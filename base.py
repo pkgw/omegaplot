@@ -10,182 +10,8 @@
 #
 
 import cairo
-import gobject
-import gtk
-import gtkThread
 import math
 import sys
-
-class OmegaArea (gtk.DrawingArea):
-    def __init__ (self, bag, style, sources):
-        gtk.DrawingArea.__init__ (self)
-        self.connect ("expose_event", self._expose)
-        self.omegaStyle = style
-        self._painter = NullPainter ()
-        self.sources = sources
-        self.bag = bag
-        self.savedWidth = -1
-        self.savedHeight = -1
-        self.lastException = None
-
-    def _expose (self, widget, event):
-        ctxt = widget.window.cairo_create()
-    
-        # set a clip region for the expose event
-        ctxt.rectangle (event.area.x, event.area.y,
-                        event.area.width, event.area.height)
-        ctxt.clip()
-
-        w, h = self.allocation.width, self.allocation.height
-
-        try:
-            if w != self.savedWidth or h != self.savedHeight:
-                (minw, minh) = self._painter.getMinimumSize (ctxt, self.omegaStyle)
-
-                if w < minw or h < minh:
-                    print 'Unable to paint: actual size (%f, %f) smaller than ' \
-                          'minimum size (%f, %f)' % (w, h, minw, minh)
-                    return False
-            
-                self._painter.configurePainting (ctxt, self.omegaStyle, w, h)
-                self.savedWidth = w
-                self.savedHeight = h
-
-            self.bag.startFlushing (self.sources)
-            self._painter.paint (ctxt, self.omegaStyle, True)
-
-            while self.bag.startNewRound ():
-                self._painter.paint (ctxt, self.omegaStyle, False)
-        except:
-            self.lastException = sys.exc_info ()
-        
-        return False
-
-    def setPainter (self, p):
-        if not isinstance (p, Painter): raise Exception ('Not a Painter: %s' % p)
-        self._painter = p or NullPainter ()
-        self.lastException = None
-        self.forceReconfigure ()
-
-    def forceReconfigure (self):
-        self.savedWidth = self.savedHeight = -1
-        
-class GtkOmegaDemo (object):
-    def __init__ (self, bag, style, sources):
-        self.win = None
-        self.oa = None
-        self.sources = sources
-        self.bag = bag
-        self.style = style
-        self.paintId = -1
-        gtkThread.send (self._initWindow)
-        self.autoRepaint = True
-
-    paintInterval = 500 # milliseconds
-    autoReconfigure = True # Reconfigure every repaint?
-    
-    def _initWindow (self):
-        self.win = gtk.Window ()
-        self.win.set_title ('OmegaPlot Test Window Canvas')
-        self.win.set_default_size (640, 480)
-        self.win.set_border_width (4)
-        
-        # We only hold a weak reference to 'self' here, so that 'del
-        # [instance-of-gtkOmegaDemo]' will actually destroy the object
-        # (and hence the window), which is a functionality that I
-        # really want, for no particular reason. If we pass a
-        # reference to an instance function, the reference to 'self'
-        # is tracked by python/pygtk, preventing 'del [i-o-gOD]' from
-        # removing the final reference to the instance, so that
-        # __del__ isn't called.
-
-        import weakref
-        sref = weakref.ref (self)
-
-        def clear (obj):
-            instance = sref ()
-            
-            if instance != None:
-                instance.win = instance.oa = None
-                
-        self.win.connect ('destroy', clear)
-        
-        self.oa = OmegaArea (self.bag, self.style, self.sources)
-        self.win.add (self.oa)
-
-        self.win.show_all ()
-
-    def get_autoRepaint (self):
-        return self.paintId >= 0
-
-    def set_autoRepaint (self, value):
-        if not value ^ (self.paintId >= 0): return #noop?
-
-        if not value:
-            # disabling?
-            gobject.source_remove (self.paintId)
-            self.paintId = -1
-            return
-        
-        # enabling. Same idea as _initWindow
-        import weakref
-        sref = weakref.ref (self)
-
-        def repaint ():
-            instance = sref ()
-
-            # Owner was destroyed; terminate timeout.
-            if not instance: return False
-                
-            # Owner still going strong
-            if instance.oa:
-                if instance.oa.lastException:
-                    # oops we blew up
-                    from traceback import print_exception
-                    print_exception (*instance.oa.lastException)
-                    print 'Painting failed. Disabling automatic repainting.'
-                    instance.oa.lastException = None
-                    self.paintId = -1
-                    return False
-
-                if instance.autoReconfigure:
-                    instance.oa.forceReconfigure ()
-                
-                instance.oa.queue_draw ()
-            return True
-                
-        self.paintId = gobject.timeout_add (self.paintInterval, \
-                                            repaint)
-
-    autoRepaint = property (get_autoRepaint, set_autoRepaint)
-
-    def setPainter (self, p):
-        def doit ():
-            if self.oa: self.oa.setPainter (p)
-        gtkThread.send (doit)
-
-    def reconfigure (self):
-        def doit ():
-            if self.oa: self.oa.forceReconfigure ()
-        gtkThread.send (doit)
-        
-    def __del__ (self):
-        if gobject and self.paintId >= 0:
-            gobject.source_remove (self.paintId)
-            self.paintId = -1
-
-        if self.win == None: return
-        if gtkThread == None: return # this can get GC'd before us!
-
-        # The user may destroy the window via the WM
-        # and then delete this object before the clear()
-        # function has had a chance to run ...
-
-        def doit ():
-            if self.win != None:
-                self.win.destroy ()
-            
-        gtkThread.send (doit)
 
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
@@ -867,7 +693,7 @@ class RectDataPainter (StreamSink):
         self.xaxis = LinearAxis ()
         self.yaxis = LinearAxis ()
         self.lines = True # XXX
-        self.pointPainter = None # XXX
+        self.pointStamp = None # XXX
 
     def transform (self, pair):
         # the 1-f(y) deals with the opposite senses of math and
@@ -900,8 +726,8 @@ class RectDataPainter (StreamSink):
         self.lastx, self.lasty = ctxt.get_current_point ()
         ctxt.stroke ()
 
-        if self.pointPainter:
-            for (x, y) in points: self.pointPainter.paint (ctxt, style, x, y, ())
+        if self.pointStamp:
+            for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())
         
 class TestStyle (object):
     smallScale = 2
@@ -934,18 +760,5 @@ class TestStyle (object):
     def apply_bgFill (self, ctxt):
         ctxt.set_source_rgb (1, 1, 1)
 
-class PointPainter (object):
-    sinkSpec = ''
-
-    def paint (self, ctxt, style, x, y, data):
-        ctxt.save ()
-        self.doPaint (ctxt, style, x, y, data)
-        ctxt.restore ()
-
-class DotPainter (PointPainter):
-    size = 2 # in style.smallScale
-
-    def doPaint (self, ctxt, style, x, y, data):
-        ctxt.arc (x, y, self.size * style.smallScale, 0, 2 * math.pi)
-        ctxt.fill ()
-
+    def apply_genericStamp (self, ctxt):
+        ctxt.set_line_width (1)

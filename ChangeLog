@@ -1,3 +1,13 @@
+2007-01-20  Peter Williams  <peter@newton.cx>
+
+	* stamps.py: New file, contains a bunch of generic
+	stamps (formerly PointPainters). 
+
+	* demo/stampDemo.py: New file, demos the stamps.
+
+	* gtkUtil.py: New file, put the Gtk widgets and
+	GtkOmegaDemo here.
+
 2007-01-19  Peter Williams  <peter@newton.cx>
 
 	* Project import.
