@@ -1,3 +1,15 @@
+2007-01-21  Peter Williams  <peter@newton.cx>
+
+	* styles.py: Move TestStyle here; new file for holding
+	various style classes.
+
+	* bag.py: Move Bag here, new file.
+
+	* sources.py: Move FuncSource here as Function; new file
+	for holding various data source classes.
+
+	* base.py: Above classes moved from here.
+
 2007-01-20  Peter Williams  <peter@newton.cx>
 
 	* stamps.py: New file, contains a bunch of generic

@@ -9,10 +9,227 @@
 # * Interactivity
 #
 
-import cairo
 import math
-import sys
 
+class Painter (object):
+    self.mainStyle = None
+    
+    def __init__ (self):
+        self.matrix = None
+
+    def getMinimumSize (self, ctxt, style):
+        #"""Should be a function of the style only."""
+        # I feel like the above should be true, but we at least
+        # need ctxt for measuring text, unless another way is found.
+        return 0, 0
+
+    def configurePainting (self, ctxt, style, w, h):
+        self.matrix = ctxt.get_matrix ()
+        self.width = w
+        self.height = h
+
+    def paint (self, ctxt, style, firstPaint):
+        ctxt.save ()
+        ctxt.set_matrix (self.matrix)
+        style.apply (ctxt, self.mainStyle)
+        self.doPaint (ctxt, style, firstPaint)
+        ctxt.restore ()
+
+class StreamSink (Painter):
+    def __init__ (self, bag):
+        Painter.__init__ (self)
+        bag.registerSink (self)
+        self._bag = bag
+
+    def doPaint (self, ctxt, style, firstPaint):
+        if firstPaint:
+            self.doFirstPaint (ctxt, style)
+        else:
+            chunk = self._bag.getChunk (self)
+            if not chunk: return # no more chunks
+            self.doChunkPaint (ctxt, style, chunk)
+
+class NullPainter (Painter):
+    def getMinimumSize (self, ctxt, style):
+        return 0, 0
+
+    def doPaint (self, ctxt, style, firstPaint):
+        if not firstPaint: return
+        
+        ctxt.move_to (0, 0)
+        ctxt.line_to (self.width, self.height)
+        ctxt.stroke ()
+        ctxt.move_to (0, self.height)
+        ctxt.line_to (self.width, 0)
+        ctxt.stroke ()
+
+class Overlay (Painter):
+    """An overlay in which multiple painters can be stacked in one
+    box, with an optional border area."""
+
+    def __init__ (self):
+        Painter.__init__ (self)
+        self.painters = []
+
+    hBorderSize = 4 # in style.smallScale
+    vBorderSize = 4 # in style.smallScale
+    bgStyle = None # style ref
+    
+    def getMinimumSize (self, ctxt, style):
+        w, h = 0, 0
+
+        for p in self.painters:
+            childw, childh = p.getMinimumSize (ctxt, style)
+            w = max (w, childw)
+            h = max (h, childh)
+
+        return w + 2 * self.hBorderSize * style.smallScale, \
+               h + 2 * self.vBorderSize * style.smallScale
+
+    def configurePainting (self, ctxt, style, w, h):
+        Painter.configurePainting (self, ctxt, style, w, h)
+        
+        hreal = self.hBorderSize * style.smallScale
+        vreal = self.vBorderSize * style.smallScale
+
+        childw = w - 2 * hreal
+        childh = h - 2 * vreal
+        
+        ctxt.save ()
+        ctxt.translate (hreal, vreal)
+
+        for p in self.painters:
+            p.configurePainting (ctxt, style, childw, childh)
+
+        ctxt.restore ()
+        
+    def doPaint (self, ctxt, style, firstPaint):
+        if firstPaint and self.bgStyle:
+            ctxt.save ()
+            style.apply (ctxt, self.bgStyle)
+            ctxt.rectangle (0, 0, self.width, self.height)
+            ctxt.fill ()
+            ctxt.restore ()
+            
+        for p in self.painters:
+            p.paint (ctxt, style, firstPaint)
+
+    def addPainter (self, p):
+        self.painters.append (p)
+
+    def removePainter (self, p):
+        self.painters.remove (p)
+
+class Grid (Painter):
+    def __init__ (self, nw, nh):
+        Painter.__init__ (self)
+        self.nw = int (nw)
+        self.nh = int (nh)
+        self._elements = [None] * nw * nh
+        
+        for i in xrange (0, self.nw):
+            for j in xrange (0, self.nh):
+                self[i,j] = NullPainter ()
+
+    # FIXME: when these are changed, need to indicate
+    # that a reconfigure is necessary.
+    hBorderSize = 2 # size of horz. border in style.smallScale
+    vBorderSize = 2 # as above for vertical border
+    hPadSize = 1 # size of interior horz. padding in style.smallScale
+    vPadSize = 1 # as above for interior vertical padding
+    
+    def _mapIndex (self, idx):
+        try:
+            asint = int (idx)
+            if self.nw == 1: idx = [0, asint]
+            elif self.nh == 1: idx = [asint, 0]
+        except TypeError:
+            idx = list (idx)
+
+        if len (idx) != 2:
+            raise IndexError ('Bad Grid index: %s' % idx)
+        if idx[0] >= self.nw:
+            raise IndexError ('Grid index width out of bounds')
+        if idx[1] >= self.nh:
+            raise IndexError ('Grid index width out of bounds')
+        
+        return idx[0] * self.nh + idx[1]
+
+    def __getitem__ (self, idx):
+        return self._elements[self._mapIndex (idx)]
+
+    def __setitem__ (self, idx, value):
+        self._elements[self._mapIndex (idx)] = value
+
+    def getMinimumSize (self, ctxt, style):
+        minw = 2 * self.hBorderSize * style.smallScale
+        minh = 2 * self.vBorderSize * style.smallScale
+
+        minw += (self.nw - 1) * self.hPadSize * style.smallScale
+        minh += (self.nh - 1) * self.vPadSize * style.smallScale
+
+        dw = dh = 0
+
+        for i in xrange (0, self.nw):
+            for j in xrange (0, self.nh):
+                childw, childh = self[i,j].getMinimumSize (ctxt, style)
+                dw = max (childw, dw)
+                dh = max (childh, dh)
+
+        minw += dw * self.nw
+        minh += dh * self.nh
+
+        # This code calculates for a nonuniform grid:
+        #dhs = [0] * self.nh
+        #
+        #for i in xrange (0, nw):
+        #    dw = 0
+        #    
+        #    for j in xrange (0, nh):
+        #        childw, childh = self[i,j].getMinimumSize (ctxt, style)
+        #
+        #        dw = max (childw, dw)
+        #        dhs[j] = max (childh, dhs[j])
+        #
+        #    minw += dw
+        #
+        #for j in xrange (0, nh): minh += dhs[j]
+
+        return minw, minh
+
+    def configurePainting (self, ctxt, style, w, h):
+        Painter.configurePainting (self, ctxt, style, w, h)
+
+        hBorderReal = self.hBorderSize * style.smallScale
+        vBorderReal = self.vBorderSize * style.smallScale
+        hPadReal = self.hPadSize * style.smallScale
+        vPadReal = self.vPadSize * style.smallScale
+        
+        childw = w - 2 * hBorderReal
+        childh = h - 2 * vBorderReal
+        childw -= (self.nw - 1) * hPadReal
+        childh -= (self.nh - 1) * vPadReal
+        
+        childw /= self.nw
+        childh /= self.nh
+
+        ctxt.save ()
+        ctxt.translate (hBorderReal, vBorderReal)
+        
+        for i in xrange (0, self.nw):
+            for j in xrange (0, self.nh):
+                dx = i * (childw + hPadReal)
+                dy = j * (childh + vPadReal)
+
+                ctxt.translate (dx, dy)
+                self[i,j].configurePainting (ctxt, style, childw, childh)
+                ctxt.translate (-dx, -dy)
+
+    def doPaint (self, ctxt, style, firstPaint):
+        for i in xrange (0, self.nw):
+            for j in xrange (0, self.nh):
+                self[i,j].paint (ctxt, style, firstPaint)
+    
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
     that this class does not paint the axis; it just maps values from
@@ -259,328 +476,6 @@ class LinearAxisPainter (BlankAxisPainter):
             val += inc
             coeff += 1
 
-class FuncSource (object):
-    def __init__ (self):
-        self.xmin = 0. # XXX bagprop, should support multi-dim
-        self.xmax = 10.
-        self.npts = 300
-        self.func = self.demofunc
-
-    import math
-    
-    def demofunc (self, x):
-        return FuncSource.math.sin(x) + 1.
-
-    class pointiter:
-        def __init__ (self, owner):
-            self.val = owner.xmin
-            self.bound = owner.xmax
-            self.func = owner.func
-            self.inc = (owner.xmax - owner.xmin) / owner.npts
-
-        def __iter__ (self): return self
-
-        def next (self):
-            if self.val > self.bound: raise StopIteration ()
-
-            try:
-                r = (self.val, self.func (self.val))
-            except:
-                r = (self.val, 0.0) # XXX FIXME ugggh
-            
-            self.val += self.inc
-            return r
-        
-    class chunkiter:
-        def __init__ (self, owner):
-            self.owner = owner
-
-        def __iter__ (self): return self
-
-        def next (self):
-            if not self.owner: raise StopIteration ()
-            r = FuncSource.pointiter (self.owner)
-            self.owner = None
-            return r
-    
-    def __iter__ (self): return FuncSource.chunkiter (self)
-
-class Bag (object):
-    def __init__ (self):
-        self.sinks = set ()
-        self.exposed = {}
-        
-    def registerSink (self, sink):
-        self.sinks.add (sink)
-
-    def exposeSink (self, sink, name):
-        self.registerSink (sink)
-        self.exposed[name] = sink
-
-    def getChunk (self, sink):
-        chunk = self.currentRound.get (sink)
-
-        if chunk: return chunk
-
-        raise Exception ('uh oh now what')
-
-    def startFlushing (self, sources):
-        self.currentIters = {}
-        
-        for (name, sink) in self.exposed.iteritems ():
-            if name not in sources: raise Exception ('No such source %s!' % (name))
-
-            self.currentIters[sink] = sources[name].__iter__ ()
-
-        
-    def startNewRound (self):
-        self.currentRound = {}
-        gotany = False
-        
-        for (sink, iter) in self.currentIters.iteritems ():
-            try:
-                chunk = iter.next ()
-                self.currentRound[sink] = chunk
-                gotany = True
-            except StopIteration:
-                self.currentRound[sink] = None
-
-        return gotany
-    
-    def push (self, sources, *args):
-        if len (sources) < len (self.exposed):
-            raise Exception ('Not enough sources for all exposed sinks!')
-        
-        for sink in self.sinks:
-            if hasattr (sink, 'streamBegin'): sink.streamBegin (*args)
-
-        for (name, sink) in self.exposed.iteritems ():
-            if name not in sources: raise Exception ('No such source %s!' % (name))
-
-            source = sources[name]
-
-            for chunk in source:
-                sink.acceptChunk (chunk, *args)
-
-        for sink in self.sinks:
-            if hasattr (sink, 'streamEnd'): sink.streamEnd (*args)
-        
-class Painter (object):
-    def __init__ (self):
-        self.matrix = None
-
-    def getMinimumSize (self, ctxt, style):
-        #"""Should be a function of the style only."""
-        # I feel like the above should be true, but we at least
-        # need ctxt for measuring text, unless another way is found.
-        return 0, 0
-
-    def configurePainting (self, ctxt, style, w, h):
-        self.matrix = ctxt.get_matrix ()
-        self.width = w
-        self.height = h
-
-    def paint (self, ctxt, style, firstPaint):
-        ctxt.save ()
-        ctxt.set_matrix (self.matrix)
-        self.doPaint (ctxt, style, firstPaint)
-        ctxt.restore ()
-
-class StreamSink (Painter):
-    def __init__ (self, bag):
-        Painter.__init__ (self)
-        bag.registerSink (self)
-        self._bag = bag
-
-    def doPaint (self, ctxt, style, firstPaint):
-        if firstPaint:
-            self.doFirstPaint (ctxt, style)
-        else:
-            chunk = self._bag.getChunk (self)
-            if not chunk: return # no more chunks
-            self.doChunkPaint (ctxt, style, chunk)
-
-class NullPainter (Painter):
-    def getMinimumSize (self, ctxt, style):
-        return 0, 0
-
-    def doPaint (self, ctxt, style, firstPaint):
-        if not firstPaint: return
-        
-        ctxt.move_to (0, 0)
-        ctxt.line_to (self.width, self.height)
-        ctxt.stroke ()
-        ctxt.move_to (0, self.height)
-        ctxt.line_to (self.width, 0)
-        ctxt.stroke ()
-
-class Overlay (Painter):
-    """An overlay in which multiple painters can be stacked in one
-    box, with an optional border area."""
-
-    def __init__ (self):
-        Painter.__init__ (self)
-        self.painters = []
-
-    hBorderSize = 4 # in style.smallScale
-    vBorderSize = 4 # in style.smallScale
-    bgStyle = None # style ref
-    
-    def getMinimumSize (self, ctxt, style):
-        w, h = 0, 0
-
-        for p in self.painters:
-            childw, childh = p.getMinimumSize (ctxt, style)
-            w = max (w, childw)
-            h = max (h, childh)
-
-        return w + 2 * self.hBorderSize * style.smallScale, \
-               h + 2 * self.vBorderSize * style.smallScale
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
-        
-        hreal = self.hBorderSize * style.smallScale
-        vreal = self.vBorderSize * style.smallScale
-
-        childw = w - 2 * hreal
-        childh = h - 2 * vreal
-        
-        ctxt.save ()
-        ctxt.translate (hreal, vreal)
-
-        for p in self.painters:
-            p.configurePainting (ctxt, style, childw, childh)
-
-        ctxt.restore ()
-        
-    def doPaint (self, ctxt, style, firstPaint):
-        if firstPaint and self.bgStyle:
-            ctxt.save ()
-            style.apply (ctxt, self.bgStyle)
-            ctxt.rectangle (0, 0, self.width, self.height)
-            ctxt.fill ()
-            ctxt.restore ()
-            
-        for p in self.painters:
-            p.paint (ctxt, style, firstPaint)
-
-    def addPainter (self, p):
-        self.painters.append (p)
-
-    def removePainter (self, p):
-        self.painters.remove (p)
-
-class Grid (Painter):
-    def __init__ (self, nw, nh):
-        Painter.__init__ (self)
-        self.nw = int (nw)
-        self.nh = int (nh)
-        self._elements = [None] * nw * nh
-        
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                self[i,j] = NullPainter ()
-
-    # FIXME: when these are changed, need to indicate
-    # that a reconfigure is necessary.
-    hBorderSize = 2 # size of horz. border in style.smallScale
-    vBorderSize = 2 # as above for vertical border
-    hPadSize = 1 # size of interior horz. padding in style.smallScale
-    vPadSize = 1 # as above for interior vertical padding
-    
-    def _mapIndex (self, idx):
-        try:
-            asint = int (idx)
-            if self.nw == 1: idx = [0, asint]
-            elif self.nh == 1: idx = [asint, 0]
-        except TypeError:
-            idx = list (idx)
-
-        if len (idx) != 2:
-            raise IndexError ('Bad Grid index: %s' % idx)
-        if idx[0] >= self.nw:
-            raise IndexError ('Grid index width out of bounds')
-        if idx[1] >= self.nh:
-            raise IndexError ('Grid index width out of bounds')
-        
-        return idx[0] * self.nh + idx[1]
-
-    def __getitem__ (self, idx):
-        return self._elements[self._mapIndex (idx)]
-
-    def __setitem__ (self, idx, value):
-        self._elements[self._mapIndex (idx)] = value
-
-    def getMinimumSize (self, ctxt, style):
-        minw = 2 * self.hBorderSize * style.smallScale
-        minh = 2 * self.vBorderSize * style.smallScale
-
-        minw += (self.nw - 1) * self.hPadSize * style.smallScale
-        minh += (self.nh - 1) * self.vPadSize * style.smallScale
-
-        dw = dh = 0
-
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                childw, childh = self[i,j].getMinimumSize (ctxt, style)
-                dw = max (childw, dw)
-                dh = max (childh, dh)
-
-        minw += dw * self.nw
-        minh += dh * self.nh
-
-        # This code calculates for a nonuniform grid:
-        #dhs = [0] * self.nh
-        #
-        #for i in xrange (0, nw):
-        #    dw = 0
-        #    
-        #    for j in xrange (0, nh):
-        #        childw, childh = self[i,j].getMinimumSize (ctxt, style)
-        #
-        #        dw = max (childw, dw)
-        #        dhs[j] = max (childh, dhs[j])
-        #
-        #    minw += dw
-        #
-        #for j in xrange (0, nh): minh += dhs[j]
-
-        return minw, minh
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
-
-        hBorderReal = self.hBorderSize * style.smallScale
-        vBorderReal = self.vBorderSize * style.smallScale
-        hPadReal = self.hPadSize * style.smallScale
-        vPadReal = self.vPadSize * style.smallScale
-        
-        childw = w - 2 * hBorderReal
-        childh = h - 2 * vBorderReal
-        childw -= (self.nw - 1) * hPadReal
-        childh -= (self.nh - 1) * vPadReal
-        
-        childw /= self.nw
-        childh /= self.nh
-
-        ctxt.save ()
-        ctxt.translate (hBorderReal, vBorderReal)
-        
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                dx = i * (childw + hPadReal)
-                dy = j * (childh + vPadReal)
-
-                ctxt.translate (dx, dy)
-                self[i,j].configurePainting (ctxt, style, childw, childh)
-                ctxt.translate (-dx, -dy)
-
-    def doPaint (self, ctxt, style, firstPaint):
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                self[i,j].paint (ctxt, style, firstPaint)
-    
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
@@ -728,37 +623,3 @@ class RectDataPainter (StreamSink):
 
         if self.pointStamp:
             for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())
-        
-class TestStyle (object):
-    smallScale = 2
-    largeScale = 5
-
-    def apply (self, ctxt, style):
-        if not style: return
-
-        if hasattr (style, 'apply'):
-            style.apply (ctxt)
-            return
-
-        if callable (style):
-            style (ctxt)
-            return
-
-        if isinstance (style, basestring):
-            fn = 'apply_' + style
-
-            if hasattr (self, fn):
-                getattr (self, fn)(ctxt)
-                return
-
-        raise Exception ('Dont know what to do with style item %s' % style)
-
-    def apply_bgLinework (self, ctxt):
-        ctxt.set_line_width (1)
-        ctxt.set_source_rgb (0.3, 0.3, 0.3) # do rgba?
-
-    def apply_bgFill (self, ctxt):
-        ctxt.set_source_rgb (1, 1, 1)
-
-    def apply_genericStamp (self, ctxt):
-        ctxt.set_line_width (1)
