@@ -1,5 +1,17 @@
 2007-01-21  Peter Williams  <peter@newton.cx>
 
+	* bag.py (Bag.linkTo): Add basic 'linking' support, which allows
+	making one sink feed into another. Going to be used for processing
+	the incoming data streams. Also work a bit on what is an iter and
+	what is a list, because you can only iterate over an iter once.
+
+	* base.py (RectDataPainter.doChunkPaint): Fix obsolete references
+	to self.pointStamp.
+	(StreamSink.linkTo): Add this method.
+	(Painter): fix init of mainStyle, duh.
+
+2007-01-21  Peter Williams  <peter@newton.cx>
+
 	* styles.py: Move TestStyle here; new file for holding
 	various style classes.
 

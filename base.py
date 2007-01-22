@@ -12,7 +12,7 @@
 import math
 
 class Painter (object):
-    self.mainStyle = None
+    mainStyle = None
     
     def __init__ (self):
         self.matrix = None
@@ -48,6 +48,9 @@ class StreamSink (Painter):
             chunk = self._bag.getChunk (self)
             if not chunk: return # no more chunks
             self.doChunkPaint (ctxt, style, chunk)
+
+    def linkTo (self, source):
+        self._bag.linkTo (source, self)
 
 class NullPainter (Painter):
     def getMinimumSize (self, ctxt, style):
@@ -603,11 +606,11 @@ class RectDataPainter (StreamSink):
     def doChunkPaint (self, ctxt, style, chunk):
         # FIXME this will require lots of ... fixing
         points = []
-        
+
         if self.lastx == None:
             try:
                 self.lastx, self.lasty = self.transform (chunk.next ())
-                if self.pointPainter: points.append ((self.lastx, self.lasty))
+                if self.pointStamp: points.append ((self.lastx, self.lasty))
             except StopIteration:
                 return
 
@@ -616,7 +619,7 @@ class RectDataPainter (StreamSink):
         for pair in chunk:
             x, y = self.transform (pair)
             ctxt.line_to (x, y)
-            if self.pointPainter: points.append ((x, y))
+            if self.pointStamp: points.append ((x, y))
 
         self.lastx, self.lasty = ctxt.get_current_point ()
         ctxt.stroke ()

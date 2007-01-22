@@ -10,6 +10,9 @@ class Function (object):
     def demofunc (self, x):
         return Function.math.sin(x) + 1.
 
+    # FIXME all unnecessary, chunk should be lists because
+    # it must be possible to iterate over them twice.
+    
     class pointiter:
         def __init__ (self, owner):
             self.val = owner.xmin
