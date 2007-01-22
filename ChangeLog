@@ -1,5 +1,14 @@
 2007-01-21  Peter Williams  <peter@newton.cx>
 
+	* omega: Move files into here, so 'import omega' from the toplevel
+	works if PYTHONPATH includes '.'. 
+
+	* demo/Makefile.am: Add this too.
+	
+	* Makefile.am, configure.ac: Tweaks for the above.
+	
+2007-01-21  Peter Williams  <peter@newton.cx>
+
 	* bag.py (Bag.linkTo): Add basic 'linking' support, which allows
 	making one sink feed into another. Going to be used for processing
 	the incoming data streams. Also work a bit on what is an iter and

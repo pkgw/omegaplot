@@ -15,4 +15,6 @@ AM_CHECK_PYMOD(gtk,,,
 
 AC_OUTPUT([
 Makefile
+omega/Makefile
+demo/Makefile
 ])
