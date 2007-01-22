@@ -2,13 +2,14 @@
 
 from base import *
 
+import bag
 import gtkThread
 import gtkUtil
-import stamps
-import bag
-import styles
 import sources
+import stamps
+import styles
 
 from bag import Bag
 from styles import TestStyle
 from sources import Function
+from gtkUtil import LiveDisplay # FIXME: import different class depending on what toolkit is available

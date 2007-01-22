@@ -1,5 +1,17 @@
 2007-01-21  Peter Williams  <peter@newton.cx>
 
+	* omega/gtkUtil.py (OmegaDemoWindow): Copy the OmegaArea functions
+	for convenience.
+	(LiveDisplay): Renamed from GtkOmegaDemo, better name. Also copy
+	the OmegaArea functions and reorganize __init__.
+
+	* omega/__init__.py: Reorder imports to alphabetical and import
+	LiveDisplay from gtkUtil.
+
+	* Makefile.am: Hey, forgot to svn add the new one.
+
+2007-01-21  Peter Williams  <peter@newton.cx>
+
 	* omega: Move files into here, so 'import omega' from the toplevel
 	works if PYTHONPATH includes '.'. 
 

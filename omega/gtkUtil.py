@@ -100,7 +100,7 @@ class OmegaArea (gtk.DrawingArea):
     # Python interface
     
     def setPainter (self, p):
-        if not isinstance (p, Painter): raise Exception ('Not a Painter: %s' % p)
+        if p and not isinstance (p, Painter): raise Exception ('Not a Painter: %s' % p)
         self._painter = p or NullPainter ()
         self.lastException = None
         self.forceReconfigure ()
@@ -127,32 +127,51 @@ class OmegaDemoWindow (gtk.Window):
         self.oa = OmegaArea (bag, style, sources, True)
         self.add (self.oa)
 
+    # Emulate the OmegaArea interface for convenience.
+
+    def get_paintInterval (self):
+        return self.oa.paintInterval
+
+    def set_paintInterval (self, value):
+        self.oa.paintInterval = value
+
+    paintInterval = property (get_paintInterval, set_paintInterval)
+    
+    def get_autoReconfigure (self):
+        return self.oa.autoReconfigure
+
+    def set_autoReconfigure (self, value):
+        self.oa.autoReconfigure = value
+
+    autoReconfigure = property (get_autoReconfigure, set_autoReconfigure)
+    
+    def get_autoRepaint (self):
+        return self.oa.autoRepaint
+
+    def set_autoRepaint (self, value):
+        self.oa.autoRepaint = value
+
+    autoRepaint = property (get_autoRepaint, set_autoRepaint)
+    
     def setPainter (self, p):
         self.oa.setPainter (p)
 
     def forceReconfigure (self):
         self.oa.forceReconfigure ()
 
-class GtkOmegaDemo (object):
-    def __init__ (self, bag, style, sources):
+class LiveDisplay (object):
+    def __init__ (self, bag, style, sources, painter):
         self.win = None
-        self.sources = sources
-        self.bag = bag
-        self.style = style
 
-        gtkThread.send (self._initWindow)
-
-    def _initWindow (self):
-        self.win = OmegaDemoWindow (self.bag, self.style, self.sources)
-        
+        # Here we set up a destroy function that the window will use.
         # We only hold a weak reference to 'self' here, so that 'del
-        # [instance-of-GtkOmegaDemo]' will actually destroy the object
+        # [instance-of-LiveDisplay]' will actually destroy the object
         # (and hence the window), which is a functionality that I
-        # really want, for no particular reason. If we pass a
+        # really like, for no particular reason. If we pass a
         # reference to an instance function, the reference to 'self'
-        # is tracked by python/pygtk, preventing 'del [i-o-GOD]' from
+        # is tracked by python/pygtk, preventing 'del [i-o-LD]' from
         # removing the final reference to the instance, so that
-        # __del__ isn't called.
+        # __del__ (below) isn't called.
 
         import weakref
         sref = weakref.ref (self)
@@ -163,22 +182,16 @@ class GtkOmegaDemo (object):
             if instance != None:
                 instance.win = None
                 
-        self.win.connect ('destroy', clear)
-
         # End of wacky code.
         
-        self.win.show_all ()
+        def init ():
+            self.win = OmegaDemoWindow (bag, style, sources)
+            self.win.setPainter (painter)
+            self.win.connect ('destroy', clear)
+            self.win.show_all ()
+            
+        gtkThread.send (init)
 
-    def setPainter (self, p):
-        def doit ():
-            if self.win: self.win.setPainter (p)
-        gtkThread.send (doit)
-
-    def forceReconfigure (self):
-        def doit ():
-            if self.win: self.win.forceReconfigure ()
-        gtkThread.send (doit)
-        
     def __del__ (self):
         if self.win == None: return
         if gtkThread == None: return # this can get GC'd before us!
@@ -192,4 +205,42 @@ class GtkOmegaDemo (object):
                 self.win.destroy ()
                 self.win = None
             
+        gtkThread.send (doit)
+
+    # More OmegaArea interface emulation, with the added wrinkle
+    # of doing everything cross-thread. Don't even bother providing
+    # write access to the attributes.
+
+    def set_paintInterval (self, value):
+        def doit ():
+            if self.win != None:
+                self.win.paintInterval = value
+        gtkThread.send (doit)
+        
+    paintInterval = property (None, set_paintInterval)
+    
+    def set_autoReconfigure (self, value):
+        def doit ():
+            if self.win != None:
+                self.win.autoReconfigure = value
+        gtkThread.send (doit)
+
+    autoReconfigure = property (None, set_autoReconfigure)
+    
+    def set_autoRepaint (self, value):
+        def doit ():
+            if self.win != None:
+                self.win.autoRepaint = value
+        gtkThread.send (doit)
+
+    autoRepaint = property (None, set_autoRepaint)
+    
+    def setPainter (self, p):
+        def doit ():
+            if self.win: self.win.setPainter (p)
+        gtkThread.send (doit)
+
+    def forceReconfigure (self):
+        def doit ():
+            if self.win: self.win.forceReconfigure ()
         gtkThread.send (doit)
