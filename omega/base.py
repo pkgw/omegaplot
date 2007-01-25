@@ -49,6 +49,9 @@ class StreamSink (Painter):
             if not chunk: return # no more chunks
             self.doChunkPaint (ctxt, style, chunk)
 
+    def expose (self, name):
+        self._bag.exposeSink (self, name)
+    
     def linkTo (self, source):
         self._bag.linkTo (source, self)
 
@@ -400,7 +403,7 @@ class LinearAxisPainter (BlankAxisPainter):
         self.axis = axis
 
     labelSeparation = 2 # in smallScale
-    numFormat = '%lg' # can be a function mapping float -> str
+    numFormat = '%g' # can be a function mapping float -> str
     majorTickScale = 2 # in largeScale
     minorTickScale = 2 # in smallScale
     minorTicks = 5
@@ -578,13 +581,21 @@ class RectPlot (Painter):
             self._axisApplyHelper (self.fieldw, self.fieldh, \
                                    'paint', ctxt, style)
             ctxt.restore ()
-            
+
+        ctxt.save ()
+        ctxt.rectangle (self.exteriors[3], self.exteriors[2],
+                        self.fieldw, self.fieldh)
+        ctxt.clip ()
+        
         for fp in self.fpainters:
             fp.paint (ctxt, style, firstPaint)
+
+        ctxt.restore ()
         
 class RectDataPainter (StreamSink):
     sinkSpec = 'FF' # FIXME
-
+    lineStyle = 'genericLine'
+    
     def __init__ (self, bag):
         StreamSink.__init__ (self, bag)
         
@@ -607,6 +618,8 @@ class RectDataPainter (StreamSink):
         # FIXME this will require lots of ... fixing
         points = []
 
+        style.apply (ctxt, self.lineStyle)
+        
         if self.lastx == None:
             try:
                 self.lastx, self.lasty = self.transform (chunk.next ())

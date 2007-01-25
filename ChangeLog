@@ -1,3 +1,26 @@
+2007-01-24  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (StreamSink.expose): New utility, calls bag.exposeSink.
+	(RectPlot.doPaint): Clip field painters to paint on the field. This
+	might be worth making optional.
+	(RectDataPainter.lineStyle): Add this style prop; apply it before
+	painting field lines. Still need to make line drawing disable-able...
+	Also, this property should default to some 'nth data set' style thing.
+
+	* omega/sources.py (Function.pointiter.__init__): Add a float() in case
+	the dumbass user (perhaps, for example, me) sets xmax and xmin to ints.
+
+	* omega/styles.py (TestStyle.initContext): Add a function to be called
+	before any painting is performed. Here, paints the background white.
+	(TestStyle.apply_genericLine): Implement this to set the width to 1
+	and color to black.
+
+	* omega/gtkUtil.py (OmegaArea._expose): Call omegaStyle.initContext before
+	painting.
+
+	* demo/sinc.py: New demo, draws sinc * sin and sinc * cos. Requires
+	numpy.
+
 2007-01-21  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (OmegaDemoWindow): Copy the OmegaArea functions

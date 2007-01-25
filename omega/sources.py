@@ -18,7 +18,7 @@ class Function (object):
             self.val = owner.xmin
             self.bound = owner.xmax
             self.func = owner.func
-            self.inc = (owner.xmax - owner.xmin) / owner.npts
+            self.inc = float (owner.xmax - owner.xmin) / owner.npts
 
         def __iter__ (self): return self
 

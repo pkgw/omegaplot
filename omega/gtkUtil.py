@@ -51,6 +51,7 @@ class OmegaArea (gtk.DrawingArea):
                 self.savedWidth = w
                 self.savedHeight = h
 
+            self.omegaStyle.initContext (ctxt, w, h)
             self.bag.startFlushing (self.sources)
             self._painter.paint (ctxt, self.omegaStyle, True)
 
