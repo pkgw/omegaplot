@@ -500,20 +500,21 @@ class LinearAxisPainter (BlankAxisPainter):
             # correctly, for axes with labels of 5 \pi, eg. The only
             # correct way I can think to do this is to invoke latex.
             # Eeek.
-            
-            helper.moveToAlong (ctxt, v)
-            helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
 
-            s = self.formatLabel (val)
-            (xbear, ybear, textw, texth, xadv, yadv) = \
-                    ctxt.text_extents (s)
-            helper.relMoveRectOut (ctxt, textw, texth)
-            ctxt.rel_move_to (-xbear, -ybear) # brings us from UL to LR
+            if coeff % self.minorTicks == 0:
+                helper.moveToAlong (ctxt, v)
+                helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
 
-            ctxt.save ()
-            style.apply (ctxt, self.labelStyle)
-            ctxt.show_text (s)
-            ctxt.restore ()
+                s = self.formatLabel (val)
+                (xbear, ybear, textw, texth, xadv, yadv) = \
+                        ctxt.text_extents (s)
+                helper.relMoveRectOut (ctxt, textw, texth)
+                ctxt.rel_move_to (-xbear, -ybear) # brings us from UL to LR
+
+                ctxt.save ()
+                style.apply (ctxt, self.labelStyle)
+                ctxt.show_text (s)
+                ctxt.restore ()
             
             val += inc
             coeff += 1

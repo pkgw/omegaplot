@@ -7,7 +7,7 @@ import gtk
 
 bag = omega.Bag ()
 
-style = omega.TestStyle ()
+style = omega.BlackOnWhiteBitmap ()
 #style.smallScale *= 2
 
 class StampPainter (omega.Painter):

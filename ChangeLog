@@ -1,5 +1,25 @@
 2007-01-29  Peter Williams  <peter@newton.cx>
 
+	* omega/styles.py: Clean up names; TestStyle is now split into
+	BitmapStyle, which defines the painting scales, and colorschemes,
+	which determine the colors.
+	(BitmapStyle.apply_genericStamp): Set the source color to foreground.
+	(BlackOnWhiteBitmap): A style for painting black-on-white colors
+	onto bitmaps.
+	(WhiteOnBlackBitmap): Analogous!
+
+	* omega/base.py (LinearAxisPainter.paint): Only label major ticks. 
+	Labeling minor ticks isn't too useful and generates a lot of visual
+	noise.
+
+	* demo/stampDemo.py (style): Track class renames.
+
+	* demo/sinc.py (style): Same.
+
+	* omega/__init__.py: Same; now import BOWB and WOBB.
+
+2007-01-29  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (Painter.setParent): New function. We need parenting
 	so that adding a Painter into two different containers works correctly.
 	(Painter.configurePainting): Refuse to configure unless we have a parent.

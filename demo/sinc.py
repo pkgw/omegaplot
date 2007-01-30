@@ -10,7 +10,7 @@ from math import sin, cos, pi
 from numpy import sinc
 
 bag = omega.Bag ()
-style = omega.TestStyle ()
+style = omega.BlackOnWhiteBitmap ()
 
 src1 = omega.Function (lambda x: sin (pi * 7 * x) * sinc (x))
 src1.xmin = -10
