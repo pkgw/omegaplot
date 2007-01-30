@@ -12,6 +12,9 @@ class Bag (object):
         self.exposed[name] = sink
 
     def linkTo (self, source, sink):
+        if source.sourceSpec != sink.sinkSpec:
+            raise Exception ('Trying to link disagreeing sink and source!')
+        
         self.registerSink (sink)
         self.registerSink (source)
         self.linked[sink] = source
@@ -40,7 +43,12 @@ class Bag (object):
         for (name, sink) in self.exposed.iteritems ():
             if name not in sources: raise Exception ('No such source %s!' % (name))
 
-            self.currentIters[sink] = sources[name].__iter__ ()
+            src = sources[name]
+
+            if src.sourceSpec != sink.sinkSpec:
+                raise Exception ('Trying to feed sink with disagreeing source!')
+                
+            self.currentIters[sink] = src.__iter__ ()
 
         for sink in self.sinks:
             if sink in self.exposed.itervalues (): continue
@@ -63,10 +71,15 @@ class Bag (object):
         return gotany
     
 class FunctionFilter (object):
-    def __init__ (self, func):
+    def __init__ (self, func, sourceSpec, sinkSpec):
         self.func = func
+        self.sourceSpec = sourceSpec
+        self.sinkSpec = sinkSpec
 
-    def linkTo (bag, source):
+    def expose (self, bag, name):
+        bag.exposeSink (self, name)
+        
+    def linkTo (self, bag, source):
         bag.linkTo (source, self)
     
     def filterChunk (self, chunk):
@@ -74,3 +87,44 @@ class FunctionFilter (object):
         # might be iterated over twice, and you can only iterate over
         # a generator once (for reasons that I do not know).
         return [self.func (*x) for x in chunk]
+
+class IndexMapFilter (object):
+    """Filter an incoming stream of data by remapping its values to
+    new indices (the "out indices") arbitrarily. This is done
+    independent of the actual contents of the incoming data. For
+    instance, if an incoming datum has the value (A, B, C), and
+    the out indices are (0, 2, 1, 0), the corresponding output
+    datum will have the value (A, C, B, A)."""
+    
+    def __init__ (self, sinkSpec, outIndices):
+        self.sinkSpec = sinkSpec
+        self.outIndices = outIndices
+
+        s = ''
+        
+        for idx in outIndices:
+            s += sinkSpec[idx]
+
+        self.sourceSpec = s
+
+    def expose (self, bag, name):
+        bag.exposeSink (self, name)
+        
+    def linkTo (self, bag, source):
+        bag.linkTo (source, self)
+
+    def mapOne (self, val):
+        # This could probably be made more efficient. I think it's
+        # best to return a tuple since the data will be immutable,
+        # but we'll be allocating and freeing a lot of arrays as
+        # the code stands.
+        
+        r = []
+
+        for idx in self.outIndices:
+            r.append (val[idx])
+
+        return tuple (r)
+        
+    def filterChunk (self, chunk):
+        return [self.mapOne (x) for x in chunk]

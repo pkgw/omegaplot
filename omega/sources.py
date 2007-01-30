@@ -1,6 +1,8 @@
 import math as _math
 
 class Function (object):
+    sourceSpec = 'FF'
+    
     def __init__ (self, func=None):
         self.xmin = 0. # XXX bagprop, should support multi-dim
         self.xmax = 10.
@@ -12,27 +14,11 @@ class Function (object):
 
     # FIXME all unnecessary, chunk should be lists because
     # it must be possible to iterate over them twice.
+
+    def genPoints (self):
+        iter = LinearIterator (self.xmin, self.xmax, self.npts)
+        return [(x, self.func (x)) for x in iter]
     
-    class pointiter:
-        def __init__ (self, owner):
-            self.val = owner.xmin
-            self.bound = owner.xmax
-            self.func = owner.func
-            self.inc = float (owner.xmax - owner.xmin) / owner.npts
-
-        def __iter__ (self): return self
-
-        def next (self):
-            if self.val > self.bound: raise StopIteration ()
-
-            try:
-                r = (self.val, self.func (self.val))
-            except:
-                r = (self.val, 0.0) # XXX FIXME ugggh
-            
-            self.val += self.inc
-            return r
-        
     class chunkiter:
         def __init__ (self, owner):
             self.owner = owner
@@ -41,18 +27,19 @@ class Function (object):
 
         def next (self):
             if not self.owner: raise StopIteration ()
-            r = Function.pointiter (self.owner)
+            r = self.owner.genPoints ()
             self.owner = None
             return r
     
     def __iter__ (self): return Function.chunkiter (self)
 
 class ParametricFunction (object):
-    def __init__ (self, func=None):
+    def __init__ (self, func=None, sourceSpec='FF'):
         self.tmin = 0. # XXX bagprop, should support multi-dim
         self.tmax = 10.
         self.npts = 300
         self.func = func or self.demofunc
+        self.sourceSpec = sourceSpec
 
     def demofunc (self, t):
         return (_math.sin(2*t), _math.cos (5*t))

@@ -1,5 +1,22 @@
 2007-01-29  Peter Williams  <peter@newton.cx>
 
+	* omega/bag.py (Bag.linkTo): Enforce source and sink compatiblity
+	by checking sourceSpec and sinkSpec members.
+	(Bag.startFlushing): Same, for exported sinks and the passed-in
+	sources.
+	(IndexMapFilter): Add this class, filters a stream by remapping
+	indices.
+
+	* omega/sources.py (Function.__iter__): Change to use the utility
+	LinearIterator class.
+	(ParametricFunction.__init__): Set a sourceSpec.
+	(Function): Provide a class-default a sourceSpec.
+
+	* demo/lissajou.py: Add a derivative little demo that tries out
+	IndexMapFilter and ParametricFunction.
+
+2007-01-29  Peter Williams  <peter@newton.cx>
+
 	* omega/styles.py: Clean up names; TestStyle is now split into
 	BitmapStyle, which defines the painting scales, and colorschemes,
 	which determine the colors.
