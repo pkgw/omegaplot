@@ -1,3 +1,24 @@
+2007-01-29  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (Painter.setParent): New function. We need parenting
+	so that adding a Painter into two different containers works correctly.
+	(Painter.configurePainting): Refuse to configure unless we have a parent.
+	(NullPainter.doPaint): Apply a genericLine linestyle so that we actually
+	paint something in the correct style.
+	(Overlay): Manage children.
+	(Overlay.removeChild): Rename from removePainter to conform to new model.
+	(Grid): Same.
+
+	* omega/sources.py (ParametricFunction): New class, like the Function source
+	but the function yields (x,y) pairs, not just y values.
+	(LinearIterator): Utility class.
+	
+	* omega/gtkUtil.py (OmegaArea.setPainter): Set the painter's parent to
+	self so that it configures
+	(OmegaArea.removeChild): Noop function to make self._painter happy. Should
+	probably be implemented to clear the painter so that directly calling it
+	makes sense.
+
 2007-01-24  Peter Williams  <peter@newton.cx>
 
 	* omega/base.py (StreamSink.expose): New utility, calls bag.exposeSink.

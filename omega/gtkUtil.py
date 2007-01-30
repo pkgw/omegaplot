@@ -103,12 +103,16 @@ class OmegaArea (gtk.DrawingArea):
     def setPainter (self, p):
         if p and not isinstance (p, Painter): raise Exception ('Not a Painter: %s' % p)
         self._painter = p or NullPainter ()
+        self._painter.setParent (self)
         self.lastException = None
         self.forceReconfigure ()
 
     def forceReconfigure (self):
         self.savedWidth = self.savedHeight = -1
 
+    def removeChild (self, child): # For self._painter
+        pass
+    
     # Cleanup
     
     def _destroyed (self, unused):

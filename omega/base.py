@@ -13,10 +13,18 @@ import math
 
 class Painter (object):
     mainStyle = None
+    parent = None
     
     def __init__ (self):
         self.matrix = None
 
+    def setParent (self, parent):
+        if self.parent:
+            self.parent.removeChild (self)
+
+        self.parent = parent
+        self.matrix = None
+        
     def getMinimumSize (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
@@ -24,6 +32,9 @@ class Painter (object):
         return 0, 0
 
     def configurePainting (self, ctxt, style, w, h):
+        if not self.parent:
+            raise Exception ('Cannot configure parentless painter')
+        
         self.matrix = ctxt.get_matrix ()
         self.width = w
         self.height = h
@@ -56,11 +67,15 @@ class StreamSink (Painter):
         self._bag.linkTo (source, self)
 
 class NullPainter (Painter):
+    lineStyle = 'genericLine'
+    
     def getMinimumSize (self, ctxt, style):
         return 0, 0
 
     def doPaint (self, ctxt, style, firstPaint):
         if not firstPaint: return
+
+        style.apply (ctxt, self.lineStyle)
         
         ctxt.move_to (0, 0)
         ctxt.line_to (self.width, self.height)
@@ -80,7 +95,7 @@ class Overlay (Painter):
     hBorderSize = 4 # in style.smallScale
     vBorderSize = 4 # in style.smallScale
     bgStyle = None # style ref
-    
+
     def getMinimumSize (self, ctxt, style):
         w, h = 0, 0
 
@@ -121,9 +136,10 @@ class Overlay (Painter):
             p.paint (ctxt, style, firstPaint)
 
     def addPainter (self, p):
+        p.setParent (self)
         self.painters.append (p)
 
-    def removePainter (self, p):
+    def removeChild (self, p):
         self.painters.remove (p)
 
 class Grid (Painter):
@@ -165,8 +181,28 @@ class Grid (Painter):
         return self._elements[self._mapIndex (idx)]
 
     def __setitem__ (self, idx, value):
-        self._elements[self._mapIndex (idx)] = value
+        midx = self._mapIndex (idx)
+        prev = self._elements[midx]
+        
+        if prev is value: return
 
+        # This will recurse to our own removeChild
+        if prev: prev.setParent (None)
+
+        # Do this before modifying self._elements, so that
+        # if value is already in _elements and is being
+        # moved to an earlier position, removeChild doesn't
+        # remove the wrong entry.
+        
+        if value: value.setParent (self)
+        
+        self._elements[midx] = value
+
+    def removeChild (self, child):
+        midx = self._elements.index (child)
+        self._elements[midx] = NullPainter ()
+        self._elements[midx].setParent (self)
+        
     def getMinimumSize (self, ctxt, style):
         minw = 2 * self.hBorderSize * style.smallScale
         minh = 2 * self.vBorderSize * style.smallScale
@@ -501,12 +537,16 @@ class RectPlot (Painter):
         self.fpainters = [] # field painters
 
     def addFieldPainter (self, fp):
+        fp.setParent (self)
         self.fpainters.append (fp)
-
+        
         if not self.defaultXAxis and isinstance (fp, RectDataPainter):
             self.defaultXAxis = fp.xaxis
             self.defaultYAxis = fp.yaxis
 
+    def removeChild (self, child):
+        self.fpainters.remove (child)
+        
     def addStream (self, stream, name, bag, sources):
         rdp = RectDataPainter (bag)
         bag.exposeSink (rdp, name)
