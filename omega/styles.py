@@ -51,6 +51,12 @@ class BitmapStyle (object):
         ctxt.set_line_width (self.thickLine)
         ctxt.set_source_rgb (*self.colors.foreground)
 
+    def apply_genericBand (self, ctxt):
+        ctxt.set_source_rgba (self.colors.foreground[0],
+                              self.colors.foreground[1],
+                              self.colors.foreground[2],
+                              0.2)
+
 class BlackOnWhiteColors (object):
     background = (1, 1, 1)
     foreground = (0, 0, 0)

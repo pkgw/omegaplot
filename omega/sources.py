@@ -1,13 +1,12 @@
 import math as _math
 
 class Function (object):
-    sourceSpec = 'FF'
-    
-    def __init__ (self, func=None):
+    def __init__ (self, func=None, funcSpec='F'):
         self.xmin = 0. # XXX bagprop, should support multi-dim
         self.xmax = 10.
         self.npts = 300
         self.func = func or self.demofunc
+        self.sourceSpec = 'F' + funcSpec
 
     def demofunc (self, x):
         return _math.sin(x) + 1.
@@ -18,9 +17,10 @@ class Function (object):
 
     def genPoints (self):
         iter = LinearIterator (self.xmin, self.xmax, self.npts)
-        return [(x, self.func (x)) for x in iter]
+        return ((x, self.func (x)) for x in iter)
     
-    def __iter__ (self): return OneFuncIterator (self.genPoints)
+    def __iter__ (self):
+        yield self.genPoints ()
 
 class ParametricFunction (object):
     def __init__ (self, func=None, sourceSpec='FF'):
@@ -37,55 +37,25 @@ class ParametricFunction (object):
 
     def genPoints (self):
         iter = LinearIterator (self.tmin, self.tmax, self.npts)
-        return [self.func (t) for t in iter]
+        return (self.func (t) for t in iter)
     
-    def __iter__ (self): return OneFuncIterator (self.genPoints)
+    def __iter__ (self):
+        yield self.genPoints ()
 
 class StoredData (object):
     def __init__ (self, sourceSpec, data):
         self.sourceSpec = sourceSpec
         self.data = data
 
-    def __iter__ (self): return OneItemIterator (list (self.data))
+    def __iter__ (self):
+        yield list (self.data)
 
-# These classes will be obviated once we can count
-# on generators
+# Dum de dum.
 
-class LinearIterator:
-    def __init__ (self, min, max, npts):
-        self.val = min
-        self.max = max
-        self.inc = float (max - min) / npts
+def LinearIterator (min, max, npts):
+    inc = float (max - min) / npts
+    val = min
 
-    def __iter__ (self): return self
-
-    def next (self):
-        if self.val > self.max: raise StopIteration ()
-        r = self.val
-        self.val += self.inc
-        return r
-
-class OneItemIterator:
-    def __init__ (self, item):
-        self.item = item
-
-    def __iter__ (self): return self
-
-    def next (self):
-        if not self.item: raise StopIteration ()
-        r = self.item
-        self.item = None
-        return r
-
-class OneFuncIterator:
-    def __init__ (self, func):
-        self.func = func
-
-    def __iter__ (self): return self
-
-    def next (self):
-        if not self.func: raise StopIteration ()
-        f = self.func
-        self.func = None
-        return f()
-
+    while val <= max:
+        yield val
+        val += inc

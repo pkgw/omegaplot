@@ -1,5 +1,26 @@
 2007-01-30  Peter Williams  <peter@newton.cx>
 
+	* omega/base.py: Have Axis objects have a coordSpec field that
+	tells what kind of data item their coordinate is, so that 
+	datapainters can synthesize their sinkSpec arguments correctly.
+	(BandPainter): New kind of field painter, paints a (x, ylow, yhigh)
+	band.
+	
+	* omega/styles.py (BitmapStyle.apply_genericBand): New placeholdery
+	style for BandPainter.
+
+
+	* demo/discrete.py: Also exercise BandPainter with some fake
+	errors to go with my fake temperatures.
+
+	* omega/sources.py: What do you know, we CAN count on
+	generators. Nice!
+	(Function.__init__): Allow the return type of the function to be
+	specified.
+	(ParametricFunction.__init__): Same
+	
+2007-01-30  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (LinearAxis.transform): Add a vital float cast
 	in case some fool (me) sets self.min and max to integers.
 	(DiscreteAxis): New class, axis implementation for a finite set

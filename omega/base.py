@@ -277,6 +277,8 @@ class LinearAxis (object):
     that this class does not paint the axis; it just maps values from
     the bounds to a [0, 1] range so that the RectPlot class knows
     where to locate points."""
+
+    coordSpec = 'F'
     
     def __init__ (self):
         self.min = 0. # XXX should be a bagprop!
@@ -298,7 +300,8 @@ class DiscreteAxis (object):
     the abscissa values are abitrary and mapped to sequential points along
     the axis with even spacing."""
     
-    def __init__ (self, abscissae):
+    def __init__ (self, coordSpec, abscissae):
+        self.coordSpec = coordSpec
         self.abscissae = list (abscissae)
 
     def transform (self, value):
@@ -715,7 +718,6 @@ class RectPlot (Painter):
         ctxt.restore ()
         
 class RectDataPainter (StreamSink):
-    sinkSpec = 'FF' # FIXME
     lineStyle = 'genericLine'
     lines = True
     pointStamp = None
@@ -726,6 +728,13 @@ class RectDataPainter (StreamSink):
         self.xaxis = LinearAxis ()
         self.yaxis = LinearAxis ()
 
+    @property
+    def sinkSpec (self):
+        if self.pointStamp:
+            return self.xaxis.coordSpec + self.yaxis.coordSpec + \
+                   self.pointStamp.sinkSpec
+        return self.xaxis.coordSpec + self.yaxis.coordSpec
+    
     def transform (self, pair):
         # the 1-f(y) deals with the opposite senses of math and
         # cairo coordinate systems.
@@ -767,3 +776,46 @@ class RectDataPainter (StreamSink):
 
         if self.pointStamp:
             for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())
+
+class BandPainter (StreamSink):
+    bandStyle = 'genericBand'
+    
+    def __init__ (self, bag):
+        StreamSink.__init__ (self, bag)
+        
+        self.xaxis = LinearAxis ()
+        self.yaxis = LinearAxis ()
+
+    @property
+    def sinkSpec (self):
+        return self.xaxis.coordSpec + self.yaxis.coordSpec * 2
+    
+    def transform (self, pts):
+        return (self.width * self.xaxis.transform (pts[0]),
+                self.height * (1. - self.yaxis.transform (pts[1])),
+                self.height * (1. - self.yaxis.transform (pts[2])))
+    
+    def doFirstPaint (self, ctxt, style):
+        self.lastx = None
+        self.lastylow = None
+        self.lastyhigh = None
+
+    def doChunkPaint (self, ctxt, style, chunk):
+        # FIXME this will require lots of ... fixing
+        style.apply (ctxt, self.bandStyle)
+
+        points = [self.transform (pts) for pts in chunk]
+        l = len (points)
+        
+        ctxt.move_to (points[0][0], points[0][2])
+
+        for i in xrange (1, l):
+            ctxt.line_to (points[i][0], points[i][2])
+
+        for i in xrange (1, l + 1):
+            ctxt.line_to (points[l - i][0], points[l - i][1])
+
+        ctxt.close_path ()
+        ctxt.fill ()
+
+
