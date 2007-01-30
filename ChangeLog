@@ -1,3 +1,28 @@
+2007-01-30  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (LinearAxis.transform): Add a vital float cast
+	in case some fool (me) sets self.min and max to integers.
+	(DiscreteAxis): New class, axis implementation for a finite set
+	of discrete values.
+	(DiscreteAxisPainter): New class to paint the above.
+	(RectDataPainter.doChunkPaint): Don't draw lines if self.lines
+	is false.
+
+	* demo/discrete.py: New demo testing DiscreteAxis and
+	DiscreteAxisPainter and point-only RectDataPainting.
+
+	* demo/Makefile.am (EXTRA_DIST): Add discrete.py, sinc.py and
+	lissajou.py
+
+	* omega/sources.py (StoredData): New source class, just returns
+	data that is passed in in the __init__ function.
+	(OneItemIterator): New class, just yields one item and that's it.
+	If we could count on generators, this would be totally useless.
+	(OneFuncIterator): As above, but returns the result of a function
+	call (that is delayed until the iterator is iterated over.)
+	(Function.__iter__): Use OneFuncIterator, fix comment.
+	(ParametricFunction.__iter__): Same.
+	
 2007-01-29  Peter Williams  <peter@newton.cx>
 
 	* omega/bag.py (Bag.linkTo): Enforce source and sink compatiblity

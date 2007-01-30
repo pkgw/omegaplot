@@ -287,11 +287,30 @@ class LinearAxis (object):
         indicating all the way towards the physical minimum of the
         plotting area, 1 indicating all the way to the maximum."""
 
-        return (value - self.min) / (self.max - self.min)
+        return float (value - self.min) / (self.max - self.min)
 
     def inbounds (self, value):
         """Return True if the given value is within the bounds of this axis."""
         return value >= self.min and value <= self.max
+    
+class DiscreteAxis (object):
+    """A class that defines a discrete axis for a rectangular plot. That is,
+    the abscissa values are abitrary and mapped to sequential points along
+    the axis with even spacing."""
+    
+    def __init__ (self, abscissae):
+        self.abscissae = list (abscissae)
+
+    def transform (self, value):
+        try:
+            idx = self.abscissae.index (value)
+            return float (idx + 1) / (len (self.abscissae) + 1)
+        except ValueError:
+            # What would a proper retval be here?
+            return 0.
+
+    def inbounds (self, value):
+        return value in self.abscissae
     
 class BlankAxisPainter (object):
     """An axisPainter for the RectPlot class. Either paints nothing at
@@ -519,6 +538,68 @@ class LinearAxisPainter (BlankAxisPainter):
             val += inc
             coeff += 1
 
+class DiscreteAxisPainter (BlankAxisPainter):
+    """An axisPainter for the RectPlot class. Paints a tick mark and label
+    for each item in the list of abscissae of the DiscreteAxis. Specialized
+    subclasses of this class should be used for common discrete scenarios
+    (months, days of week, etc.)"""
+    
+    def __init__ (self, axis, formatLabel=None):
+        BlankAxisPainter.__init__ (self)
+
+        if not isinstance (axis, DiscreteAxis):
+            raise Exception ('Giving DiscreteAxisPainter a'
+                             'non-DiscreteAxis axis')
+        
+        self.axis = axis
+        self.formatLabel = formatLabel or self.genericFormat
+
+    labelSeparation = 2 # in smallScale
+    tickScale = 2 # in largeScale
+    tickStyle = 'bgLinework' # style ref.
+    labelStyle = None
+
+    def genericFormat (self, v): return str(v)
+    
+    def spaceExterior (self, helper, ctxt, style):
+        test = self.formatLabel (self.axis.abscissae[0])
+        (tmp, tmp, textw, texth, tmp, tmp) = \
+              ctxt.text_extents (test)
+        return self.labelSeparation * style.smallScale \
+               + helper.spaceRectOut (textw, texth), \
+               helper.spaceRectAlong (textw, texth)
+    
+    def paint (self, helper, ctxt, style):
+        BlankAxisPainter.paint (self, helper, ctxt, style)
+
+        style.apply (ctxt, self.tickStyle)
+
+        abscissae = self.axis.abscissae
+        inc = 1.0 / (len (abscissae) + 1)
+        val = inc
+
+        for i in range (0, len (abscissae)):
+            helper.paintTickIn (ctxt, val, self.tickScale * style.largeScale)
+
+            # See discussion of label painting in LinearAxisPainter.
+            # Code needs to be consolidated, for sure.
+
+            helper.moveToAlong (ctxt, val)
+            helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
+
+            s = self.formatLabel (abscissae[i])
+            (xbear, ybear, textw, texth, xadv, yadv) = \
+                    ctxt.text_extents (s)
+            helper.relMoveRectOut (ctxt, textw, texth)
+            ctxt.rel_move_to (-xbear, -ybear) # brings us from UL to LR
+
+            ctxt.save ()
+            style.apply (ctxt, self.labelStyle)
+            ctxt.show_text (s)
+            ctxt.restore ()
+            
+            val += inc
+
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
@@ -636,14 +717,14 @@ class RectPlot (Painter):
 class RectDataPainter (StreamSink):
     sinkSpec = 'FF' # FIXME
     lineStyle = 'genericLine'
+    lines = True
+    pointStamp = None
     
     def __init__ (self, bag):
         StreamSink.__init__ (self, bag)
         
         self.xaxis = LinearAxis ()
         self.yaxis = LinearAxis ()
-        self.lines = True # XXX
-        self.pointStamp = None # XXX
 
     def transform (self, pair):
         # the 1-f(y) deals with the opposite senses of math and
@@ -669,14 +750,20 @@ class RectDataPainter (StreamSink):
                 return
 
         ctxt.move_to (self.lastx, self.lasty)
-        
-        for pair in chunk:
-            x, y = self.transform (pair)
-            ctxt.line_to (x, y)
-            if self.pointStamp: points.append ((x, y))
 
-        self.lastx, self.lasty = ctxt.get_current_point ()
-        ctxt.stroke ()
+        if self.lines:
+            for pair in chunk:
+                x, y = self.transform (pair)
+                ctxt.line_to (x, y)
+                if self.pointStamp: points.append ((x, y))
+
+            self.lastx, self.lasty = ctxt.get_current_point ()
+            ctxt.stroke ()
+        elif self.pointStamp:
+            for pair in chunk:
+                points.append (self.transform (pair))
+
+            self.lastx, self.lasty = points[len (points) - 1]
 
         if self.pointStamp:
             for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())

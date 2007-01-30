@@ -1,1 +1,5 @@
-EXTRA_DIST = stampDemo.py
+EXTRA_DIST = \
+	discrete.py \
+	lissajou.py \
+	sinc.py \
+	stampDemo.py
