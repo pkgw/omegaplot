@@ -280,6 +280,7 @@ class LinearAxisPainter (BlankAxisPainter):
     tickStyle = 'bgLinework' # style ref.
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
+    labelMinorTicks = False # draw value labels at the minor tick points?
     
     def formatLabel (self, val):
         if callable (self.numFormat): return self.numFormat (val)
@@ -297,6 +298,8 @@ class LinearAxisPainter (BlankAxisPainter):
         BlankAxisPainter.paint (self, helper, ctxt, style)
 
         style.apply (ctxt, self.tickStyle)
+
+        # Tick spacing variables
         
         span = self.axis.max - self.axis.min
         mip = math.floor (math.log10 (span)) # major interval power
@@ -305,10 +308,25 @@ class LinearAxisPainter (BlankAxisPainter):
         coeff = int (math.ceil (self.axis.min / inc)) # coeff. of first tick
         val = coeff * inc # location of first tick
 
+        # If we cross zero, floating-point rounding errors cause the
+        # ticks to be placed at points like 6.3e-16. Detect this case
+        # and round to 0. Do it in units of the axis bounds so that a
+        # plot from -1e-6 to 1e-6 will still work OK.
+
+        if (self.axis.max < 0. and self.axis.min > 0.) or \
+           (self.axis.min < 0. and self.axis.max > 0.):
+            scale = max (abs (self.axis.max), abs (self.axis.min))
+            zeroclamp = scale * 1e-6
+        else:
+            zeroclamp = None
+        
         while self.axis.inbounds (val):
             if coeff % self.minorTicks == 0: len = self.majorTickScale * style.largeScale
             else: len = self.minorTickScale * style.smallScale
 
+            if zeroclamp and abs(val) < zeroclamp:
+                val = 0.
+            
             v = self.axis.transform (val)
 
             # If our tick would land right on the bounds of the plot field,
@@ -335,7 +353,7 @@ class LinearAxisPainter (BlankAxisPainter):
             # correct way I can think to do this is to invoke latex.
             # Eeek.
 
-            if coeff % self.minorTicks == 0:
+            if coeff % self.minorTicks == 0 or self.labelMinorTicks:
                 helper.moveToAlong (ctxt, v)
                 helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
 
@@ -451,7 +469,7 @@ class RectPlot (Painter):
 
         self.addFieldPainter (rdp)
     
-    field_aspect = None # Aspect ratio of the plot field, None for free
+    fieldAspect = None # Aspect ratio of the plot field, None for free
     
     SIDE_TOP = 0
     SIDE_RIGHT = 1
@@ -498,9 +516,30 @@ class RectPlot (Painter):
     def configurePainting (self, ctxt, style, w, h):
         Painter.configurePainting (self, ctxt, style, w, h)
 
-        self.fieldw = w - self.exteriors[1] - self.exteriors[3]
-        self.fieldh = h - self.exteriors[0] - self.exteriors[2]
+        fieldw = w - self.exteriors[1] - self.exteriors[3]
+        fieldh = h - self.exteriors[0] - self.exteriors[2]
 
+        if self.fieldAspect:
+            cur = float (fieldw) / fieldh
+
+            if cur > self.fieldAspect:
+                # Wider than desired ; bump up left/right margins
+                want_fieldw = fieldh * self.fieldAspect
+                delta = (fieldw - want_fieldw) / 2
+                self.exteriors[1] += delta
+                self.exteriors[3] += delta
+                fieldw = want_fieldw
+            elif cur < self.fieldAspect:
+                # Taller than desired ; bump up top/bottom margins
+                want_fieldh = fieldw / self.fieldAspect
+                delta = (fieldh - want_fieldh) / 2
+                self.exteriors[0] += delta
+                self.exteriors[2] += delta
+                fieldh = want_fieldh
+        
+        self.fieldw = fieldw
+        self.fieldh = fieldh
+        
         ctxt.save ()
         ctxt.translate (self.exteriors[3], self.exteriors[0])
 

@@ -1,5 +1,16 @@
 2007-01-30  Peter Williams  <peter@newton.cx>
 
+	* omega/base.py (RectPlot.configurePainting): Add a fieldAspect
+	field; if it is set, tweak the parameters to set the aspect ratio
+	of the plot field to a fixed value.
+	(LinearAxisPainter.paint): Check for floating-point rounding issues
+	near 0. when choosing tick locations, and make it possible to 
+	turn on labeling of all ticks, not just major ticks.
+
+	* demo/lissajou.py (rp): Set fieldAspect to be 1.0 here.
+
+2007-01-30  Peter Williams  <peter@newton.cx>
+
 	* omega/layout.py (Grid,Overlay): Break out these classes into a
 	separate file...
 

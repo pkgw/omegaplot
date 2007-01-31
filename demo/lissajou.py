@@ -49,6 +49,7 @@ rp.bpainter = omega.LinearAxisPainter (rdp1.xaxis)
 #rp1.tpainter = omega.LinearAxisPainter (rdp1.xaxis)
 rp.lpainter = omega.LinearAxisPainter (rdp1.yaxis)
 rp.rpainter = rp.lpainter
+rp.fieldAspect = 1.0
 rp.addFieldPainter (rdp1)
 rp.addFieldPainter (rdp2)
 
