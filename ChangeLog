@@ -1,5 +1,9 @@
 2007-01-30  Peter Williams  <peter@newton.cx>
 
+	* omega/Makefile.am (mypy_PYTHON): Hey need to add layout.py
+
+2007-01-30  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (RectPlot.configurePainting): Add a fieldAspect
 	field; if it is set, tweak the parameters to set the aspect ratio
 	of the plot field to a fixed value.

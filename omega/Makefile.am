@@ -5,6 +5,7 @@ mypy_PYTHON = \
    base.py \
    gtkThread.py \
    gtkUtil.py \
+   layout.py \
    sources.py \
    stamps.py \
    styles.py
