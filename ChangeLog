@@ -1,5 +1,14 @@
 2007-01-30  Peter Williams  <peter@newton.cx>
 
+	* omega/layout.py (Grid,Overlay): Break out these classes into a
+	separate file...
+
+	* omega/base.py (Grid,Overlay): ... from here.
+
+	* omega/__init__.py: Modify to still import the above.
+
+2007-01-30  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py: Have Axis objects have a coordSpec field that
 	tells what kind of data item their coordinate is, so that 
 	datapainters can synthesize their sinkSpec arguments correctly.
