@@ -1,3 +1,35 @@
+2007-02-05  Peter Williams  <peter@newton.cx>
+
+	* omega/util.py: New file. Contains utility classes, mainly aimed
+	at conveniently displaying or saving plots quickly.
+
+	* omega/__init__.py: Import a few names from util.py into the
+	main namespace.
+
+	* omega/gtkUtil.py (OmegaArea): Use a PaintPipeline from util to store
+	all our painting info instead of doing it ourselves.
+
+	* omega/base.py (StreamSink.getBag): New utility function.
+	(LinearAxis): Specify a default axis painter class for use with
+	emulate functions below.
+	(DiscreteAxis): Same.
+	(RectPlot.__init__): Allow an optional 'emulate' argument which,
+	if specified, will have its logical axes and axis painters copied.
+	(RectPlot.magicAxisPainters): New function to conveniently set
+	axis painters to smart values for great justice.
+	(RectDataPainter.__init__): If the argument is a RectDataPainter,
+	emulate its axes and bag.
+	(RectDataPainter.setBounds): Convenience function to set the bounds 
+	of the logical axes all at once.
+
+	* omega/bag.py (Bag.exposeSink): Allow several sinks to be exposed
+	under the same name, so long as their specs agree.
+
+	* demo/sinc.py: Use the various convenience functions I just wrote.
+
+	* demo/sinc-ps.py: Same thing as the above, but calls omega.dump
+	instead of displaying the plot.
+
 2007-01-30  Peter Williams  <peter@newton.cx>
 
 	* omega/Makefile.am (mypy_PYTHON): Hey need to add layout.py

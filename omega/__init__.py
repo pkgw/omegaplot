@@ -9,11 +9,13 @@ import layout
 import sources
 import stamps
 import styles
+import util
 
 from bag import Bag
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
 from sources import Function
+from util import dump, PaintPipeline, LetterFile, InchesFile
 
 # FIXME: we might want to import a different
 # class depending on what toolkit is available (eg,

@@ -8,5 +8,6 @@ mypy_PYTHON = \
    layout.py \
    sources.py \
    stamps.py \
-   styles.py
+   styles.py \
+   util.py
 

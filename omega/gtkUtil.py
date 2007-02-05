@@ -5,19 +5,14 @@ import gtkThread
 import sys #exc_info
 
 from base import NullPainter, Painter
+from util import PaintPipeline, ContextTooSmallError
 
 class OmegaArea (gtk.DrawingArea):
     def __init__ (self, bag, style, sources, autoRepaint):
         gtk.DrawingArea.__init__ (self)
 
-        self._painter = NullPainter ()
+        self.pipeline = PaintPipeline (bag, style, sources)
 
-        self.bag = bag
-        self.omegaStyle = style
-        self.sources = sources
-
-        self.savedWidth = -1
-        self.savedHeight = -1
         self.lastException = None
 
         self.paintId = -1
@@ -39,24 +34,9 @@ class OmegaArea (gtk.DrawingArea):
         w, h = self.allocation.width, self.allocation.height
 
         try:
-            if w != self.savedWidth or h != self.savedHeight:
-                (minw, minh) = self._painter.getMinimumSize (ctxt, self.omegaStyle)
-
-                if w < minw or h < minh:
-                    print 'Unable to paint: actual size (%f, %f) smaller than ' \
-                          'minimum size (%f, %f)' % (w, h, minw, minh)
-                    return False
-            
-                self._painter.configurePainting (ctxt, self.omegaStyle, w, h)
-                self.savedWidth = w
-                self.savedHeight = h
-
-            self.omegaStyle.initContext (ctxt, w, h)
-            self.bag.startFlushing (self.sources)
-            self._painter.paint (ctxt, self.omegaStyle, True)
-
-            while self.bag.startNewRound ():
-                self._painter.paint (ctxt, self.omegaStyle, False)
+            self.pipeline.paintToContext (ctxt, w, h)
+        except ContextTooSmallError, ctse:
+            print ctse
         except:
             self.lastException = sys.exc_info ()
         
@@ -101,18 +81,11 @@ class OmegaArea (gtk.DrawingArea):
     # Python interface
     
     def setPainter (self, p):
-        if p and not isinstance (p, Painter): raise Exception ('Not a Painter: %s' % p)
-        self._painter = p or NullPainter ()
-        self._painter.setParent (self)
-        self.lastException = None
-        self.forceReconfigure ()
+        self.pipeline.setPainter (p)
 
     def forceReconfigure (self):
-        self.savedWidth = self.savedHeight = -1
+        self.pipeline.forceReconfigure ()
 
-    def removeChild (self, child): # For self._painter
-        pass
-    
     # Cleanup
     
     def _destroyed (self, unused):

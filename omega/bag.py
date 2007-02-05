@@ -2,14 +2,24 @@ class Bag (object):
     def __init__ (self):
         self.sinks = set ()
         self.exposed = {}
+        self.exposedSpecs = {}
         self.linked = {}
         
     def registerSink (self, sink):
         self.sinks.add (sink)
 
     def exposeSink (self, sink, name):
+        curSpec = self.exposedSpecs.get (name)
+
+        if not curSpec:
+            self.exposedSpecs[name] = sink.sinkSpec
+        elif curSpec != sink.sinkSpec:
+            raise Exception ('Trying to expose two sinks with different specs' \
+                             'to the same name, %s' % (name))
+        
         self.registerSink (sink)
-        self.exposed[name] = sink
+        self.exposed[sink] = name
+
 
     def linkTo (self, source, sink):
         if source.sourceSpec != sink.sinkSpec:
@@ -40,7 +50,7 @@ class Bag (object):
     def startFlushing (self, sources):
         self.currentIters = {}
         
-        for (name, sink) in self.exposed.iteritems ():
+        for (sink, name) in self.exposed.iteritems ():
             if name not in sources: raise Exception ('No such source %s!' % (name))
 
             src = sources[name]
@@ -51,7 +61,7 @@ class Bag (object):
             self.currentIters[sink] = src.__iter__ ()
 
         for sink in self.sinks:
-            if sink in self.exposed.itervalues (): continue
+            if sink in self.exposed: continue
             if sink in self.linked: continue
 
             raise Exception ('Sink %s is neither exposed nor linked, cannot flush' % sink)
@@ -69,7 +79,7 @@ class Bag (object):
                 self.currentRound[sink] = None
 
         return gotany
-    
+
 class FunctionFilter (object):
     def __init__ (self, func, sourceSpec, sinkSpec):
         self.func = func

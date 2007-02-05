@@ -49,9 +49,4 @@ g[1] = rp2
 g.hBorderSize = 4
 g.vBorderSize = 4
 
-odw = omega.gtkUtil.OmegaDemoWindow (bag, style, sources)
-odw.setPainter (g)
-odw.connect ('destroy', gtk.main_quit)
-odw.show_all ()
-
-gtk.main ()
+omega.dump (g, bag, style, sources)

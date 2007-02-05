@@ -11,6 +11,8 @@
 
 import math
 
+import bag
+
 class Painter (object):
     mainStyle = None
     parent = None
@@ -52,6 +54,8 @@ class StreamSink (Painter):
         bag.registerSink (self)
         self._bag = bag
 
+    def getBag (self): return self._bag
+    
     def doPaint (self, ctxt, style, firstPaint):
         if firstPaint:
             self.doFirstPaint (ctxt, style)
@@ -83,7 +87,7 @@ class NullPainter (Painter):
         ctxt.move_to (0, self.height)
         ctxt.line_to (self.width, 0)
         ctxt.stroke ()
-
+    
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
     that this class does not paint the axis; it just maps values from
@@ -152,7 +156,7 @@ class BlankAxisPainter (object):
         paint this axis correctly. First element is orthogonal to the side
         we're on, second is along it."""
         return 0, 0
-    
+
 class AxisPaintHelper (object):
     """A helper class that makes common axis-painting operations
     agnostic to the orientation of the axis we are painting. More
@@ -371,6 +375,8 @@ class LinearAxisPainter (BlankAxisPainter):
             val += inc
             coeff += 1
 
+LinearAxis.defaultPainter = LinearAxisPainter
+
 class DiscreteAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a tick mark and label
     for each item in the list of abscissae of the DiscreteAxis. Specialized
@@ -433,22 +439,33 @@ class DiscreteAxisPainter (BlankAxisPainter):
             
             val += inc
 
+DiscreteAxis.defaultPainter = DiscreteAxisPainter
+
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
     
-    def __init__ (self):
+    def __init__ (self, emulate=None):
         Painter.__init__ (self)
         
         # we might want to plot two data sets with different logical axes,
         # but store default ones here to make life easier in the common case.
-        
-        self.defaultXAxis = None
-        self.defaultYAxis = None
-        self.bpainter = BlankAxisPainter () # bottom (primary x) axis painter
-        self.lpainter = BlankAxisPainter () # left (primary y) axis painter
-        self.rpainter = BlankAxisPainter () # right (secondary x) axis painter
-        self.tpainter = BlankAxisPainter () # top (secondary y) axis painter
+
+        if not emulate:
+            self.defaultXAxis = None
+            self.defaultYAxis = None
+            self.bpainter = BlankAxisPainter () # bottom (primary x) axis painter
+            self.lpainter = BlankAxisPainter () # left (primary y) axis painter
+            self.rpainter = BlankAxisPainter () # right (secondary x) axis painter
+            self.tpainter = BlankAxisPainter () # top (secondary y) axis painter
+        else:
+            self.defaultXAxis = emulate.defaultXAxis
+            self.defaultYAxis = emulate.defaultYAxis
+            self.bpainter = emulate.bpainter
+            self.lpainter = emulate.lpainter
+            self.rpainter = emulate.rpainter
+            self.tpainter = emulate.tpainter
+
         self.fpainters = [] # field painters
 
     def addFieldPainter (self, fp):
@@ -458,6 +475,71 @@ class RectPlot (Painter):
         if not self.defaultXAxis and isinstance (fp, RectDataPainter):
             self.defaultXAxis = fp.xaxis
             self.defaultYAxis = fp.yaxis
+
+    def magicAxisPainters (self, spec):
+        """Magically set the AxisPainter variables to smart
+        values. More precisely, the if certain sides are specified in
+        the 'spec' argument, those sides are painted in a sensible default
+        style; those sides not specified in the argument are made blank
+        (that is, they are painted with a baseline only).
+
+        If 'spec' contains the letter 'h' (as in 'horizontal'), both
+        the bottom and top sides of the field are set to the same
+        sensible default. If it contains 'v' (as in 'vertical'), both
+        the left and right sides of the field are set to the same
+        sensible default. If it contains the letter 'b', the bottom
+        side is painted with a sensible default, and similarly for the
+        letters 't' (top), 'r' (right), and 'l' (left). Note that a spec
+        of 'bt' is NOT equivalent to 'h': the former will create two
+        AxisPainter instances, while the latter will only create one and
+        share it between the two sides. The same goes for 'lr' versus 'h'.
+        Once again, any side NOT set by one of the above mechanisms is
+        set to be painted with a BlankAxisPainter instance.
+        
+        To be more specific, the 'sensible default' is whatever class
+        is pointed to by the defaultPainter attribute of the
+        defaultXAxis and defaultYAxis members of the RectPlot. This class
+        is instantiated with the logical axis as the only argument to __init__.
+
+        Examples:
+
+           rdp.magicAxisPainters ('lb') will give a classical plot
+           in which the left and bottom sides of the field are marked with axes.
+
+           rdp.magicAxisPainters ('hv') will give an IDL-style plot
+           in which all sides of the field are marked with axes.
+
+           rdp.magicAxisPainters ('r') will give an unusual plot in which
+           only the right side is labeled with axes.
+        """
+        
+        if 'h' in spec:
+            self.bpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+            self.tpainter = self.bpainter
+        else:
+            if 'b' in spec:
+                self.bpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+            else:
+                self.bpainter = BlankAxisPainter ()
+
+            if 't' in spec:
+                self.tpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+            else:
+                self.tpainter = BlankAxisPainter ()
+                    
+        if 'v' in spec:
+            self.lpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+            self.rpainter = self.lpainter
+        else:
+            if 'l' in spec:
+                self.lpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+            else:
+                self.lpainter = BlankAxisPainter ()
+
+            if 'r' in spec:
+                self.rpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+            else:
+                self.rpainter = BlankAxisPainter ()
 
     def removeChild (self, child):
         self.fpainters.remove (child)
@@ -573,11 +655,15 @@ class RectDataPainter (StreamSink):
     lines = True
     pointStamp = None
     
-    def __init__ (self, bag):
-        StreamSink.__init__ (self, bag)
-        
-        self.xaxis = LinearAxis ()
-        self.yaxis = LinearAxis ()
+    def __init__ (self, bagOrRDP):
+        if isinstance (bagOrRDP, bag.Bag):
+            StreamSink.__init__ (self, bagOrRDP)
+            self.xaxis = LinearAxis ()
+            self.yaxis = LinearAxis ()
+        else:
+            StreamSink.__init__ (self, bagOrRDP.getBag ())
+            self.xaxis = bagOrRDP.xaxis
+            self.yaxis = bagOrRDP.yaxis
 
     @property
     def sinkSpec (self):
@@ -628,6 +714,12 @@ class RectDataPainter (StreamSink):
         if self.pointStamp:
             for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())
 
+    def setBounds (self, xmin, xmax, ymin, ymax):
+        self.xaxis.min = xmin
+        self.xaxis.max = xmax
+        self.yaxis.min = ymin
+        self.yaxis.max = ymax
+        
 class BandPainter (StreamSink):
     bandStyle = 'genericBand'
     
