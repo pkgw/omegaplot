@@ -1,5 +1,11 @@
 2007-02-07  Peter Williams  <peter@newton.cx>
 
+	* demo/discrete.py (sources): Hey you can expose two sinks to the
+	same name now, so do that.
+
+2007-02-07  Peter Williams  <peter@newton.cx>
+
+	* demo/discrete.py (sources): 
 	* omega/base.py (EnumeratedDiscreteAxis.__init__): Break out from
 	a more generic DiscreteAxis, so we can have discrete axes with large
 	numbers of indices that are programmatically mapped (eg, the whole

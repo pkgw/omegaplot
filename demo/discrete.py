@@ -26,7 +26,7 @@ pts = zip (months, data)
 
 src = omega.sources.StoredData ('SF', pts)
 
-sources = {'temps': src, 'errs': src}
+sources = {'temps': src }
 
 rdp = omega.RectDataPainter (bag)
 rdp.xaxis = omega.EnumeratedDiscreteAxis ('S', months)
@@ -40,7 +40,7 @@ def errfilter (mon, val):
     return (mon, val - 5 * (val % 3 + 1),
             val + 5 * (val % 3 + 1))
 ff = omega.bag.FunctionFilter (errfilter, 'SFF', 'SF')
-ff.expose (bag, 'errs')
+ff.expose (bag, 'temps')
 
 rdp2 = omega.BandPainter (bag)
 rdp2.xaxis = rdp.xaxis
