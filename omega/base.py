@@ -133,6 +133,9 @@ class DiscreteAxis (object):
     def valueToIndex (self, value):
         raise NotImplementedError ()
         
+    def indexToValue (self, index):
+        raise NotImplementedError ()
+        
     def inbounds (self, value):
         raise NotImplementedError ()
     
@@ -167,6 +170,35 @@ class EnumeratedDiscreteAxis (DiscreteAxis):
 
     def inbounds (self, value): 
         return value in self.abscissae
+    
+class DiscreteIntegerAxis (DiscreteAxis):
+    """A discrete axis in which the abscissae values are integers, specified
+    by a minimum, maximum, and step."""
+    
+    def __init__ (self, min, max, step=1):
+        DiscreteAxis.__init__ (self, 'F') # proper to call it a float and not an int?
+        self.min = int (min)
+        self.max = int (max)
+        step = int (step)
+        
+        if min < max and step < 0:
+            self.step = -step
+        elif min > max and step > 0:
+            self.step = -step
+        else:
+            self.step = step
+
+    def numAbscissae (self):
+        return (self.max - self.min) // self.step + 1
+
+    def valueToIndex (self, value):
+        return (value - self.min) // self.step
+
+    def indexToValue (self, index):
+        return index * self.step + self.min
+
+    def inbounds (self, value): 
+        return value >= self.min and value <= self.max
     
 class BlankAxisPainter (object):
     """An axisPainter for the RectPlot class. Either paints nothing at
@@ -451,10 +483,9 @@ class DiscreteAxisPainter (BlankAxisPainter):
         style.apply (ctxt, self.tickStyle)
 
         n = self.axis.numAbscissae ()
-        inc = 1.0 / (n + 1)
-        val = inc
 
         for i in range (0, n):
+            val = self.axis.transform (self.axis.indexToValue (i))
             helper.paintTickIn (ctxt, val, self.tickScale * style.largeScale)
 
             # See discussion of label painting in LinearAxisPainter.
@@ -473,8 +504,6 @@ class DiscreteAxisPainter (BlankAxisPainter):
             style.apply (ctxt, self.labelStyle)
             ctxt.show_text (s)
             ctxt.restore ()
-            
-            val += inc
 
 DiscreteAxis.defaultPainter = DiscreteAxisPainter
 
@@ -686,7 +715,11 @@ class RectPlot (Painter):
             fp.paint (ctxt, style, firstPaint)
 
         ctxt.restore ()
-        
+
+class StampPaintHelper (object):
+    def __init__ (self, xformfn):
+        self.transform = xformfn
+
 class RectDataPainter (StreamSink):
     lineStyle = 'genericLine'
     lines = True
@@ -798,4 +831,113 @@ class BandPainter (StreamSink):
         ctxt.close_path ()
         ctxt.fill ()
 
+class DiscreteHistogramPainter (StreamSink):
+    lineStyle = 'genericLine'
+    
+    def __init__ (self, bag):
+        StreamSink.__init__ (self, bag)
+        self.xaxis = None
+        self.yaxis = LinearAxis ()
 
+    @property
+    def sinkSpec (self):
+        return self.xaxis.coordSpec + self.yaxis.coordSpec
+    
+    def transform (self, pair):
+        # the 1-f(y) deals with the opposite senses of math and
+        # cairo coordinate systems.
+        return self.width * self.xaxis.transform (pair[0]), \
+               self.height * (1. - self.yaxis.transform (pair[1]))
+
+    def nextX (self, preval):
+        # uuuugly
+        idx = self.xaxis.valueToIndex (preval)
+        idx += 1
+
+        if idx >= self.xaxis.numAbscissae ():
+            return -1
+        
+        val = self.xaxis.indexToValue (idx)
+        return self.width * self.xaxis.transform (val)
+    
+    def doFirstPaint (self, ctxt, style):
+        if not self.xaxis:
+            raise Exception ('Need to specify an X axis for this class!')
+        
+        self.lastx = 0
+        self.lasty = self.height
+
+    def doChunkPaint (self, ctxt, style, chunk):
+        # FIXME: we assume that xaxis.padBoundaries = True
+        # We also assume that the data show up in order!
+        # If padBoundaries = False, this code actually somehow
+        # works. I have no idea why.
+        #
+        # This algorithm is really gross. I needed to sketch it
+        # out on paper in detail to check that it worked.
+        
+        style.apply (ctxt, self.lineStyle)
+
+        #try:
+        #    xyvals = chunk.next ()
+        #    next_ctr_x, nexty = self.transform (xyvals)
+        #except StopIteration:
+        #    return
+
+        #ctxt.move_to (self.lastx, self.lasty)
+        #ctxt.line_to (self.lastx, nexty)
+
+        #lastx = (next_ctr_x + self.nextX (xyvals[0])) / 2
+        #lasty = nexty
+        #lastctrx = next_ctr_x
+
+        lastx = self.lastx
+        lasty = self.lasty
+        lastctrx = 0
+        
+        for pair in chunk:
+            ctrx, y = self.transform (pair)
+
+            #if lastctrx < 0:
+            #    rt_edge_x = self.lastx
+            #else:
+            rt_edge_x = (ctrx + lastctrx) / 2
+            
+            ctxt.line_to (lastx, lasty)
+            ctxt.line_to (rt_edge_x, lasty)
+
+            lastx = rt_edge_x
+            lastctrx = ctrx
+            lasty = y
+
+        # Finish off the current bar in prep for the next
+        # chunk, cause we don't know if we're the last chunk
+        # or not.
+        
+        next_ctr_x = self.nextX (pair[0])
+
+        if next_ctr_x < 0:
+            # We just painted the last item in the list;
+            # don't just draw the horizontal, drop it down to 0
+            rt_edge_x = (self.width + lastctrx) / 2
+            ctxt.line_to (lastx, lasty)
+            ctxt.line_to (rt_edge_x, lasty)
+            ctxt.line_to (rt_edge_x, self.height)
+            # This is to match the left-hand side of the histogram;
+            # it might be better not to draw it, but then the first-chunk
+            # and beginning-of-chunk algorithm will need to be tweaked somehow.
+            ctxt.line_to (self.width, self.height)
+        else:
+            ctxt.line_to (lastx, lasty)
+            ctxt.line_to ((ctrx + next_ctr_x)/2, lasty)
+        
+        ctxt.stroke ()
+
+        self.lastx = lastx
+        self.lasty = lasty
+    
+    def setBounds (self, xmin, xmax, ymin, ymax):
+        self.xaxis.min = xmin
+        self.xaxis.max = xmax
+        self.yaxis.min = ymin
+        self.yaxis.max = ymax

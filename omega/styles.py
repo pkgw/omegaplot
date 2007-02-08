@@ -24,7 +24,7 @@ class BitmapStyle (object):
             return
 
         if callable (style):
-            style (ctxt)
+            style (ctxt, self)
             return
 
         if isinstance (style, basestring):
