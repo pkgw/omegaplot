@@ -29,7 +29,7 @@ src = omega.sources.StoredData ('SF', pts)
 sources = {'temps': src, 'errs': src}
 
 rdp = omega.RectDataPainter (bag)
-rdp.xaxis = omega.DiscreteAxis ('S', months)
+rdp.xaxis = omega.EnumeratedDiscreteAxis ('S', months)
 rdp.yaxis.min = 0
 rdp.yaxis.max = 100
 rdp.pointStamp = omega.stamps.UpTriangle ()

@@ -1,3 +1,18 @@
+2007-02-07  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (EnumeratedDiscreteAxis.__init__): Break out from
+	a more generic DiscreteAxis, so we can have discrete axes with large
+	numbers of indices that are programmatically mapped (eg, the whole
+	numbers 1 to 1000).
+	(DiscreteAxisPainter.spaceExterior): Use more generic DiscreteAxis
+	functions.
+	(DiscreteAxisPainter.paint): Same.
+	(DiscreteAxis.transform): Honor a padBoundaries field that controls
+	whether the extreme axis items get mapped to the very edge of the field
+	or not.
+
+	* demo/discrete.py (rdp): Use EnumeratedDiscreteAxis now.
+
 2007-02-05  Peter Williams  <peter@newton.cx>
 
 	* omega/util.py: New file. Contains utility classes, mainly aimed

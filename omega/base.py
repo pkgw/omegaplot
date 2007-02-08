@@ -115,20 +115,57 @@ class DiscreteAxis (object):
     """A class that defines a discrete axis for a rectangular plot. That is,
     the abscissa values are abitrary and mapped to sequential points along
     the axis with even spacing."""
-    
-    def __init__ (self, coordSpec, abscissae):
-        self.coordSpec = coordSpec
-        self.abscissae = list (abscissae)
 
+    # If true, and there are N abscissae, map values to 1 / (N + 1) to
+    # N / (N + 1), so that no data points land on the left and right edges
+    # of the field. If false, map them to 0 / (N - 1) to (N - 1) / (N - 1),
+    # so that the first value lands on the left edge and the last value on
+    # the right edge.
+    
+    padBoundaries = True
+    
+    def __init__ (self, coordSpec):
+        self.coordSpec = coordSpec
+
+    def numAbscissae (self):
+        raise NotImplementedError ()
+
+    def valueToIndex (self, value):
+        raise NotImplementedError ()
+        
+    def inbounds (self, value):
+        raise NotImplementedError ()
+    
     def transform (self, value):
         try:
-            idx = self.abscissae.index (value)
-            return float (idx + 1) / (len (self.abscissae) + 1)
+            idx = self.valueToIndex (value)
+
+            if self.padBoundaries:
+                return float (idx + 1) / (self.numAbscissae () + 1)
+            
+            return float (idx) / (self.numAbscissae () - 1)
         except ValueError:
             # What would a proper retval be here?
             return 0.
 
-    def inbounds (self, value):
+class EnumeratedDiscreteAxis (DiscreteAxis):
+    """A discrete axis in which the abscissae values are stored in memory in
+    an array."""
+    
+    def __init__ (self, coordSpec, abscissae):
+        DiscreteAxis.__init__ (self, coordSpec)
+        self.abscissae = list (abscissae)
+
+    def numAbscissae (self):
+        return len (self.abscissae)
+
+    def valueToIndex (self, value):
+        return self.abscissae.index (value)
+
+    def indexToValue (self, index):
+        return self.abscissae[index]
+
+    def inbounds (self, value): 
         return value in self.abscissae
     
 class BlankAxisPainter (object):
@@ -401,7 +438,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
     def genericFormat (self, v): return str(v)
     
     def spaceExterior (self, helper, ctxt, style):
-        test = self.formatLabel (self.axis.abscissae[0])
+        test = self.formatLabel (self.axis.indexToValue (0))
         (tmp, tmp, textw, texth, tmp, tmp) = \
               ctxt.text_extents (test)
         return self.labelSeparation * style.smallScale \
@@ -413,11 +450,11 @@ class DiscreteAxisPainter (BlankAxisPainter):
 
         style.apply (ctxt, self.tickStyle)
 
-        abscissae = self.axis.abscissae
-        inc = 1.0 / (len (abscissae) + 1)
+        n = self.axis.numAbscissae ()
+        inc = 1.0 / (n + 1)
         val = inc
 
-        for i in range (0, len (abscissae)):
+        for i in range (0, n):
             helper.paintTickIn (ctxt, val, self.tickScale * style.largeScale)
 
             # See discussion of label painting in LinearAxisPainter.
@@ -426,7 +463,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
             helper.moveToAlong (ctxt, val)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
 
-            s = self.formatLabel (abscissae[i])
+            s = self.formatLabel (self.axis.indexToValue (i))
             (xbear, ybear, textw, texth, xadv, yadv) = \
                     ctxt.text_extents (s)
             helper.relMoveRectOut (ctxt, textw, texth)
