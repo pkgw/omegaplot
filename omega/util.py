@@ -53,22 +53,6 @@ class PaintPipeline (object):
 
     def forceReconfigure (self):
         self.savedWidth = -1
-
-    def paintToSurfgen (self, surfgen):
-        """Runs the pipeline, painting to a context created from the
-        'surface generator' surfgen. A surface generator should be
-        callable with no arguments; it must return a tuple of a Cairo
-        Surface object, a width, and a height. This function creates
-        a context from that return value, paints to it, then finishes
-        the surface and discards it. A typical surface generator is an
-        instance of the GenericPointSizedFile class, such as LetterFile,
-        but it can also be a user-defined function."""
-        
-        (surf, w, h) = surfgen ()
-        ctxt = cairo.Context (surf)
-        self.paintToContext (ctxt, w, h)
-        ctxt.show_page ()
-        surf.finish ()
     
 class ContextTooSmallError (Exception):
     def __init__ (self, w, h, minw, minh):
@@ -102,9 +86,15 @@ class GenericPointSizedFile (object):
         self.serial += 1
         return f
     
-    def __call__ (self):
+    def renderPipeline (self, pipeline):
         f = self.getFilename ()
-        return (self.surf (f, self.w, self.h), self.w, self.h)
+        surf = self.surf (f, self.w, self.h)
+        ctxt = cairo.Context (surf)
+        
+        pipeline.paintToContext (ctxt, self.w, self.h)
+        
+        ctxt.show_page ()
+        surf.finish ()
 
 class LetterFile (GenericPointSizedFile):
     # FIXME: I am not sure if the whole page size / orientation
@@ -139,6 +129,33 @@ class CMFile (GenericPointSizedFile):
         GenericPointSizedFile.__init__ (self, filename, w * 72 / 2.54,
                                         h * 72 / 2.54, type)
         
+class GenericPngFile (object):
+    def __init__ (self, filename, w, h):
+        self.filename = filename
+        self.w = w
+        self.h = h
+        self.serial = 0
+
+    def getFilename (self):
+        if '%' not in self.filename: return self.filename
+
+        f = self.filename % (self.serial)
+        self.serial += 1
+        return f
+    
+    def renderPipeline (self, pipeline):
+        f = self.getFilename ()
+        surf = cairo.ImageSurface (cairo.FORMAT_ARGB32, self.w, self.h)
+        ctxt = cairo.Context (surf)
+        
+        pipeline.paintToContext (ctxt, self.w, self.h)
+        
+        surf.write_to_png (f)
+
+class LargePngFile (GenericPngFile):
+    def __init__ (self, filename):
+        GenericPngFile.__init__ (self, filename, 1024, 768)
+
 _dumpSerial = 0
 dumpName = 'omegaDump%02d.ps'
 dumpSurfgen = LetterFile
@@ -150,11 +167,8 @@ def dump (painter, bag, style, sources):
     f = dumpName % (_dumpSerial)
 
     pl = PaintPipeline (bag, style, sources, painter)
-    pl.paintToSurfgen (dumpSurfgen (f))
+    dumpSurfgen (f).renderPipeline (pl)
 
 def resetDumpSerial ():
     global _dumpSerial
     _dumpSerial = 0
-
-
-    

@@ -1,5 +1,40 @@
 2007-02-08  Peter Williams  <peter@newton.cx>
 
+	* omega/stamps.py (Stamp.paint): Change all paint and doPaint functions
+	to accept a helper argument which can map data values to X and Y values;
+	needed for e.g. stamps that draw error bars. This model is broken: the
+	stamp needs to assume that the X and Y axis dataSpecs are both F. There
+	should be a stampSpec that has the usual data types as well as 'X' and 'Y',
+	which some helper maps to appropriate values from the incoming data. Also,
+	the whole (x, y, data) arguments are nearly redundant; see the RectDataPainter
+	doChunkPaint routine.
+	(DotYErrorBars.doPaint): Simple class that draws a dot with error bars
+	in the Y axis.
+
+	* omega/util.py (PaintPipeline.paintToSurfgen): Delete, this was
+	kind of dumb way to do things.
+	(GenericPointSizedFile.renderPipeline): Instead, have the surfgen
+	paint a pipeline.
+	(GenericPngFile.__init__): Add a surfgen-type class that creates
+	an image surface (currently only ARGB32) and dumps it to a PNG file.
+	(LargePngFile.__init__): Utility class that creates a 1024x768 PNG.
+	(dump): Adapt to the new API. Should probably dump the 'surfgen' name
+	now.
+	
+	* omega/base.py (RectDataPainter.transform): Change this to accept
+	two arguments, not a tuple.
+	(RectDataPainter.doChunkPaint): Fix algorithm to work if we have
+	data to pass to the point stamp. The whole stamp data setup is really
+	broken and needs fixing.
+	(DiscreteHistogramPainter.transform): Change this signature too.
+
+	* demo/derr.py: New demo, like discrete.py with some error bar point
+	stamps.
+
+	* omega/__init__.py: Import LargePngFile from util.
+
+2007-02-08  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (EnumeratedDiscreteAxis): New class, provides a
 	DiscreteAxis with sequential integers.
 	(DiscreteHistogramPainter.__init__): Paint a discrete histogram.

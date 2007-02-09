@@ -742,11 +742,11 @@ class RectDataPainter (StreamSink):
                    self.pointStamp.sinkSpec
         return self.xaxis.coordSpec + self.yaxis.coordSpec
     
-    def transform (self, pair):
+    def transform (self, x, y):
         # the 1-f(y) deals with the opposite senses of math and
         # cairo coordinate systems.
-        return self.width * self.xaxis.transform (pair[0]), \
-               self.height * (1. - self.yaxis.transform (pair[1]))
+        return self.width * self.xaxis.transform (x), \
+               self.height * (1. - self.yaxis.transform (y))
     
     def doFirstPaint (self, ctxt, style):
         self.lastx = None
@@ -760,29 +760,34 @@ class RectDataPainter (StreamSink):
         
         if self.lastx == None:
             try:
-                self.lastx, self.lasty = self.transform (chunk.next ())
-                if self.pointStamp: points.append ((self.lastx, self.lasty))
+                data = chunk.next ()
+                self.lastx, self.lasty = self.transform (data[0], data[1])
+                if self.pointStamp: points.append ((self.lastx, self.lasty) + data[2:])
             except StopIteration:
                 return
 
         ctxt.move_to (self.lastx, self.lasty)
 
         if self.lines:
-            for pair in chunk:
-                x, y = self.transform (pair)
+            for data in chunk:
+                x, y = self.transform (data[0], data[1])
                 ctxt.line_to (x, y)
-                if self.pointStamp: points.append ((x, y))
+                if self.pointStamp: points.append ((x, y) + data[2:])
 
             self.lastx, self.lasty = ctxt.get_current_point ()
             ctxt.stroke ()
         elif self.pointStamp:
-            for pair in chunk:
-                points.append (self.transform (pair))
+            for data in chunk:
+                xy = self.transform (data[0], data[1])
+                points.append (xy + data[2:])
 
-            self.lastx, self.lasty = points[len (points) - 1]
+            self.lastx, self.lasty = points[len (points) - 1][0:2]
 
         if self.pointStamp:
-            for (x, y) in points: self.pointStamp.paint (ctxt, style, x, y, ())
+            helper = StampPaintHelper (self.transform)
+            
+            for xdata in points:
+                self.pointStamp.paint (ctxt, style, helper, xdata[0], xdata[1], xdata[2:])
 
     def setBounds (self, xmin, xmax, ymin, ymax):
         self.xaxis.min = xmin
@@ -843,11 +848,11 @@ class DiscreteHistogramPainter (StreamSink):
     def sinkSpec (self):
         return self.xaxis.coordSpec + self.yaxis.coordSpec
     
-    def transform (self, pair):
+    def transform (self, x, y):
         # the 1-f(y) deals with the opposite senses of math and
         # cairo coordinate systems.
-        return self.width * self.xaxis.transform (pair[0]), \
-               self.height * (1. - self.yaxis.transform (pair[1]))
+        return self.width * self.xaxis.transform (x), \
+               self.height * (1. - self.yaxis.transform (y))
 
     def nextX (self, preval):
         # uuuugly
@@ -896,7 +901,7 @@ class DiscreteHistogramPainter (StreamSink):
         lastctrx = 0
         
         for pair in chunk:
-            ctrx, y = self.transform (pair)
+            ctrx, y = self.transform (*pair)
 
             #if lastctrx < 0:
             #    rt_edge_x = self.lastx
