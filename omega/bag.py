@@ -22,6 +22,10 @@ class Bag (object):
         return sink
 
     def linkTo (self, source, sink):
+        if isinstance (source, basestring):
+            self.exposeSink (sink, source)
+            return
+        
         if source.sourceSpec != sink.sinkSpec:
             raise Exception ('Trying to link disagreeing sink (%s) and source (%s)!' \
                              % (sink.sinkSpec, source.sourceSpec))

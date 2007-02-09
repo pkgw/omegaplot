@@ -164,6 +164,11 @@
 
 2007-01-30  Peter Williams  <peter@newton.cx>
 
+	* omega/bag.py (Bag.linkTo): If the passed-in source is a string,
+	treat this as equivalent to calling exposeSink.
+
+2007-01-30  Peter Williams  <peter@newton.cx>
+
 	* omega/Makefile.am (mypy_PYTHON): Hey need to add layout.py
 
 2007-01-30  Peter Williams  <peter@newton.cx>
