@@ -2,6 +2,11 @@ import cairo
 
 from base import Painter, NullPainter
 
+defaultLiveDisplay = None
+
+def LiveDisplay (pipeline, **kwargs):
+    return defaultLiveDisplay (pipeline, **kwargs)
+
 class PaintPipeline (object):
     def __init__ (self, bag, style, sources, painter=None):
         self.bag = bag
@@ -53,7 +58,10 @@ class PaintPipeline (object):
 
     def forceReconfigure (self):
         self.savedWidth = -1
-    
+
+    def makeLiveDisplay (self):
+        return defaultLiveDisplay (self)
+
 class ContextTooSmallError (Exception):
     def __init__ (self, w, h, minw, minh):
         (self.w, self.h, self.minw, self.minh) = (w, h, minw, minh)

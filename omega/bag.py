@@ -19,11 +19,12 @@ class Bag (object):
         
         self.registerSink (sink)
         self.exposed[sink] = name
-
+        return sink
 
     def linkTo (self, source, sink):
         if source.sourceSpec != sink.sinkSpec:
-            raise Exception ('Trying to link disagreeing sink and source!')
+            raise Exception ('Trying to link disagreeing sink (%s) and source (%s)!' \
+                             % (sink.sinkSpec, source.sourceSpec))
         
         self.registerSink (sink)
         self.registerSink (source)
@@ -81,10 +82,10 @@ class Bag (object):
         return gotany
 
 class FunctionFilter (object):
-    def __init__ (self, func, sourceSpec, sinkSpec):
+    def __init__ (self, func, sinkSpec, sourceSpec):
         self.func = func
-        self.sourceSpec = sourceSpec
         self.sinkSpec = sinkSpec
+        self.sourceSpec = sourceSpec
 
     def expose (self, bag, name):
         bag.exposeSink (self, name)

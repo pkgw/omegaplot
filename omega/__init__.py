@@ -14,11 +14,6 @@ import util
 from bag import Bag
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from sources import Function
-from util import dump, PaintPipeline, LetterFile, InchesFile, LargePngFile
+from sources import Function, StoredData
+from util import dump, Livedisplay, PaintPipeline, LetterFile, InchesFile, LargePngFile
 
-# FIXME: we might want to import a different
-# class depending on what toolkit is available (eg,
-# if there is ever a qtUtil).
-
-from gtkUtil import LiveDisplay

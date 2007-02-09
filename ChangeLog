@@ -1,5 +1,43 @@
 2007-02-08  Peter Williams  <peter@newton.cx>
 
+	* omega/gtkUtil.py (OmegaArea.__init__): Just take a PaintPipeline
+	instead of constructing it ourself.
+	(OmegaArea.getPipeline): Function to retrive our pipeline.
+	(OmegaDemoWindow.__init__): Same as above.
+	(OmegaDemoWindow.getPipeline): Same as above.
+	(LiveDisplay.__init__): Same as above.
+	(EOF): Set util.defaultLiveDisplay to our LiveDisplay class.
+
+	* omega/__init__.py (StoredData): Import this from sources.
+	(LiveDisplay): Import this from util now.
+
+	* omega/util.py (defaultLiveDisplay): New field, should be set by
+	external modules that define a suitable LiveDisplay class.
+	(LiveDisplay): Function that just calls the above. May want to futz
+	with the behavior later.
+	(PaintPipeline.makeLiveDisplay): Little utility func that uses the above.
+	I used this mechanism to solve a circular dep problem since gtkUtil depends
+	on util.
+
+	* omega/base.py (LinePainter.__init__): Hacky little class to just
+	paint a single line. Makes me realize that we should implement a RectField
+	class that encapsulates axes and transforms.
+
+	* omega/bag.py (Bag.exposeSink): Return the registered sink so callers
+	can use the result for more compact code.
+	(Bag.linkTo): Say what the specs are to aid debugging.
+	(FunctionFilter.__init__): Change the order of the source and sink spec
+	arguments to be more natural: func maps sink -> source.
+
+	* demo/discrete.py: Adapt to new LiveDisplay API.
+	* demo/derr.py: Same.
+	* demo/sinc.py: Same.
+	* demo/dhisto.py: Same.
+	* demo/lissajou.py: Same.
+	* demo/stampDemo.py: Same.
+
+2007-02-08  Peter Williams  <peter@newton.cx>
+
 	* omega/stamps.py (Stamp.stampSpec): Fix stamp data, I think. Do what
 	I mentioned below: provide 'X' and 'Y' stampSpec values, and map them
 	into a sinkSpec using caller-provided X and Y spec values.

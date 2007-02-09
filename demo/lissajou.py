@@ -53,8 +53,7 @@ rp.fieldAspect = 1.0
 rp.addFieldPainter (rdp1)
 rp.addFieldPainter (rdp2)
 
-odw = omega.gtkUtil.OmegaDemoWindow (bag, style, sources)
-odw.setPainter (rp)
+odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)
 odw.show_all ()
 

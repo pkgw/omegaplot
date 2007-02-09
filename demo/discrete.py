@@ -39,7 +39,7 @@ rdp.expose ('temps')
 def errfilter (mon, val):
     return (mon, val - 5 * (val % 3 + 1),
             val + 5 * (val % 3 + 1))
-ff = omega.bag.FunctionFilter (errfilter, 'SFF', 'SF')
+ff = omega.bag.FunctionFilter (errfilter, 'SF', 'SFF')
 ff.expose (bag, 'temps')
 
 rdp2 = omega.BandPainter (bag)
@@ -55,8 +55,7 @@ rp.rpainter = rp.lpainter
 rp.addFieldPainter (rdp)
 rp.addFieldPainter (rdp2)
 
-odw = omega.gtkUtil.OmegaDemoWindow (bag, style, sources)
-odw.setPainter (rp)
+odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)
 odw.show_all ()
 

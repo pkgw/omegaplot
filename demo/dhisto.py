@@ -72,8 +72,7 @@ rp.rpainter = rp.lpainter
 rp.addFieldPainter (dhp)
 rp.addFieldPainter (rdp)
 
-odw = omega.gtkUtil.OmegaDemoWindow (bag, style, sources)
-odw.setPainter (rp)
+odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)
 odw.show_all ()
 

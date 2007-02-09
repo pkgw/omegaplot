@@ -947,3 +947,36 @@ class DiscreteHistogramPainter (StreamSink):
         self.xaxis.max = xmax
         self.yaxis.min = ymin
         self.yaxis.max = ymax
+
+class LinePainter (Painter):
+    lineStyle = 'genericLine'
+    x0 = 0
+    y0 = 0
+    x1 = 10
+    y1 = 10
+    
+    def __init__ (self, *pts):
+        Painter.__init__ (self)
+        self.xaxis = LinearAxis ()
+        self.yaxis = LinearAxis ()
+
+        if len (pts) == 4:
+            self.x0, self.y0, self.x1, self.y1 = pts
+        elif len (pts) == 0:
+            return
+        else:
+            raise Exception ('Invalid argument to LinePainter(): should have 0 or 4 elements')
+    
+    def transform (self, x, y):
+        return (self.width * self.xaxis.transform (x),
+                self.height * (1. - self.yaxis.transform (y)))
+        
+    def doPaint (self, ctxt, style, firstPaint):
+        if not firstPaint: return
+
+        style.apply (ctxt, self.lineStyle)
+
+        ctxt.move_to (*self.transform (self.x0, self.y0))
+        ctxt.line_to (*self.transform (self.x1, self.y1))
+        ctxt.stroke ()
+

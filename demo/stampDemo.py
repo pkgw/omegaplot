@@ -31,8 +31,7 @@ g[1,2] = StampPainter (Plus ())
 g[2,0] = StampPainter (Box ())
 g[2,1] = StampPainter (Diamond ())
 
-odw = omega.gtkUtil.OmegaDemoWindow (bag, style, {})
-odw.setPainter (g)
+odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, {}, g))
 odw.connect ('destroy', gtk.main_quit)
 odw.show_all ()
 

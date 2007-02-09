@@ -8,13 +8,12 @@ from base import NullPainter, Painter
 from util import PaintPipeline, ContextTooSmallError
 
 class OmegaArea (gtk.DrawingArea):
-    def __init__ (self, bag, style, sources, autoRepaint):
+    def __init__ (self, pipeline, autoRepaint):
         gtk.DrawingArea.__init__ (self)
 
-        self.pipeline = PaintPipeline (bag, style, sources)
+        self.pipeline = pipeline
 
         self.lastException = None
-
         self.paintId = -1
         self.autoRepaint = autoRepaint
 
@@ -86,6 +85,9 @@ class OmegaArea (gtk.DrawingArea):
     def forceReconfigure (self):
         self.pipeline.forceReconfigure ()
 
+    def getPipeline (self):
+        return self.pipeline
+    
     # Cleanup
     
     def _destroyed (self, unused):
@@ -95,14 +97,14 @@ class OmegaArea (gtk.DrawingArea):
         self._destroyed (self)
 
 class OmegaDemoWindow (gtk.Window):
-    def __init__ (self, bag, style, sources):
+    def __init__ (self, pipeline):
         gtk.Window.__init__ (self)
         
         self.set_title ('OmegaPlot Test Window Canvas')
         self.set_default_size (640, 480)
         self.set_border_width (4)
         
-        self.oa = OmegaArea (bag, style, sources, True)
+        self.oa = OmegaArea (pipeline, True)
         self.add (self.oa)
 
     # Emulate the OmegaArea interface for convenience.
@@ -137,8 +139,11 @@ class OmegaDemoWindow (gtk.Window):
     def forceReconfigure (self):
         self.oa.forceReconfigure ()
 
+    def getPipeline (self):
+        return self.oa.getPipeline ()
+    
 class LiveDisplay (object):
-    def __init__ (self, bag, style, sources, painter):
+    def __init__ (self, pipeline):
         self.win = None
 
         # Here we set up a destroy function that the window will use.
@@ -163,8 +168,7 @@ class LiveDisplay (object):
         # End of wacky code.
         
         def init ():
-            self.win = OmegaDemoWindow (bag, style, sources)
-            self.win.setPainter (painter)
+            self.win = OmegaDemoWindow (pipeline)
             self.win.connect ('destroy', clear)
             self.win.show_all ()
             
@@ -222,3 +226,10 @@ class LiveDisplay (object):
         def doit ():
             if self.win: self.win.forceReconfigure ()
         gtkThread.send (doit)
+
+# FIXME: some mechanism for user expressing their pref here?
+# But the odds of 'import omega.gtkUtil, omega.qtUtil' are
+# pretty low, I think.
+
+import util
+util.defaultLiveDisplay = LiveDisplay
