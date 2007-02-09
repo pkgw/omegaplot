@@ -1,3 +1,18 @@
+2007-02-08  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (EnumeratedDiscreteAxis): New class, provides a
+	DiscreteAxis with sequential integers.
+	(DiscreteHistogramPainter.__init__): Paint a discrete histogram.
+
+	* demo/dhisto.py (rdp): Demo discrete histogram painting. Nice little
+	demo of the central limit theorem applied to discrete coin flips.
+
+	* omega/styles.py (BitmapStyle.apply): If the style is a function,
+	provide it with the style object so it can use its info.
+
+	* omega/base.py (StampPaintHelper.__init__): Planned helper class to
+	resolve some issues with painting stamps with error bars.
+
 2007-02-07  Peter Williams  <peter@newton.cx>
 
 	* demo/discrete.py (sources): Hey you can expose two sinks to the
