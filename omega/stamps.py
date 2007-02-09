@@ -8,43 +8,54 @@ import cairo as _cairo
 import math as _math
 
 class Stamp (object):
-    sinkSpec = ''
+    stampSpec = 'XY'
     mainStyle = 'genericStamp'
-    
-    def paint (self, ctxt, style, helper, x, y, data):
+
+    def getSinkSpec (self, xspec, yspec):
+        return self.stampSpec.replace ('X', xspec).replace ('Y', yspec)
+
+    def paint (self, ctxt, style, mapx, mapy, data):
+        mapped = list (data)
+        
+        for i in range (0, len(mapped)):
+            if self.stampSpec[i] == 'X':
+                mapped[i] = mapx (data[i])
+            elif self.stampSpec[i] == 'Y':
+                mapped[i] = mapy (data[i])
+                
         ctxt.save ()
         style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style, helper, x, y, data)
+        self.doPaint (ctxt, style, mapped)
         ctxt.restore ()
 
 class SizedDot (Stamp):
-    sinkSpec = 'F' # size of dot in style.smallScale
+    stampSpec = 'XYF' # size of dot in style.smallScale
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
-        ctxt.arc (x, y, data[0] * style.smallScale, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, data):
+        ctxt.arc (data[0], data[1], data[2] * style.smallScale, 0, 2 * _math.pi)
         ctxt.fill ()
 
 class Dot (Stamp):
     size = 3 # diameter of dot in style.smallScale
     
-    def doPaint (self, ctxt, style, helper, x, y, data):
-        ctxt.arc (x, y, self.size * style.smallScale / 2, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, data):
+        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.fill ()
 
 class Circle (Stamp):
     size = 3 # diameter of circle in style.smallScale
     
-    def doPaint (self, ctxt, style, helper, x, y, data):
-        ctxt.arc (x, y, self.size * style.smallScale / 2, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, data):
+        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.stroke ()
 
 class UpTriangle (Stamp):
     size = 3 # size of triangle in style.smallScale
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
         
-        ctxt.move_to (x, y - s * 0.666666)
+        ctxt.move_to (data[0], data[1] - s * 0.666666)
         ctxt.rel_line_to (s/2, s)
         ctxt.rel_line_to (-s, 0)
         ctxt.rel_line_to (s/2, -s)
@@ -53,10 +64,10 @@ class UpTriangle (Stamp):
 class DownTriangle (Stamp):
     size = 3 # size of triangle in style.smallScale
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
         
-        ctxt.move_to (x, y + s * 0.666666)
+        ctxt.move_to (data[0], data[1] + s * 0.666666)
         ctxt.rel_line_to (-s/2, -s)
         ctxt.rel_line_to (s, 0)
         ctxt.rel_line_to (-s/2, s)
@@ -66,8 +77,9 @@ class X (Stamp):
     size = 3 # size of the X in style.smallScale; corrected by
     # sqrt(2) so that X and Plus lay down the same amount of "ink"
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale / _math.sqrt (2)
+        x, y = data
         
         ctxt.move_to (x - s/2, y - s/2)
         ctxt.rel_line_to (s, s)
@@ -79,13 +91,14 @@ class X (Stamp):
 class Plus (Stamp):
     size = 3 # size of the + in style.smallScale
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
+        x, y = data
         
         ctxt.move_to (x - s/2, y)
         ctxt.rel_line_to (s, 0)
         ctxt.stroke ()
-        ctxt.move_to (x, y - s/2)
+        ctxt.move_to (data[0], y - s/2)
         ctxt.rel_line_to (0, s)
         ctxt.stroke ()
     
@@ -94,19 +107,19 @@ class Box (Stamp):
     # reduced by sqrt(2) so that the area of the Box and
     # Diamond stamps are the same for the same values of size.
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale / _math.sqrt (2)
         
-        ctxt.rectangle (x - s/2, y - s/2, s, s)
+        ctxt.rectangle (data[0] - s/2, data[1] - s/2, s, s)
         ctxt.stroke ()
     
 class Diamond (Stamp):
     size = 3 # size of the diamond in style.smallScale
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
+    def doPaint (self, ctxt, style, data):
         s2 = self.size * style.smallScale / 2
 
-        ctxt.move_to (x, y - s2)
+        ctxt.move_to (data[0], data[1] - s2)
         ctxt.rel_line_to (s2, s2)
         ctxt.rel_line_to (-s2, s2)
         ctxt.rel_line_to (-s2, -s2)
@@ -115,15 +128,12 @@ class Diamond (Stamp):
 
 class DotYErrorBars (Stamp):
     size = 3 # diameter of dot in style.smallScale
-    sinkSpec = 'FF' # lower error bound, upper error bound
+    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
 
-    def doPaint (self, ctxt, style, helper, x, y, data):
-        ctxt.arc (x, y, self.size * style.smallScale / 2, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, data):
+        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.fill ()
 
-        (tmp, ylow) = helper.transform (0, data[0])
-        (tmp, yhigh) = helper.transform (0, data[1])
-        
-        ctxt.move_to (x, ylow)
-        ctxt.line_to (x, yhigh)
+        ctxt.move_to (data[0], data[2])
+        ctxt.line_to (data[0], data[3])
         ctxt.stroke ()

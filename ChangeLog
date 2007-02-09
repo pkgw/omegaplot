@@ -1,5 +1,28 @@
 2007-02-08  Peter Williams  <peter@newton.cx>
 
+	* omega/stamps.py (Stamp.stampSpec): Fix stamp data, I think. Do what
+	I mentioned below: provide 'X' and 'Y' stampSpec values, and map them
+	into a sinkSpec using caller-provided X and Y spec values.
+	(Stamp.paint): Take the data and 'mapx' and 'mapy' arguments; map X and
+	Y parameters using those functions before passing the data off to doPaint.
+	(*): Adapt to new API.
+	(DotYErrorBars.doPaint): This works waaaay better now.
+
+	* omega/base.py (RectDataPainter.sinkSpec): Fix to honor new Stamp
+	getSinkSpec method.
+	(RectDataPainter.transformX): Futz with transforming some more. Break
+	it out into two routines that can be given to pointStamp if needed.
+	(RectDataPainter.doChunkPaint): Simplify a fair bit. Just convert our
+	chunk to a list, since the point of chunking is to make that something
+	that's not stupid to do. And do less of other dumb stuff.
+
+	* demo/lissajou.py (tempstyle): Oops, forgot to make this track new
+	style-function API.
+
+	* demo/stampDemo.py (StampPainter.doPaint): Adapt to new Stamp API.
+
+2007-02-08  Peter Williams  <peter@newton.cx>
+
 	* omega/stamps.py (Stamp.paint): Change all paint and doPaint functions
 	to accept a helper argument which can map data values to X and Y values;
 	needed for e.g. stamps that draw error bars. This model is broken: the

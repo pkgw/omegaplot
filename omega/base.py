@@ -738,31 +738,37 @@ class RectDataPainter (StreamSink):
     @property
     def sinkSpec (self):
         if self.pointStamp:
-            return self.xaxis.coordSpec + self.yaxis.coordSpec + \
-                   self.pointStamp.sinkSpec
+            if self.pointStamp.stampSpec[0:2] != 'XY':
+                raise Exception ('trying to paint rect data with invalid stamp!')
+            
+            return self.pointStamp.getSinkSpec (self.xaxis.coordSpec,
+                                                self.yaxis.coordSpec)
+        
         return self.xaxis.coordSpec + self.yaxis.coordSpec
     
-    def transform (self, x, y):
+    def transformX (self, xvar):
+        return self.width * self.xaxis.transform (xvar)
+    
+    def transformY (self, yvar):
         # the 1-f(y) deals with the opposite senses of math and
         # cairo coordinate systems.
-        return self.width * self.xaxis.transform (x), \
-               self.height * (1. - self.yaxis.transform (y))
+        return self.height * (1. - self.yaxis.transform (yvar))
     
     def doFirstPaint (self, ctxt, style):
         self.lastx = None
         self.lasty = None
 
     def doChunkPaint (self, ctxt, style, chunk):
+        chunk = list (chunk)
+        
         # FIXME this will require lots of ... fixing
-        points = []
-
         style.apply (ctxt, self.lineStyle)
         
         if self.lastx == None:
             try:
-                data = chunk.next ()
-                self.lastx, self.lasty = self.transform (data[0], data[1])
-                if self.pointStamp: points.append ((self.lastx, self.lasty) + data[2:])
+                data = chunk[0]
+                self.lastx = self.transformX (data[0])
+                self.lasty = self.transformY (data[1])
             except StopIteration:
                 return
 
@@ -770,24 +776,19 @@ class RectDataPainter (StreamSink):
 
         if self.lines:
             for data in chunk:
-                x, y = self.transform (data[0], data[1])
-                ctxt.line_to (x, y)
-                if self.pointStamp: points.append ((x, y) + data[2:])
+                ctxt.line_to (self.transformX (data[0]), self.transformY (data[1]))
 
             self.lastx, self.lasty = ctxt.get_current_point ()
             ctxt.stroke ()
         elif self.pointStamp:
-            for data in chunk:
-                xy = self.transform (data[0], data[1])
-                points.append (xy + data[2:])
-
-            self.lastx, self.lasty = points[len (points) - 1][0:2]
+            data = chunk[-1]
+            self.lastx = self.transformX (data[0])
+            self.lasty = self.transformY (data[1])
 
         if self.pointStamp:
-            helper = StampPaintHelper (self.transform)
-            
-            for xdata in points:
-                self.pointStamp.paint (ctxt, style, helper, xdata[0], xdata[1], xdata[2:])
+            for data in chunk:
+                self.pointStamp.paint (ctxt, style, self.transformX,
+                                       self.transformY, data)
 
     def setBounds (self, xmin, xmax, ymin, ymax):
         self.xaxis.min = xmin

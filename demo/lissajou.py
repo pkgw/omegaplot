@@ -34,7 +34,7 @@ rdp2.xaxis = rdp1.xaxis
 rdp2.yaxis = rdp1.yaxis
 rdp2.linkTo (imf)
 
-def tempstyle (ctxt):
+def tempstyle (ctxt, style):
     style.apply_genericLine (ctxt)
     ctxt.set_source_rgb (0.9, 0.3, 0.3)
 
