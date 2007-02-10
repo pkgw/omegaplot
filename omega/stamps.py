@@ -126,14 +126,33 @@ class Diamond (Stamp):
         ctxt.rel_line_to (s2, -s2)
         ctxt.stroke ()
 
-class DotYErrorBars (Stamp):
-    size = 3 # diameter of dot in style.smallScale
+class DotYErrorBars (Dot):
     stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
 
     def doPaint (self, ctxt, style, data):
-        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
-        ctxt.fill ()
+        Dot.doPaint (self, ctxt, style, data[0:2])
 
         ctxt.move_to (data[0], data[2])
         ctxt.line_to (data[0], data[3])
         ctxt.stroke ()
+
+class CrossYErrorBars (X):
+    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
+
+    def doPaint (self, ctxt, style, data):
+        X.doPaint (self, ctxt, style, data[0:2])
+
+        ctxt.move_to (data[0], data[2])
+        ctxt.line_to (data[0], data[3])
+        ctxt.stroke ()
+
+class BoxYErrorBars (Box):
+    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
+
+    def doPaint (self, ctxt, style, data):
+        Box.doPaint (self, ctxt, style, data[0:2])
+
+        ctxt.move_to (data[0], data[2])
+        ctxt.line_to (data[0], data[3])
+        ctxt.stroke ()
+

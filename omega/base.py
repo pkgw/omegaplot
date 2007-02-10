@@ -66,9 +66,16 @@ class StreamSink (Painter):
 
     def expose (self, name):
         self._bag.exposeSink (self, name)
+        return self
     
     def linkTo (self, source):
         self._bag.linkTo (source, self)
+        return source
+
+    def linkExpose (self, source, name):
+        self._bag.linkTo (source, self)
+        self._bag.exposeSink (source, name)
+        return source
 
 class NullPainter (Painter):
     lineStyle = 'genericLine'

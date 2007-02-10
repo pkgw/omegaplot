@@ -1,3 +1,17 @@
+2007-02-09  Peter Williams  <peter@newton.cx>
+
+	* omega/stamps.py (DotYErrorBars): Subclass Dot.
+	(CrossYErrorBars): Analog to the above.
+	(BoxYErrorBars): Same. By god, I think this calls for a metaclass!
+
+	* omega/__init__.py: Typo fix, LiveDisplay not Livedisplay.
+
+	* omega/base.py (StreamSink.expose): Return self to potentially allow
+	more compact expressions.
+	(StreamSink.linkTo): Same.
+	(StreamSink.linkExpose): Utility, link to a source and then expose that
+	source in our bag.
+
 2007-02-08  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (OmegaArea.__init__): Just take a PaintPipeline
