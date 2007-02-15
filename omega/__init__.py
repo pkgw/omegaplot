@@ -17,3 +17,5 @@ from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
 from sources import Function, StoredData
 from util import dump, LiveDisplay, PaintPipeline, LetterFile, InchesFile, LargePngFile
 
+QP = util.makeQuickPipeline
+QD = util.makeQuickDisplay

@@ -1,3 +1,19 @@
+2007-02-14  Peter Williams  <peter@newton.cx>
+
+	* omega/util.py (makeQuickPipeline): Beginnings of a function to "just plot
+	this data". Not very smart so far.
+	(makeQuickDisplay): Calls the above and makes it into a LiveDisplay.
+
+	* omega/__init__.py (QP): Export this as an alias to util.makeQuickPipeline
+	(QD): Similar, for util.makeQuickDisplay.
+
+	* omega/base.py (RectPlot.doPaint): Fix a mistake in the clip rectangle
+	calculation.
+
+	* omega/gtkUtil.py (OmegaDemoWindow.do_key_press_event): Make it possible
+	to fullscreen the plot demo window if you know the appropriate mojo. Happy
+	Valentine's Day, plotters!
+
 2007-02-09  Peter Williams  <peter@newton.cx>
 
 	* omega/stamps.py (DotYErrorBars): Subclass Dot.

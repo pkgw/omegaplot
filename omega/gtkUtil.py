@@ -97,6 +97,10 @@ class OmegaArea (gtk.DrawingArea):
         self._destroyed (self)
 
 class OmegaDemoWindow (gtk.Window):
+    isFullscreen = False
+
+    __gsignals__ = { 'key-press-event' : 'override' }
+    
     def __init__ (self, pipeline):
         gtk.Window.__init__ (self)
         
@@ -107,6 +111,20 @@ class OmegaDemoWindow (gtk.Window):
         self.oa = OmegaArea (pipeline, True)
         self.add (self.oa)
 
+    # Fun
+
+    def do_key_press_event (self, event):
+        if not self.isFullscreen and event.keyval == gtk.keysyms.F11:
+            self.fullscreen ()
+            self.isFullscreen = True
+            return True
+        elif self.isFullscreen and event.keyval == gtk.keysyms.Escape:
+            self.unfullscreen ()
+            self.isFullscreen = False
+            return True
+
+        return gtk.Window.do_key_press_event (self, event)
+    
     # Emulate the OmegaArea interface for convenience.
 
     def get_paintInterval (self):

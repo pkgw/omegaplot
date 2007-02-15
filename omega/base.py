@@ -714,7 +714,7 @@ class RectPlot (Painter):
             ctxt.restore ()
 
         ctxt.save ()
-        ctxt.rectangle (self.exteriors[3], self.exteriors[2],
+        ctxt.rectangle (self.exteriors[3], self.exteriors[0],
                         self.fieldw, self.fieldh)
         ctxt.clip ()
         

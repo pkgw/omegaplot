@@ -71,6 +71,8 @@ class ContextTooSmallError (Exception):
                'required minimum size of %fx%f' % (self.w, self.h,
                                                    self.minw, self.minh)
 
+# Utilities for dumping pipelines to various useful output devices.
+
 class GenericPointSizedFile (object):
     def __init__ (self, filename, w, h, type=None):
         if type == 'ps' or filename[-3:] == '.ps':
@@ -180,3 +182,53 @@ def dump (painter, bag, style, sources):
 def resetDumpSerial ():
     global _dumpSerial
     _dumpSerial = 0
+
+# Generating quick-and-dirty pipelines from data
+
+import sources, base, bag, styles, stamps
+
+def makeQuickPipeline (xinfo, yinfo=None, lines=True):
+    """Construct a PaintPipeline object that tries to represent
+    the passed-in data reasonably in a plot."""
+    
+    if yinfo is None:
+        yinfo = xinfo
+        xinfo = xrange (0, len(yinfo))
+
+    if callable (yinfo):
+        raise Exception ('write this bit')
+
+    try:
+        tmp = float (xinfo[0])
+        tmp = float (yinfo[0])
+    except:
+        raise
+
+    b = bag.Bag ()
+    style = styles.BlackOnWhiteBitmap ()
+    
+    src = sources.StoredData ('FF', zip (xinfo, yinfo))
+
+    rdp = base.RectDataPainter (b)
+    rdp.setBounds (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
+    rdp.expose ('data')
+
+    if not lines:
+        rdp.lines = False
+        rdp.pointStamp = stamps.X ()
+    
+    rp = base.RectPlot ()
+    rp.addFieldPainter (rdp)
+    rp.magicAxisPainters ('lb')
+
+    return PaintPipeline (b, style, {'data': src}, rp), rp
+
+def makeQuickDisplay (*args, **kwargs):
+    """Create a LiveDisplay object that attempts to represent the
+    passed-in data passably in a plot. Just creates a pipeline using
+    omega.util.makeQuickPipeline and wraps it with a LiveDisplay object.
+
+    Returns: LiveDisplay object, PaintPipeline object, RectPlot object."""
+    
+    pl, rp = makeQuickPipeline (*args, **kwargs)
+    return LiveDisplay (pl), pl, rp
