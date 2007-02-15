@@ -26,7 +26,7 @@ pts = zip (months, data)
 
 src = omega.sources.StoredData ('SF', pts)
 
-sources = {'temps': src }
+sources = { 'temps': src }
 
 def errfilter (mon, val):
     return (mon, val, val - 5 * (val % 3 + 1),
@@ -35,9 +35,9 @@ ff = omega.bag.FunctionFilter (errfilter, 'SF', 'SFFF')
 ff.expose (bag, 'temps')
 
 rdp = omega.RectDataPainter (bag)
-rdp.xaxis = omega.EnumeratedDiscreteAxis ('S', months)
-rdp.yaxis.min = 0
-rdp.yaxis.max = 100
+rdp.field.xaxis = omega.EnumeratedDiscreteAxis ('S', months)
+rdp.field.yaxis.min = 0
+rdp.field.yaxis.max = 100
 rdp.pointStamp = omega.stamps.DotYErrorBars ()
 rdp.lines = False
 rdp.linkTo (ff)
@@ -45,18 +45,14 @@ rdp.linkTo (ff)
 imf = omega.bag.IndexMapFilter ('SFFF', (0, 2, 3))
 imf.linkTo (bag, ff)
 
-rdp2 = omega.BandPainter (bag)
-rdp2.xaxis = rdp.xaxis
-rdp2.yaxis = rdp.yaxis
+rdp2 = omega.BandPainter (rdp)
 rdp2.linkTo (imf)
 
 rp = omega.RectPlot ()
-rp.bpainter = omega.DiscreteAxisPainter (rdp.xaxis)
-rp.lpainter = omega.LinearAxisPainter (rdp.yaxis)
-rp.lpainter.numFormat = '%.0f'
-rp.rpainter = rp.lpainter
 rp.addFieldPainter (rdp)
 rp.addFieldPainter (rdp2)
+rp.magicAxisPainters ('vb')
+rp.lpainter.numFormat = '%.0f'
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)

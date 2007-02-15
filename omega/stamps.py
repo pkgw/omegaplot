@@ -11,21 +11,10 @@ class Stamp (object):
     stampSpec = 'XY'
     mainStyle = 'genericStamp'
 
-    def getSinkSpec (self, xspec, yspec):
-        return self.stampSpec.replace ('X', xspec).replace ('Y', yspec)
-
-    def paint (self, ctxt, style, mapx, mapy, data):
-        mapped = list (data)
-        
-        for i in range (0, len(mapped)):
-            if self.stampSpec[i] == 'X':
-                mapped[i] = mapx (data[i])
-            elif self.stampSpec[i] == 'Y':
-                mapped[i] = mapy (data[i])
-                
+    def paint (self, ctxt, style, data):
         ctxt.save ()
         style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style, mapped)
+        self.doPaint (ctxt, style, data)
         ctxt.restore ()
 
 class SizedDot (Stamp):
@@ -156,3 +145,12 @@ class BoxYErrorBars (Box):
         ctxt.line_to (data[0], data[3])
         ctxt.stroke ()
 
+class CrossXErrorBars (X):
+    stampSpec = 'XYXX' # x, y, lower error bound, upper error bound
+
+    def doPaint (self, ctxt, style, data):
+        X.doPaint (self, ctxt, style, data[0:2])
+
+        ctxt.move_to (data[2], data[1])
+        ctxt.line_to (data[3], data[1])
+        ctxt.stroke ()

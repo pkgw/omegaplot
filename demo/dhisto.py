@@ -47,10 +47,10 @@ thy.func = lambda x: expected_max * exp (-(x - 5)**2 / 4 / sqrt(2))
 sources = { 'obs': obssrc, 'thy': thy }
 
 dhp = omega.DiscreteHistogramPainter (bag)
-dhp.xaxis = omega.DiscreteIntegerAxis (0, 10)
+dhp.field.xaxis = omega.DiscreteIntegerAxis (0, 10)
 #dhp.xaxis.padBoundaries = False
-dhp.yaxis.min = 0
-dhp.yaxis.max = expected_max * 1.1
+dhp.field.yaxis.min = 0
+dhp.field.yaxis.max = expected_max * 1.1
 dhp.expose ('obs')
 
 def hackDash (ctxt, style):
@@ -58,19 +58,16 @@ def hackDash (ctxt, style):
     ctxt.set_dash ((3, 3), 0.0)
 
 rdp = omega.RectDataPainter (bag)
-rdp.xaxis.min = thy.xmin
-rdp.xaxis.max = thy.xmax
-rdp.yaxis = dhp.yaxis
+rdp.field.xaxis = omega.LinearAxis (thy.xmin, thy.xmax)
+rdp.field.yaxis = dhp.field.yaxis
 rdp.lineStyle = hackDash
 rdp.expose ('thy')
 
 rp = omega.RectPlot ()
-rp.bpainter = omega.DiscreteAxisPainter (dhp.xaxis)
-rp.lpainter = omega.LinearAxisPainter (dhp.yaxis)
-rp.lpainter.numFormat = '%.0f'
-rp.rpainter = rp.lpainter
 rp.addFieldPainter (dhp)
 rp.addFieldPainter (rdp)
+rp.magicAxisPainters ('vb')
+rp.lpainter.numFormat = '%.0f'
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)

@@ -103,9 +103,9 @@ class LinearAxis (object):
 
     coordSpec = 'F'
     
-    def __init__ (self):
-        self.min = 0. # XXX should be a bagprop!
-        self.max = 10. # XXX should be a bagprop!
+    def __init__ (self, min=0., max=10.):
+        self.min = min # XXX should be a bagprop!
+        self.max = max # XXX should be a bagprop!
 
     def transform (self, value):
         """Return where the given value should reside on this axis, 0
@@ -514,6 +514,105 @@ class DiscreteAxisPainter (BlankAxisPainter):
 
 DiscreteAxis.defaultPainter = DiscreteAxisPainter
 
+class RectField (object):
+    """A rectangular field. A field is associated with X and Y axes; other objects
+    use the field to map X and Y values input from the user into coordinates at which
+    to paint."""
+
+    def __init__ (self, xaxisOrField=None, yaxis=None):
+        if isinstance (xaxisOrField, RectField):
+            xaxis = xaxisOrField.xaxis
+            yaxis = xaxisOrField.yaxis
+            
+        if not xaxisOrField: xaxisOrField = LinearAxis ()
+        if not yaxis: yaxis = LinearAxis ()
+
+        self.xaxis = xaxisOrField
+        self.yaxis = yaxis
+    
+    def mapSpec (self, spec):
+        """Objects which reference a field and source or sink X and Y values should
+        call use this function to generate the correct 'sinkSpec'. For instance, if
+        a Y error bar stamp painter might have a sink specification of 'XYYY', corresponding
+        to an X/Y location, a lower Y error bound, and an upper Y error bound. This function
+        might then map these values into FFFF, if the axes both take floats as inputs,
+        or perhaps SFFF, if the X axis is indexed by strings."""
+        
+        return spec.replace ('X', self.xaxis.coordSpec).replace ('Y', self.yaxis.coordSpec)
+
+    class Transformer (object):
+        """A utility class tied to a RectField object. Has three members:
+
+        - mapData (spec, data): Given a sink specification and a tuple or list
+        of data, maps those data corresponding to 'X' or 'Y' values in the specification
+        to an appropriate floating point number using the axes associated with the
+        RectField
+
+        - mapX (val): Transforms val to an X value within the field using
+        the RectField's X axis.
+
+        - mapY (val): Analogous to transformX.
+        """
+        
+        def __init__ (self, field, width, height):
+            self.field = field
+            self.width = float (width)
+            self.height = float (height)
+
+        def mapX (self, val):
+            return self.field.xaxis.transform (val) * self.width
+        
+        def mapY (self, val):
+            # Mathematical Y axes have 0 on the bottom, while cairo has 0 at the
+            # top. The one-minus accounts for that difference. (We transform from
+            # math sense to cairo sense.)
+            
+            return (1. - self.field.yaxis.transform (val)) * self.height
+
+        def mapData (self, spec, data):
+            mapped = list (data)
+        
+            for i in range (0, len(mapped)):
+                if spec[i] == 'X':
+                    mapped[i] = self.mapX (data[i])
+                elif spec[i] == 'Y':
+                    mapped[i] = self.mapY (data[i])
+
+            return mapped
+
+        def mapChunk (self, spec, chunk):
+            # FIXME: could probably make this a bit more efficient
+            # Could maybe precompile a specific mapData function
+            # somehow. That would be cute.
+            
+            xmaps = []
+            ymaps = []
+
+            for i in range (0, len(spec)):
+                if spec[i] == 'X':
+                    xmaps.append (i)
+                elif spec[i] == 'Y':
+                    ymaps.append (i)
+
+            for data in chunk:
+                mapped = list (data)
+
+                for idx in xmaps:
+                    mapped[idx] = self.mapX (data[idx])
+                for idx in ymaps:
+                    mapped[idx] = self.mapY (data[idx])
+
+                yield mapped
+                
+    def makeTransformer (self, width, height):
+        return self.Transformer (self, width, height)
+
+    def setBounds (self, xmin, xmax, ymin, ymax):
+        self.xaxis.min = xmin
+        self.xaxis.max = xmax
+        self.yaxis.min = ymin
+        self.yaxis.max = ymax
+
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
@@ -525,15 +624,13 @@ class RectPlot (Painter):
         # but store default ones here to make life easier in the common case.
 
         if not emulate:
-            self.defaultXAxis = None
-            self.defaultYAxis = None
+            self.defaultField = None
             self.bpainter = BlankAxisPainter () # bottom (primary x) axis painter
             self.lpainter = BlankAxisPainter () # left (primary y) axis painter
             self.rpainter = BlankAxisPainter () # right (secondary x) axis painter
             self.tpainter = BlankAxisPainter () # top (secondary y) axis painter
         else:
-            self.defaultXAxis = emulate.defaultXAxis
-            self.defaultYAxis = emulate.defaultYAxis
+            self.defaultField = emulate.defaultField
             self.bpainter = emulate.bpainter
             self.lpainter = emulate.lpainter
             self.rpainter = emulate.rpainter
@@ -545,9 +642,9 @@ class RectPlot (Painter):
         fp.setParent (self)
         self.fpainters.append (fp)
         
-        if not self.defaultXAxis and isinstance (fp, RectDataPainter):
-            self.defaultXAxis = fp.xaxis
-            self.defaultYAxis = fp.yaxis
+        if not self.defaultField and hasattr (fp, 'field') and \
+               isinstance (fp.field, RectField):
+            self.defaultField = fp.field
 
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
@@ -570,9 +667,10 @@ class RectPlot (Painter):
         set to be painted with a BlankAxisPainter instance.
         
         To be more specific, the 'sensible default' is whatever class
-        is pointed to by the defaultPainter attribute of the
-        defaultXAxis and defaultYAxis members of the RectPlot. This class
-        is instantiated with the logical axis as the only argument to __init__.
+        is pointed to by the defaultPainter attributes of the axes of
+        the defaultField member of the RectPlot. This class is
+        instantiated with the logical axis as the only argument to
+        __init__.
 
         Examples:
 
@@ -585,32 +683,36 @@ class RectPlot (Painter):
            rdp.magicAxisPainters ('r') will give an unusual plot in which
            only the right side is labeled with axes.
         """
+
+        def make (axis): return axis.defaultPainter (axis)
+        def makex (): return make (self.defaultField.xaxis)
+        def makey (): return make (self.defaultField.yaxis)
         
         if 'h' in spec:
-            self.bpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+            self.bpainter = makex ()
             self.tpainter = self.bpainter
         else:
             if 'b' in spec:
-                self.bpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+                self.bpainter = makex ()
             else:
                 self.bpainter = BlankAxisPainter ()
 
             if 't' in spec:
-                self.tpainter = self.defaultXAxis.defaultPainter (self.defaultXAxis)
+                self.tpainter = makex ()
             else:
                 self.tpainter = BlankAxisPainter ()
                     
         if 'v' in spec:
-            self.lpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+            self.lpainter = makey ()
             self.rpainter = self.lpainter
         else:
             if 'l' in spec:
-                self.lpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+                self.lpainter = makey ()
             else:
                 self.lpainter = BlankAxisPainter ()
 
             if 'r' in spec:
-                self.rpainter = self.defaultYAxis.defaultPainter (self.defaultYAxis)
+                self.rpainter = makey ()
             else:
                 self.rpainter = BlankAxisPainter ()
 
@@ -723,59 +825,61 @@ class RectPlot (Painter):
 
         ctxt.restore ()
 
-class StampPaintHelper (object):
-    def __init__ (self, xformfn):
-        self.transform = xformfn
+class FieldPainter (StreamSink):
+    rawSpec = 'XY'
+    field = None
+    
+    def __init__ (self, bagOrFP):
+        if isinstance (bagOrFP, bag.Bag):
+            StreamSink.__init__ (self, bagOrFP)
+            self.field = RectField ()
+        else:
+            StreamSink.__init__ (self, bagOrFP.getBag ())
+            self.field = bagOrFP.field
 
-class RectDataPainter (StreamSink):
+    @property
+    def sinkSpec (self):
+        return self.field.mapSpec (self.rawSpec)
+    
+    def doFirstPaint (self, ctxt, style):
+        self.xform = self.field.makeTransformer (self.width, self.height)
+
+    def setBounds (self, *args):
+        self.field.setBounds (*args)
+
+class RectDataPainter (FieldPainter):
     lineStyle = 'genericLine'
     lines = True
     pointStamp = None
     
-    def __init__ (self, bagOrRDP):
-        if isinstance (bagOrRDP, bag.Bag):
-            StreamSink.__init__ (self, bagOrRDP)
-            self.xaxis = LinearAxis ()
-            self.yaxis = LinearAxis ()
-        else:
-            StreamSink.__init__ (self, bagOrRDP.getBag ())
-            self.xaxis = bagOrRDP.xaxis
-            self.yaxis = bagOrRDP.yaxis
+    def __init__ (self, bagOrFP):
+        FieldPainter.__init__ (self, bagOrFP)
 
     @property
-    def sinkSpec (self):
-        if self.pointStamp:
-            if self.pointStamp.stampSpec[0:2] != 'XY':
-                raise Exception ('trying to paint rect data with invalid stamp!')
-            
-            return self.pointStamp.getSinkSpec (self.xaxis.coordSpec,
-                                                self.yaxis.coordSpec)
+    def rawSpec (self):
+        if not self.pointStamp:
+            return 'XY'
         
-        return self.xaxis.coordSpec + self.yaxis.coordSpec
-    
-    def transformX (self, xvar):
-        return self.width * self.xaxis.transform (xvar)
-    
-    def transformY (self, yvar):
-        # the 1-f(y) deals with the opposite senses of math and
-        # cairo coordinate systems.
-        return self.height * (1. - self.yaxis.transform (yvar))
+        spec = self.pointStamp.stampSpec
+        
+        if spec[0:2] != 'XY':
+            raise Exception ('trying to paint rect data with invalid stamp!')
+        
+        return spec
     
     def doFirstPaint (self, ctxt, style):
+        FieldPainter.doFirstPaint (self, ctxt, style)
         self.lastx = None
         self.lasty = None
 
     def doChunkPaint (self, ctxt, style, chunk):
-        chunk = list (chunk)
+        chunk = list (self.xform.mapChunk (self.rawSpec, chunk))
         
-        # FIXME this will require lots of ... fixing
         style.apply (ctxt, self.lineStyle)
         
         if self.lastx == None:
             try:
-                data = chunk[0]
-                self.lastx = self.transformX (data[0])
-                self.lasty = self.transformY (data[1])
+                self.lastx, self.lasty = chunk[0][0:2]
             except StopIteration:
                 return
 
@@ -783,45 +887,26 @@ class RectDataPainter (StreamSink):
 
         if self.lines:
             for data in chunk:
-                ctxt.line_to (self.transformX (data[0]), self.transformY (data[1]))
+                ctxt.line_to (data[0], data[1])
 
             self.lastx, self.lasty = ctxt.get_current_point ()
             ctxt.stroke ()
         elif self.pointStamp:
-            data = chunk[-1]
-            self.lastx = self.transformX (data[0])
-            self.lasty = self.transformY (data[1])
+            self.lastx, self.lasty = chunk[-1][0:2]
 
         if self.pointStamp:
             for data in chunk:
-                self.pointStamp.paint (ctxt, style, self.transformX,
-                                       self.transformY, data)
+                self.pointStamp.paint (ctxt, style, data)
 
-    def setBounds (self, xmin, xmax, ymin, ymax):
-        self.xaxis.min = xmin
-        self.xaxis.max = xmax
-        self.yaxis.min = ymin
-        self.yaxis.max = ymax
-        
-class BandPainter (StreamSink):
+class BandPainter (FieldPainter):
     bandStyle = 'genericBand'
+    rawSpec = 'XYY'
     
-    def __init__ (self, bag):
-        StreamSink.__init__ (self, bag)
-        
-        self.xaxis = LinearAxis ()
-        self.yaxis = LinearAxis ()
+    def __init__ (self, bagOrFP):
+        FieldPainter.__init__ (self, bagOrFP)
 
-    @property
-    def sinkSpec (self):
-        return self.xaxis.coordSpec + self.yaxis.coordSpec * 2
-    
-    def transform (self, pts):
-        return (self.width * self.xaxis.transform (pts[0]),
-                self.height * (1. - self.yaxis.transform (pts[1])),
-                self.height * (1. - self.yaxis.transform (pts[2])))
-    
     def doFirstPaint (self, ctxt, style):
+        FieldPainter.doFirstPaint (self, ctxt, style)
         self.lastx = None
         self.lastylow = None
         self.lastyhigh = None
@@ -830,52 +915,47 @@ class BandPainter (StreamSink):
         # FIXME this will require lots of ... fixing
         style.apply (ctxt, self.bandStyle)
 
-        points = [self.transform (pts) for pts in chunk]
-        l = len (points)
+        chunk = list (self.xform.mapChunk (self.rawSpec, chunk))
+        l = len (chunk)
         
-        ctxt.move_to (points[0][0], points[0][2])
+        ctxt.move_to (chunk[0][0], chunk[0][2])
 
         for i in xrange (1, l):
-            ctxt.line_to (points[i][0], points[i][2])
+            ctxt.line_to (chunk[i][0], chunk[i][2])
 
         for i in xrange (1, l + 1):
-            ctxt.line_to (points[l - i][0], points[l - i][1])
+            ctxt.line_to (chunk[l - i][0], chunk[l - i][1])
 
         ctxt.close_path ()
         ctxt.fill ()
 
-class DiscreteHistogramPainter (StreamSink):
+class DiscreteHistogramPainter (FieldPainter):
     lineStyle = 'genericLine'
     
-    def __init__ (self, bag):
-        StreamSink.__init__ (self, bag)
-        self.xaxis = None
-        self.yaxis = LinearAxis ()
+    def __init__ (self, bagOrFP):
+        FieldPainter.__init__ (self, bagOrFP)
 
-    @property
-    def sinkSpec (self):
-        return self.xaxis.coordSpec + self.yaxis.coordSpec
-    
-    def transform (self, x, y):
-        # the 1-f(y) deals with the opposite senses of math and
-        # cairo coordinate systems.
-        return self.width * self.xaxis.transform (x), \
-               self.height * (1. - self.yaxis.transform (y))
+        if isinstance (bagOrFP, bag.Bag):
+            self.field.xaxis = None # User needs to specify a DiscreteAxis
 
     def nextX (self, preval):
         # uuuugly
-        idx = self.xaxis.valueToIndex (preval)
+        idx = self.field.xaxis.valueToIndex (preval)
         idx += 1
 
-        if idx >= self.xaxis.numAbscissae ():
+        if idx >= self.field.xaxis.numAbscissae ():
             return -1
-        
-        val = self.xaxis.indexToValue (idx)
-        return self.width * self.xaxis.transform (val)
+
+        # We should really use a Transformer returned by
+        # the field somehow.
+        val = self.field.xaxis.indexToValue (idx)
+        return self.width * self.field.xaxis.transform (val)
     
     def doFirstPaint (self, ctxt, style):
-        if not self.xaxis:
+        if not self.field.xaxis:
             raise Exception ('Need to specify an X axis for this class!')
+
+        FieldPainter.doFirstPaint (self, ctxt, style)
         
         self.lastx = 0
         self.lasty = self.height
@@ -908,9 +988,7 @@ class DiscreteHistogramPainter (StreamSink):
         lasty = self.lasty
         lastctrx = 0
         
-        for pair in chunk:
-            ctrx, y = self.transform (*pair)
-
+        for ctrx, y in self.xform.mapChunk (self.rawSpec, chunk):
             #if lastctrx < 0:
             #    rt_edge_x = self.lastx
             #else:
@@ -927,7 +1005,7 @@ class DiscreteHistogramPainter (StreamSink):
         # chunk, cause we don't know if we're the last chunk
         # or not.
         
-        next_ctr_x = self.nextX (pair[0])
+        next_ctr_x = self.nextX (ctrx)
 
         if next_ctr_x < 0:
             # We just painted the last item in the list;
@@ -949,12 +1027,6 @@ class DiscreteHistogramPainter (StreamSink):
         self.lastx = lastx
         self.lasty = lasty
     
-    def setBounds (self, xmin, xmax, ymin, ymax):
-        self.xaxis.min = xmin
-        self.xaxis.max = xmax
-        self.yaxis.min = ymin
-        self.yaxis.max = ymax
-
 class LinePainter (Painter):
     lineStyle = 'genericLine'
     x0 = 0
@@ -962,10 +1034,10 @@ class LinePainter (Painter):
     x1 = 10
     y1 = 10
     
-    def __init__ (self, *pts):
+    def __init__ (self, field, *pts):
         Painter.__init__ (self)
-        self.xaxis = LinearAxis ()
-        self.yaxis = LinearAxis ()
+        
+        self.field = field or RectField ()
 
         if len (pts) == 4:
             self.x0, self.y0, self.x1, self.y1 = pts
@@ -974,16 +1046,12 @@ class LinePainter (Painter):
         else:
             raise Exception ('Invalid argument to LinePainter(): should have 0 or 4 elements')
     
-    def transform (self, x, y):
-        return (self.width * self.xaxis.transform (x),
-                self.height * (1. - self.yaxis.transform (y)))
-        
     def doPaint (self, ctxt, style, firstPaint):
         if not firstPaint: return
 
         style.apply (ctxt, self.lineStyle)
 
-        ctxt.move_to (*self.transform (self.x0, self.y0))
-        ctxt.line_to (*self.transform (self.x1, self.y1))
+        xform = self.field.makeTransformer (self.width, self.height)
+        ctxt.move_to (xform.mapX (self.x0), xform.mapY (self.y0))
+        ctxt.line_to (xform.mapX (self.x1), xform.mapY (self.y1))
         ctxt.stroke ()
-

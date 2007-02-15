@@ -1,3 +1,35 @@
+2007-02-15  Peter Williams  <peter@newton.cx>
+
+	* omega/base.py (LinearAxis.__init__): Have the min and max be defaulted
+	arguments.
+	(RectField): New class that puts all the xaxis/yaxis and transformation
+	stuff in one place. Also does the X/Y -> position mapping in specs, data,
+	and chunks.
+	(RectPlot.__init__): Have a defaultField instead of defaultXAxis and
+	defaultYAxis.
+	(RectPlot.magicAxisPainters): Adapt to RectField and clarify a bit.
+	(FieldPainter.__init__): New class, stores a RectField and does a few
+	useful things like emulating another FieldPainter on init.
+	(RectDataPainter.__init__): Inherit from FieldPainter now.
+	(RectDataPainter.doChunkPaint): Use the RectField to transform the data
+	all at once. Makes the code a lot clearer now.
+	(BandPainter.__init__): As above. Goodbye redundancy!
+	(DiscreteHistogramPainter.__init__): As above.
+	(LinePainter.__init__): This is not a StreamSink, so it's not a FieldPainter,
+	although that should probably be fixed via multiple inheritance, but at least
+	use a field object.
+
+	* omega/stamps.py (Stamp.paint): This class is much simpler since now
+	all of the value transformation is taken care of by someone else's
+	RectField.
+	(CrossXErrorBars.doPaint): New class, needed for Bower work. I will
+	get around to doing this properly.
+
+	* demo/lissajou.py: Clean up to new idioms. Satisfyingly more compact.
+	* demo/dhisto.py: Same.
+	* demo/derr.py: Same.
+	* demo/discrete.py: Same.
+
 2007-02-14  Peter Williams  <peter@newton.cx>
 
 	* omega/util.py (makeQuickPipeline): Beginnings of a function to "just plot

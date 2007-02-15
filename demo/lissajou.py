@@ -17,22 +17,14 @@ src.tmin = 0
 src.tmax = 2 * pi
 src.npts = 1000
 
-sources = {'sink1': src, 'sink2': src}
-
-imf = omega.bag.IndexMapFilter ('FF', (1, 0))
-imf.expose (bag, 'sink2')
+sources = {'data': src}
 
 rdp1 = omega.RectDataPainter (bag)
-rdp1.xaxis.min = -2
-rdp1.xaxis.max = 2
-rdp1.yaxis.min = -2
-rdp1.yaxis.max = 2
-rdp1.expose ('sink1')
+rdp1.setBounds (-2, 2, -2, 2)
+rdp1.expose ('data')
 
-rdp2 = omega.RectDataPainter (bag)
-rdp2.xaxis = rdp1.xaxis
-rdp2.yaxis = rdp1.yaxis
-rdp2.linkTo (imf)
+rdp2 = omega.RectDataPainter (rdp1)
+rdp2.linkExpose (omega.bag.IndexMapFilter ('FF', (1, 0)), 'data')
 
 def tempstyle (ctxt, style):
     style.apply_genericLine (ctxt)
@@ -45,13 +37,10 @@ rdp2.lineStyle = tempstyle
 # limitations in the current LinearAxisPainter code.
 
 rp = omega.RectPlot ()
-rp.bpainter = omega.LinearAxisPainter (rdp1.xaxis)
-#rp1.tpainter = omega.LinearAxisPainter (rdp1.xaxis)
-rp.lpainter = omega.LinearAxisPainter (rdp1.yaxis)
-rp.rpainter = rp.lpainter
 rp.fieldAspect = 1.0
 rp.addFieldPainter (rdp1)
 rp.addFieldPainter (rdp2)
+rp.magicAxisPainters ('hv')
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)
