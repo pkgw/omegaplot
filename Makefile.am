@@ -1,1 +1,1 @@
-SUBDIRS = omega demo
+SUBDIRS = latexsnippet omega demo

@@ -1,5 +1,19 @@
 2007-02-15  Peter Williams  <peter@newton.cx>
 
+	* latexsnippet/latexsnippet.py: New useful module, generates PNG files
+	from LaTeX snippets. Lots and lots of docstrings. Based off of 
+	htmlatex from http://www.meangrape.com/htmlatex/, although honestly it
+	is pretty vastly modified from that.
+
+	* demo/stampDemo.py (StampPainter.doPaint): Oops forgot to fix this to 
+	new old stamp API.
+
+	* latexsnippet/Makefile.am: Support file.
+	* Makefile.am: Support changes.
+	* configure.ac: Support changes.
+
+2007-02-15  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (LinearAxis.__init__): Have the min and max be defaulted
 	arguments.
 	(RectField): New class that puts all the xaxis/yaxis and transformation

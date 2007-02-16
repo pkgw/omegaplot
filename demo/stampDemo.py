@@ -18,8 +18,7 @@ class StampPainter (omega.Painter):
         if not firstPaint: return
 
         data = (self.width / 2, self.height / 2)
-        noop = lambda x: x
-        self.stamp.paint (ctxt, style, noop, noop, data)
+        self.stamp.paint (ctxt, style, data)
 
 g = omega.Grid (3, 3)
 g[0,0] = StampPainter (Dot ())
