@@ -68,11 +68,16 @@ class RenderConfig (object):
       the snippets. Sets the pagestyle to empty, a \usepackage{preview},
       and a \begin{document}.
     """
+
+    # FIXME: the -D 100 parameter sets the DPI used by dvipng, sort of.
+    # (There are a lot of words in the manpage about that argument.)
+    # We shouldn't just make up a value or it will come back to bite us
+    # in the ass.
     
     texprogram = 'latex'
     texflags = '-interaction scrollmode'
     pngprogram = 'dvipng'
-    pngflags = '-T tight -D 120 -z 9 -bg Transparent'
+    pngflags = '-T tight -D 100 -z 9 -bg Transparent'
     shutup = '>/dev/null'
 
     _debug = False

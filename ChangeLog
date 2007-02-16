@@ -1,5 +1,24 @@
 2007-02-15  Peter Williams  <peter@newton.cx>
 
+	* omega/images.py: A couple of painters for prerendered images; this
+	seems to be the best-possible way to import LaTeX output, unfortunately.
+
+	* omega/Makefile.am (mypy_PYTHON): Add images.py.
+
+	* omega/__init__.py: Import the new images module and compactify the
+	imports a bit.
+
+	* latexsnippet/latexsnippet.py (RendererConfig.pngflags): Tweak to make
+	things look better on my machine. Woohoo!
+
+	* demo/stamps.py: Renamed from stampDemo ; down with redundancy.
+	
+	* demo/image.py: Quick test of LaTeX image painters.
+
+	* demo/Makefile.am: Update this.
+
+2007-02-15  Peter Williams  <peter@newton.cx>
+
 	* latexsnippet/latexsnippet.py: New useful module, generates PNG files
 	from LaTeX snippets. Lots and lots of docstrings. Based off of 
 	htmlatex from http://www.meangrape.com/htmlatex/, although honestly it

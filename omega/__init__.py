@@ -2,14 +2,8 @@
 
 from base import *
 
-import bag
-import gtkThread
-import gtkUtil
-import layout
-import sources
-import stamps
-import styles
-import util
+import bag, gtkThread, gtkUtil, images, layout, sources, \
+       stamps, styles, util
 
 from bag import Bag
 from layout import Overlay, Grid
