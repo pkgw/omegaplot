@@ -47,6 +47,9 @@ class LatexPainter (ImagePainter):
         f = self.cache.getPngFile (self.handle)
         return cairo.ImageSurface.create_from_png (f)
 
+    def __del__ (self):
+        self.cache.expire (self.handle)
+
 def _atexit ():
     globalCache.close ()
 

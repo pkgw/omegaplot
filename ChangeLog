@@ -1,5 +1,17 @@
 2007-02-18  Peter Williams  <peter@newton.cx>
 
+	* omega/base.py: Move all of the rectangular-plot related code
+	from here ...
+
+	* omega/rect.py: ... into here.
+
+	* omega/__init__.py: from rect import *, import rect.
+
+	* omega/images.py (LatexPainter.__del__): Expire our SnippetCache
+	handle upon deletion.
+
+2007-02-18  Peter Williams  <peter@newton.cx>
+
 	* latexsnippet/latexsnippet.py (RenderConfig): Add a 'noinput' option
 	that is given to LaTeX to make it not hang trying to read from stdin.
 	(renderSnippets): Use it here. LaTeX was hanging on a system without

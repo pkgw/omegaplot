@@ -1,9 +1,10 @@
 # OmegaPlot main module
 
 from base import *
+from rect import *
 
-import bag, gtkThread, gtkUtil, images, layout, sources, \
-       stamps, styles, util
+import bag, gtkThread, gtkUtil, images, layout, rect, \
+       sources, stamps, styles, util
 
 from bag import Bag
 from layout import Overlay, Grid
