@@ -60,7 +60,10 @@ class RenderConfig (object):
 
     shutup -- Flags appended to a command-line to suppress program output.
       Defaults to '>/dev/null'.
-  
+
+    noinput -- Flags appended to a command-line to prevent a program from
+      accepting input. Defaults to '</dev/null'.
+    
     preamble -- The very first text written to the LaTeX file that is
       processed. Defaults to some sensible \usepackage commands.
 
@@ -79,14 +82,28 @@ class RenderConfig (object):
     pngprogram = 'dvipng'
     pngflags = '-T tight -D 100 -z 9 -bg Transparent'
     shutup = '>/dev/null'
-
+    noinput = '</dev/null'
+    
     _debug = False
 
     # From original source:
-    # Include your favourite LaTeX packages and commands here
+    # "Include your favourite LaTeX packages and commands here
     # ------ NOTE: please leave \usepackage{preview} as the last package
     # ------       it plays a role with dvipng in generating to correct
-    # ------       offset for inline equations
+    # ------       offset for inline equations"
+    #
+    # I have looked into this a little. The preview package is part of
+    # the GNU AUCTeX extensions to LaTeX which are mainly aimed at
+    # integrating LaTeX and Emacs. It's used here because one thing that
+    # the preview package does is add some more information into DVI files
+    # that helps with the computation of bounding boxes. Specifically,
+    # it seems that the bounding box of an equation, say, normally has to
+    # be computed from the bounding boxes of the PostScript characters that
+    # go into it. However, this bounding box may be far too small if some
+    # of the characters (eg, integral sign) aren't known, and software like
+    # DVIPNG will then give bad results. The preview package adds fake 0-size
+    # images in the corners of such LaTeX groups, so that the correct bounding
+    # boxes will be calculated by DVI processing programs.
     
     preamble = r'''
 \documentclass[12pt]{article} 
@@ -169,7 +186,8 @@ def renderSnippets (snips, texbase, pngbase, header=None, cfg=defaultConfig):
 
     # Now run LaTeX
 
-    os.system ('%s %s %s %s' % (cfg.texprogram, cfg.texflags, texfile, shutflag))
+    os.system ('%s %s %s %s %s' % (cfg.texprogram, cfg.texflags, texfile,
+                                   shutflag, cfg.noinput))
 
     if not cfg._debug:
         os.remove (texfile)
