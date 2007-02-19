@@ -1,3 +1,22 @@
+2007-02-19  Peter Williams  <peter@newton.cx>
+
+	* omega/rect.py (RectPlot.__init__): Add support for 'outer
+	painters', which are aligned outside of the plot field and axes
+	quasi-radially. This is some complicated-ass code that will 
+	basically only be used for drawing X and Y axis labels. But it
+	is pretty general. Also add some code to make it easy to add
+	X and Y labels.
+
+	* demo/opaint.py: Add a new test/demo of RectPlot outer painter 
+	positioning and allocation.
+
+	* demo/sinc.py: Add some axis labels. Looks ugly since axis
+	painters still paint text with Cairo, not LaTeX.
+
+	* demo/Makefile.am (EXTRA_DIST): Add opaint.py.
+
+	* omega/Makefile.am (mypydir): Oops, add rect.py here.
+
 2007-02-18  Peter Williams  <peter@newton.cx>
 
 	* omega/base.py: Move all of the rectangular-plot related code

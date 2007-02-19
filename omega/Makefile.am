@@ -7,6 +7,7 @@ mypy_PYTHON = \
    gtkUtil.py \
    images.py \
    layout.py \
+   rect.py \
    sources.py \
    stamps.py \
    styles.py \

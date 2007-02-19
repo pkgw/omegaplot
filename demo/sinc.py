@@ -39,9 +39,11 @@ rp1 = omega.RectPlot ()
 rp1.addFieldPainter (rdp1)
 rp1.magicAxisPainters ('vb')
 rp1.lpainter.numFormat = '%1.1f'
+rp1.setLabels ('X', 'Y')
 
 rp2 = omega.RectPlot (rp1)
 rp2.addFieldPainter (rdp2)
+rp2.setLabels ('X', 'Y')
 
 g = omega.Grid (1, 2)
 g[0] = rp1

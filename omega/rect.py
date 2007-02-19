@@ -3,6 +3,7 @@
 import math
 import bag
 from base import *
+from images import LatexPainter
 
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
@@ -526,6 +527,14 @@ class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
     
+    fieldAspect = None # Aspect ratio of the plot field, None for free
+    outerPadding = 3 # in smallScale
+    
+    SIDE_TOP = 0
+    SIDE_RIGHT = 1
+    SIDE_BOTTOM = 2
+    SIDE_LEFT = 3
+
     def __init__ (self, emulate=None):
         Painter.__init__ (self)
         
@@ -546,7 +555,9 @@ class RectPlot (Painter):
             self.tpainter = emulate.tpainter
 
         self.fpainters = [] # field painters
-
+        self.opainters = [] # outer painters
+        self.mainLabels = [None] * 4
+        
     def addFieldPainter (self, fp):
         fp.setParent (self)
         self.fpainters.append (fp)
@@ -555,6 +566,31 @@ class RectPlot (Painter):
                isinstance (fp.field, RectField):
             self.defaultField = fp.field
 
+    def addOuterPainter (self, op, side, position):
+        op.setParent (self)
+        self.opainters.append ((op, side, position))
+
+    def _outerPainterIndex (self, op):
+        for i in xrange (0, len(self.opainters)):
+            if self.opainters[i][0] == self: return 1
+
+        raise ValueError ('%s not in list of outer painters' % (op))
+
+    def moveOuterPainter (self, op, side, position):
+        idx = self._outerPainterIndex (self, op)
+        self.opainters[i] = (op, side, position)
+    
+    def removeChild (self, child):
+        try:
+            self.fpainters.remove (child)
+            return
+        except:
+            pass
+
+        idx = self._outerPainterIndex (child)
+        del self.opainters[idx]
+        return
+        
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
         values. More precisely, the if certain sides are specified in
@@ -625,23 +661,37 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
-    def removeChild (self, child):
-        self.fpainters.remove (child)
-        
     def addStream (self, stream, name, bag, sources):
         rdp = RectDataPainter (bag)
         bag.exposeSink (rdp, name)
         sources[name] = stream
 
         self.addFieldPainter (rdp)
-    
-    fieldAspect = None # Aspect ratio of the plot field, None for free
-    
-    SIDE_TOP = 0
-    SIDE_RIGHT = 1
-    SIDE_BOTTOM = 2
-    SIDE_LEFT = 3
 
+    # X and Y axis label helpers
+
+    def setSideLabel (self, side, val):
+        if self.mainLabels[side]:
+            self.removeChild (self.mainLabels[side])
+
+        if not isinstance (val, Painter):
+            val = LatexPainter (str (val))
+
+        self.addOuterPainter (val, side, 0.5)
+        self.mainLabels[side] = val
+
+    def setXLabel (self, val):
+        self.setSideLabel (self.SIDE_BOTTOM, val)
+        
+    def setYLabel (self, val):
+        self.setSideLabel (self.SIDE_LEFT, val)
+
+    def setLabels (self, xval, yval):
+        self.setXLabel (xval)
+        self.setYLabel (yval)
+    
+    # Sizing and configuration
+    
     def _axisApplyHelper (self, w, h, fn, *args):
         helper = AxisPaintHelper (w, h)
 
@@ -659,31 +709,92 @@ class RectPlot (Painter):
 
         return (rt, rr, rb, rl)
 
-    def getMinimumSize (self, ctxt, style):
-        s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
-
-        self.exteriors = [0] * 4
-
-        # How much space we need along top: either the orthogonal
-        # distance reported by the top sidePainter, or the bigger
-        # of half of the along distances reported by the left and
-        # right sidePainters; whichever is bigger.
-
-        self.exteriors[0] = max (s[0][0], max (s[1][1], s[3][1]) / 2)
-
-        # And so on.
+    def _calcOuterExtents (self, ctxt, style):
+        trueoe = [0] * 4
+        allocoe = [0] * 4
+        any = [False] * 4
         
-        self.exteriors[1] = max (s[1][0], max (s[0][1], s[2][1]) / 2)
-        self.exteriors[2] = max (s[2][0], max (s[1][1], s[3][1]) / 2)
-        self.exteriors[3] = max (s[3][0], max (s[0][1], s[2][1]) / 2)
+        T, R, B, L = 0, 1, 2, 3
+        
+        for (op, side, pos) in self.opainters:
+            any[side] = True
+            w, h = op.getMinimumSize (ctxt, style)
 
-        return self.exteriors[1] + self.exteriors[3], self.exteriors[0] + self.exteriors[2]
+            if side == T:
+                trueoe[T] = max (trueoe[T], h)
+                allocoe[L] = max (allocoe[L], w * (1 - pos))
+                allocoe[R] = max (allocoe[R], w * pos)
+            elif side == B:
+                trueoe[B] = max (trueoe[B], h)
+                allocoe[L] = max (allocoe[L], w * (1 - pos))
+                allocoe[R] = max (allocoe[R], w * pos)
+            elif side == L:
+                trueoe[L] = max (trueoe[L], w)
+                allocoe[B] = max (allocoe[B], h * (1 - pos))
+                allocoe[T] = max (allocoe[T], h * pos)
+            elif side == R:
+                trueoe[R] = max (trueoe[R], w)
+                allocoe[B] = max (allocoe[B], h * (1 - pos))
+                allocoe[T] = max (allocoe[T], h * pos)
+
+        opad = self.outerPadding * style.smallScale
+
+        for i in range (0, 4):
+            if any[i]: trueoe[i] += opad
+            allocoe[i] = max (allocoe[i], trueoe[i])
+
+        self.oe_true = trueoe
+        self.oe_alloc = allocoe
+    
+    def _calcExteriors (self, exteriors, s):
+        # s has four elements, one for each side of the plot,
+        # indexed by the RectPlot.SIDE_X constants. Each element is a
+        # tuple with two values. The first value is the amount of space
+        # away from that side that is necessary, and the second value is
+        # the amount of space along that side that is necessary. So if we
+        # need 10 units above the top, sideinfo[0][0] = 10. If we need 30
+        # units of width along the top, sideinfo[0][1] = 30. If we need
+        # 50 units of height along the left side, sideinfo[3][1] = 50.
+        #
+        # So, the amount of space we need along an axis is either the
+        # orthogonal distance away from the axis, or the bigger of
+        # half of the distances along the adjacent sides, whichever is
+        # biggest.
+        #
+        # We increment the input so that this function can be called
+        # repeatedly.
+
+        vprot = max (s[1][1], s[3][1]) / 2
+        hprot = max (s[0][1], s[2][1]) / 2
+        prots = [vprot, hprot, vprot, hprot]
+        
+        return [exteriors[i] + max (s[i][0], prots[i]) for i in range (0, 4)]
+
+    def getMinimumSize (self, ctxt, style):
+        # First, we figure out how much space our axes need. Then, we
+        # add to that the amount of space that our outer painters need.
+        
+        s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
+        self.ext_axis = self._calcExteriors ([0] * 4, s)
+        
+        self._calcOuterExtents (ctxt, style)
+
+        combined = [self.ext_axis[i] + self.oe_alloc[i] \
+                    for i in range (0, 4)]
+
+        self.ext_total = [self.ext_axis[i] + self.oe_true[i] \
+                          for i in range (0, 4)]
+
+        return combined[1] + combined[3], \
+               combined[0] + combined[2]
     
     def configurePainting (self, ctxt, style, w, h):
         Painter.configurePainting (self, ctxt, style, w, h)
 
-        fieldw = w - self.exteriors[1] - self.exteriors[3]
-        fieldh = h - self.exteriors[0] - self.exteriors[2]
+        # First, size the field.
+        
+        fieldw = w - self.ext_total[1] - self.ext_total[3]
+        fieldh = h - self.ext_total[0] - self.ext_total[2]
 
         if self.fieldAspect:
             cur = float (fieldw) / fieldh
@@ -692,40 +803,70 @@ class RectPlot (Painter):
                 # Wider than desired ; bump up left/right margins
                 want_fieldw = fieldh * self.fieldAspect
                 delta = (fieldw - want_fieldw) / 2
-                self.exteriors[1] += delta
-                self.exteriors[3] += delta
+                self.ext_total[1] += delta
+                self.ext_total[3] += delta
                 fieldw = want_fieldw
             elif cur < self.fieldAspect:
                 # Taller than desired ; bump up top/bottom margins
                 want_fieldh = fieldw / self.fieldAspect
                 delta = (fieldh - want_fieldh) / 2
-                self.exteriors[0] += delta
-                self.exteriors[2] += delta
+                self.ext_total[0] += delta
+                self.ext_total[2] += delta
                 fieldh = want_fieldh
         
         self.fieldw = fieldw
         self.fieldh = fieldh
         
         ctxt.save ()
-        ctxt.translate (self.exteriors[3], self.exteriors[0])
+        ctxt.translate (self.ext_total[3], self.ext_total[0])
 
         for fp in self.fpainters:
             fp.configurePainting (ctxt, style, self.fieldw, self.fieldh)
 
         ctxt.restore ()
-    
+        
+        # Now do the outer painters
+
+        opad = self.outerPadding * style.smallScale
+        ext_outer = [self.ext_total[i] - self.ext_axis[i] \
+                     for i in range (0, 4)]
+        
+        for (op, side, pos) in self.opainters:
+            # well this is gross
+            ow, oh = op.getMinimumSize (ctxt, style)
+
+            if side == self.SIDE_TOP:
+                x = (fieldw - ow) * pos + self.ext_total[3]
+                y = ext_outer[0] - oh - opad
+            elif side == self.SIDE_BOTTOM:
+                x = (fieldw - ow) * pos + self.ext_total[3]
+                y = h - ext_outer[2] + opad
+            elif side == self.SIDE_LEFT:
+                x = ext_outer[3] - ow - opad
+                y = (fieldh - oh) * (1 - pos) + self.ext_total[0]
+            elif side == self.SIDE_RIGHT:
+                x = w - ext_outer[1] + opad
+                y = (fieldh - oh) * (1 - pos) + self.ext_total[0]
+
+            #print ' -> %s, %d, %f to (%f, %f)' % (op, side, pos, x, y)
+            
+            ctxt.save ()
+            ctxt.translate (x, y)
+            op.configurePainting (ctxt, style, ow, oh)
+            ctxt.restore ()
+
     def doPaint (self, ctxt, style, firstPaint):
         """Paint the rectangular plot: axes and data items."""
 
         if firstPaint:
             ctxt.save ()
-            ctxt.translate (self.exteriors[3], self.exteriors[0])
+            ctxt.translate (self.ext_total[3], self.ext_total[0])
             self._axisApplyHelper (self.fieldw, self.fieldh, \
                                    'paint', ctxt, style)
             ctxt.restore ()
 
         ctxt.save ()
-        ctxt.rectangle (self.exteriors[3], self.exteriors[0],
+        ctxt.rectangle (self.ext_total[3], self.ext_total[0],
                         self.fieldw, self.fieldh)
         ctxt.clip ()
         
@@ -733,6 +874,9 @@ class RectPlot (Painter):
             fp.paint (ctxt, style, firstPaint)
 
         ctxt.restore ()
+
+        for (op, side, pos) in self.opainters:
+            op.paint (ctxt, style, firstPaint)
 
 class FieldPainter (StreamSink):
     rawSpec = 'XY'
