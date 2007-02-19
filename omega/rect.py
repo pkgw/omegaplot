@@ -720,6 +720,24 @@ class RectPlot (Painter):
             any[side] = True
             w, h = op.getMinimumSize (ctxt, style)
 
+            # Hack, hack hack hack... hack, hack hack hack haaack!
+            # Autorotate axis labels if they appear to be text
+            
+            if op in self.mainLabels and side % 2 == 1 and \
+                   isinstance (op, LatexPainter):
+                
+                aspect = float (w) / h
+
+                if aspect > 3.:
+                    if side == R:
+                        op.setRotation (LatexPainter.ROT_CW90)
+                    elif side == L:
+                        op.setRotation (LatexPainter.ROT_CCW90)
+                        
+                    w, h = h, w
+
+            # End hack.
+            
             if side == T:
                 trueoe[T] = max (trueoe[T], h)
                 allocoe[L] = max (allocoe[L], w * (1 - pos))

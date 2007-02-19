@@ -1,5 +1,23 @@
 2007-02-19  Peter Williams  <peter@newton.cx>
 
+	* omega/images.py (ImagePainter.setRotation): New function. Allow
+	the image to be rotated in 90-degree increments.
+	(ImagePainter.getMinimumSize): Return appropriate width and height
+	depending on rotation status.
+	(ImagePainter.doPaint): Paint according to appropriate rotation status.
+
+	* omega/rect.py (RectPlot._calcOuterExtents): If we are considering
+	one of our mainLabel items, and it is on a side axis, and it is long,
+	rotate it, because we are horizontal-writing-system-centric here.
+
+	* demo/image.py: Paint some rotated images to check that the
+	image rotation code works.
+
+	* demo/sinc.py: Make the axis label strings longer to exercise
+	the automatic axis label rotation code.
+
+2007-02-19  Peter Williams  <peter@newton.cx>
+
 	* omega/rect.py (RectPlot.__init__): Add support for 'outer
 	painters', which are aligned outside of the plot field and axes
 	quasi-radially. This is some complicated-ass code that will 
