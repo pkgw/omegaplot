@@ -10,12 +10,11 @@ class BitmapStyle (object):
     
     def __init__ (self, colorscheme):
         self.colors = colorscheme
-        
+
     def initContext (self, ctxt, width, height):
-        ctxt.rectangle (0, 0, width, height)
         ctxt.set_source_rgb (*self.colors.background)
-        ctxt.fill ()
-    
+        ctxt.paint ()
+
     def apply (self, ctxt, style):
         if not style: return
 
@@ -56,6 +55,11 @@ class BitmapStyle (object):
                               self.colors.foreground[1],
                               self.colors.foreground[2],
                               0.2)
+
+    def getColor (self, color):
+        if isinstance (color, tuple): return color
+        
+        return getattr (self.colors, color)
 
 class BlackOnWhiteColors (object):
     background = (1, 1, 1)

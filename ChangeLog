@@ -1,3 +1,37 @@
+2007-02-24  Peter Williams  <peter@newton.cx>
+
+	* omega/images.py (ImagePainter.getSurf): Make this abstract and let
+	it vary on the style.
+	(_colorizeLatex): New function to do magic mojo to take black-on-white
+	LaTeX snippets and convert them to colored ImageSurfaces.
+	(LatexPainter.getSurf): Rework to colorize correctly.
+	(LatexStamper.__init__): New class to allow stamping of a LaTeX snippet
+	without the whole rigamorale of creating a painter, setting its geometry,
+	etc. Used by AxisPainters for tick labels now.
+
+	* omega/styles.py (BitmapStyle.initContext): Clear the context more
+	efficiently.
+	(BitmapStyle.getColor): Member for getting a color somewhat generically.
+	Not ideal but needed for colored text painting.
+
+	* omega/rect.py (LinearAxisPainter.getTickLocations): Rework how
+	ticks and labels are produced. Inefficient, but calculates the axis
+	bounds in a better way, and can produce arbitrary LaTeX labels.
+	(LinearAxisPainter.paint): This function is a lot shorter now though.
+	(RectPlot._calcExteriors): Don't store exteriors tuples on self since
+	that's not really necessary.
+
+	* demo/latexColor.py: Quick demo of rendering LaTeX output in various
+	colors.
+
+	* demo/lissajou.py (rp): Show off colored LaTeX text labels. Woo!
+
+	* demo/Makefile.am (EXTRA_DIST): Add latexColor.py
+
+2007-02-19  Peter Williams  <peter@newton.cx>
+
+	* configure.ac: Remove redundant 'checking' messages.
+
 2007-02-19  Peter Williams  <peter@newton.cx>
 
 	* omega/images.py (ImagePainter.setRotation): New function. Allow

@@ -3,7 +3,7 @@
 import math
 import bag
 from base import *
-from images import LatexPainter
+from images import LatexPainter, LatexStamper
 
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
@@ -268,6 +268,7 @@ class LinearAxisPainter (BlankAxisPainter):
     minorTickScale = 2 # in smallScale
     minorTicks = 5
     tickStyle = 'bgLinework' # style ref.
+    textColor = 'foreground'
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
     labelMinorTicks = False # draw value labels at the minor tick points?
@@ -276,19 +277,7 @@ class LinearAxisPainter (BlankAxisPainter):
         if callable (self.numFormat): return self.numFormat (val)
         return self.numFormat % (val)
 
-    def spaceExterior (self, helper, ctxt, style):
-        test = self.formatLabel (self.axis.max)
-        (tmp, tmp, textw, texth, tmp, tmp) = \
-              ctxt.text_extents (test)
-        return self.labelSeparation * style.smallScale \
-               + helper.spaceRectOut (textw, texth), \
-               helper.spaceRectAlong (textw, texth)
-    
-    def paint (self, helper, ctxt, style):
-        BlankAxisPainter.paint (self, helper, ctxt, style)
-
-        style.apply (ctxt, self.tickStyle)
-
+    def getTickLocations (self):
         # Tick spacing variables
         
         span = self.axis.max - self.axis.min
@@ -311,55 +300,70 @@ class LinearAxisPainter (BlankAxisPainter):
             zeroclamp = None
         
         while self.axis.inbounds (val):
-            if coeff % self.minorTicks == 0: len = self.majorTickScale * style.largeScale
-            else: len = self.minorTickScale * style.smallScale
-
             if zeroclamp and abs(val) < zeroclamp:
                 val = 0.
             
             v = self.axis.transform (val)
+            yield (val, v, coeff % self.minorTicks == 0)
 
+            val += inc
+            coeff += 1
+
+    def getLabelInfos (self):
+        # Create the LatexPainter objects all at once, so that we can
+        # generate their PNG images all in one go. (That will happen
+        # upon the first invocation of getMinimumSize.)
+        
+        labels = []
+        
+        for (val, xformed, isMajor) in self.getTickLocations ():
+            if not isMajor: continue
+
+            s = self.formatLabel (val)
+
+            labels.append ((LatexStamper (s), xformed, isMajor))
+
+        for (ls, xformed, isMajor) in labels:
+            w, h = ls.getSize ()
+
+            yield (ls, xformed, w, h)
+
+    def spaceExterior (self, helper, ctxt, style):
+        outside, along = 0, 0
+        
+        for (ls, xformed, w, h) in self.getLabelInfos ():
+            outside = max (outside, helper.spaceRectOut (w, h))
+            along = max (along, helper.spaceRectAlong (w, h))
+
+        return outside + self.labelSeparation * style.smallScale, along
+
+    def paint (self, helper, ctxt, style):
+        BlankAxisPainter.paint (self, helper, ctxt, style)
+
+        style.apply (ctxt, self.tickStyle)
+
+        for (val, xformed, isMajor) in self.getTickLocations ():
+            if isMajor: len = self.majorTickScale * style.largeScale
+            else: len = self.minorTickScale * style.smallScale
+            
             # If our tick would land right on the bounds of the plot field,
             # it might overplot on the baseline of the axis adjacent to ours.
             # This is ugly, so don't do it. However, this behavior can be
             # disabled by setting avoidBounds to false, so that if the adjacent
             # axes don't draw their baselines, we'll see the ticks as desired.
             
-            if not self.avoidBounds or (v != 0. and v != 1.):
-                helper.paintTickIn (ctxt, v, len)
+            if not self.avoidBounds or (xformed != 0. and xformed != 1.):
+                helper.paintTickIn (ctxt, xformed, len)
 
-            # Now print the label text with Cairo, for the time being.
-            # We must be crafty to align the text appropriately
-            # relative to the known location of the tick mark.
-            # Cairo text extents are given in user coordinates, which
-            # has implications for how the coords need to be
-            # transformed, I'm pretty sure.
-            #
-            # FIXME: if textw > w * f, don't draw the text, to avoid
-            # overlapping tick labels.
-            #
-            # FIXME: we need to be able to render mathematical symbols
-            # correctly, for axes with labels of 5 \pi, eg. The only
-            # correct way I can think to do this is to invoke latex.
-            # Eeek.
-
-            if coeff % self.minorTicks == 0 or self.labelMinorTicks:
-                helper.moveToAlong (ctxt, v)
-                helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
-
-                s = self.formatLabel (val)
-                (xbear, ybear, textw, texth, xadv, yadv) = \
-                        ctxt.text_extents (s)
-                helper.relMoveRectOut (ctxt, textw, texth)
-                ctxt.rel_move_to (-xbear, -ybear) # brings us from UL to LR
-
-                ctxt.save ()
-                style.apply (ctxt, self.labelStyle)
-                ctxt.show_text (s)
-                ctxt.restore ()
-            
-            val += inc
-            coeff += 1
+        style.apply (ctxt, self.labelStyle)
+        tc = style.getColor (self.textColor)
+        
+        for (ls, xformed, w, h) in self.getLabelInfos ():
+            helper.moveToAlong (ctxt, xformed)
+            helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
+            helper.relMoveRectOut (ctxt, w, h)
+            x, y = ctxt.get_current_point ()
+            ls.stamp (ctxt, x, y, tc)
 
 LinearAxis.defaultPainter = LinearAxisPainter
 
@@ -761,8 +765,7 @@ class RectPlot (Painter):
             if any[i]: trueoe[i] += opad
             allocoe[i] = max (allocoe[i], trueoe[i])
 
-        self.oe_true = trueoe
-        self.oe_alloc = allocoe
+        return trueoe, allocoe
     
     def _calcExteriors (self, exteriors, s):
         # s has four elements, one for each side of the plot,
@@ -795,12 +798,12 @@ class RectPlot (Painter):
         s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
         self.ext_axis = self._calcExteriors ([0] * 4, s)
         
-        self._calcOuterExtents (ctxt, style)
+        oe_true, oe_alloc = self._calcOuterExtents (ctxt, style)
 
-        combined = [self.ext_axis[i] + self.oe_alloc[i] \
+        combined = [self.ext_axis[i] + oe_alloc[i] \
                     for i in range (0, 4)]
 
-        self.ext_total = [self.ext_axis[i] + self.oe_true[i] \
+        self.ext_total = [self.ext_axis[i] + oe_true[i] \
                           for i in range (0, 4)]
 
         return combined[1] + combined[3], \

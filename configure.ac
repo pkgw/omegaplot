@@ -17,24 +17,20 @@ dnl Configuration checks for latexsnippet -- need to make
 dnl sure that we have latex, dvipng, and the preview package
 dnl installed.
 
-AC_MSG_CHECKING([for latex])
 AC_PATH_PROG(LATEX, latex, true, false)
 if $LATEX ; then
-   AC_MSG_RESULT([yes])
+   :
 else
-   AC_MSG_RESULT([no])
    AC_MSG_ERROR([The program 'latex' wasn't found on your system! It
 is necessary for the creation of text labels. Set the environment
 variable LATEX to the full path to the program if it is not in your
 default system \$PATH.])
 fi
 
-AC_MSG_CHECKING([for dvipng])
 AC_PATH_PROG(DVIPNG, dvipng, true, false)
 if $DVIPNG ; then
-   AC_MSG_RESULT([yes])
+   :
 else
-   AC_MSG_RESULT([no])
    AC_MSG_ERROR([The program 'dvipng' wasn't found on your system! It
 is necessary for the creation of text labels. Set the environment
 variable DVIPNG to the full path to the program if it is not in your

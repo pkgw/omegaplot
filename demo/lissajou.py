@@ -41,6 +41,7 @@ rp.fieldAspect = 1.0
 rp.addFieldPainter (rdp1)
 rp.addFieldPainter (rdp2)
 rp.magicAxisPainters ('hv')
+rp.setLabels (r'$\int_0^\infty e^x', r'\sin (\pi x) + \sum_0^10 n')
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)

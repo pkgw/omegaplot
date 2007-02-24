@@ -36,6 +36,9 @@ rp.addOuterPainter (LatexPainter ('left top'), RectPlot.SIDE_LEFT, 1)
 rp.addOuterPainter (LatexPainter ('left mid'), RectPlot.SIDE_LEFT, 0.5)
 rp.addOuterPainter (LatexPainter ('left bot'), RectPlot.SIDE_LEFT, 0.)
 
+rp.opainters[4][0].setRotation (LatexPainter.ROT_CW90)
+rp.opainters[9][0].setRotation (LatexPainter.ROT_CCW90)
+
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)
 odw.show_all ()

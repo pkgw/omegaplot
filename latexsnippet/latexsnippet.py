@@ -56,7 +56,7 @@ class RenderConfig (object):
       'dvipng'. It is NOT checked whether this program is present.
   
     pngflags -- Flags to pass to pngprogram. Defaults to
-      '-T tight -D 120 -z 9 -bg Transparent'.
+      '-T tight -D 100 -z 9 -bg Transparent'.
 
     shutup -- Flags appended to a command-line to suppress program output.
       Defaults to '>/dev/null'.
@@ -76,7 +76,7 @@ class RenderConfig (object):
     # (There are a lot of words in the manpage about that argument.)
     # We shouldn't just make up a value or it will come back to bite us
     # in the ass.
-    
+
     texprogram = 'latex'
     texflags = '-interaction scrollmode'
     pngprogram = 'dvipng'
@@ -147,7 +147,7 @@ def renderSnippets (snips, texbase, pngbase, header=None, cfg=defaultConfig):
       \usepackage{} commands and the like. This header is output
       before the \begin{document} statement.
 
-    config (optional, defaults to defaultConfig) -- A RendererConfig object
+    cfg (optional, defaults to defaultConfig) -- A RendererConfig object
       whose fields are used to control how this function interacts with
       its environment.
     
@@ -198,7 +198,7 @@ def renderSnippets (snips, texbase, pngbase, header=None, cfg=defaultConfig):
 
     dvifile = texbase + '.dvi'
     pngfile = pngbase + '.png'
-    
+
     os.system ('%s %s -o \'%s\' %s %s' % (cfg.pngprogram, cfg.pngflags, pngfile,
                                           dvifile, shutflag))
 
@@ -315,7 +315,8 @@ class SnippetCache (object):
         
         try:
             os.chdir (self.cdir)
-            renderSnippets (self.snips, self.texbase, self.pngbase, self.header, self.cfg)
+            renderSnippets (self.snips, self.texbase, self.pngbase, \
+                            self.header, self.cfg)
         finally:
             os.chdir (pwd)
 
@@ -341,7 +342,8 @@ class SnippetCache (object):
         
         try:
             os.chdir (self.cdir)
-            renderSnippets (snips, self.texbase, pngbase, self.header, self.cfg)
+            renderSnippets (snips, self.texbase, pngbase, \
+                            self.header, self.cfg)
         finally:
             os.chdir (pwd)
 
