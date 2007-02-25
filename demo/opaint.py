@@ -4,8 +4,7 @@ import omega
 import gtk
 
 from math import sin
-from omega.images import LatexPainter
-from omega import RectPlot
+from omega import RectPlot, TextPainter
 
 bag = omega.Bag ()
 style = omega.BlackOnWhiteBitmap ()
@@ -23,21 +22,18 @@ rp.magicAxisPainters ('btlr')
 rp.lpainter.numFormat = '%1.3f'
 rp.tpainter.numFormat = '%1.5f'
 
-rp.addOuterPainter (LatexPainter ('top left'), RectPlot.SIDE_TOP, 0)
-rp.addOuterPainter (LatexPainter ('top mid'), RectPlot.SIDE_TOP, 0.5)
-rp.addOuterPainter (LatexPainter ('top right'), RectPlot.SIDE_TOP, 1)
-rp.addOuterPainter (LatexPainter ('right top'), RectPlot.SIDE_RIGHT, 1)
-rp.addOuterPainter (LatexPainter ('right mid'), RectPlot.SIDE_RIGHT, 0.5)
-rp.addOuterPainter (LatexPainter ('right bot'), RectPlot.SIDE_RIGHT, 0.)
-rp.addOuterPainter (LatexPainter ('bottom left'), RectPlot.SIDE_BOTTOM, 0)
-rp.addOuterPainter (LatexPainter ('bottom mid'), RectPlot.SIDE_BOTTOM, 0.5)
-rp.addOuterPainter (LatexPainter ('bottom right'), RectPlot.SIDE_BOTTOM, 1)
-rp.addOuterPainter (LatexPainter ('left top'), RectPlot.SIDE_LEFT, 1)
-rp.addOuterPainter (LatexPainter ('left mid'), RectPlot.SIDE_LEFT, 0.5)
-rp.addOuterPainter (LatexPainter ('left bot'), RectPlot.SIDE_LEFT, 0.)
-
-rp.opainters[4][0].setRotation (LatexPainter.ROT_CW90)
-rp.opainters[9][0].setRotation (LatexPainter.ROT_CCW90)
+rp.addOuterPainter (TextPainter ('top left'), RectPlot.SIDE_TOP, 0)
+rp.addOuterPainter (TextPainter ('top mid'), RectPlot.SIDE_TOP, 0.5)
+rp.addOuterPainter (TextPainter ('top right'), RectPlot.SIDE_TOP, 1)
+rp.addOuterPainter (TextPainter ('right top'), RectPlot.SIDE_RIGHT, 1)
+rp.addOuterPainter (TextPainter ('right mid'), RectPlot.SIDE_RIGHT, 0.5)
+rp.addOuterPainter (TextPainter ('right bot'), RectPlot.SIDE_RIGHT, 0.)
+rp.addOuterPainter (TextPainter ('bottom left'), RectPlot.SIDE_BOTTOM, 0)
+rp.addOuterPainter (TextPainter ('bottom mid'), RectPlot.SIDE_BOTTOM, 0.5)
+rp.addOuterPainter (TextPainter ('bottom right'), RectPlot.SIDE_BOTTOM, 1)
+rp.addOuterPainter (TextPainter ('left top'), RectPlot.SIDE_LEFT, 1)
+rp.addOuterPainter (TextPainter ('left mid'), RectPlot.SIDE_LEFT, 0.5)
+rp.addOuterPainter (TextPainter ('left bot'), RectPlot.SIDE_LEFT, 0.)
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)

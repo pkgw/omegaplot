@@ -364,8 +364,7 @@ class LinearAxisPainter (BlankAxisPainter):
             helper.moveToAlong (ctxt, xformed)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
             helper.relMoveRectOut (ctxt, w, h)
-            x, y = ctxt.get_current_point ()
-            ts.stamp (ctxt, x, y, tc)
+            ts.paintHere (ctxt, tc)
 
 LinearAxis.defaultPainter = LinearAxisPainter
 
@@ -388,17 +387,33 @@ class DiscreteAxisPainter (BlankAxisPainter):
     labelSeparation = 2 # in smallScale
     tickScale = 2 # in largeScale
     tickStyle = 'bgLinework' # style ref.
+    textColor = 'foreground'
     labelStyle = None
 
     def genericFormat (self, v): return str(v)
     
     def spaceExterior (self, helper, ctxt, style):
-        test = self.formatLabel (self.axis.indexToValue (0))
-        (tmp, tmp, textw, texth, tmp, tmp) = \
-              ctxt.text_extents (test)
-        return self.labelSeparation * style.smallScale \
-               + helper.spaceRectOut (textw, texth), \
-               helper.spaceRectAlong (textw, texth)
+        n = self.axis.numAbscissae ()
+        skip = max (n / 10, 1) # this is more than a little sketchy
+
+        stampers = []
+        
+        for i in range (0, n, skip):
+            s = self.formatLabel (self.axis.indexToValue (i))
+            stampers.append ((TextStamper (s), i))
+
+        outside, along = 0, 0
+
+        for i in range (0, len (stampers)):
+            (ts, idx) = stampers[i]
+            w, h = ts.getSize (ctxt, style)
+            outside = max (outside, helper.spaceRectOut (w, h))
+            along = max (along, helper.spaceRectAlong (w, h))
+            stampers[i] = (ts, idx, w, h)
+
+        self.stampers = stampers
+        
+        return outside + self.labelSeparation * style.smallScale, along
     
     def paint (self, helper, ctxt, style):
         BlankAxisPainter.paint (self, helper, ctxt, style)
@@ -411,22 +426,14 @@ class DiscreteAxisPainter (BlankAxisPainter):
             val = self.axis.transform (self.axis.indexToValue (i))
             helper.paintTickIn (ctxt, val, self.tickScale * style.largeScale)
 
-            # See discussion of label painting in LinearAxisPainter.
-            # Code needs to be consolidated, for sure.
-
+        tc = style.getColor (self.textColor)
+        
+        for (ts, idx, w, h) in self.stampers:
+            val = self.axis.transform (self.axis.indexToValue (idx))
             helper.moveToAlong (ctxt, val)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
-
-            s = self.formatLabel (self.axis.indexToValue (i))
-            (xbear, ybear, textw, texth, xadv, yadv) = \
-                    ctxt.text_extents (s)
-            helper.relMoveRectOut (ctxt, textw, texth)
-            ctxt.rel_move_to (-xbear, -ybear) # brings us from UL to LR
-
-            ctxt.save ()
-            style.apply (ctxt, self.labelStyle)
-            ctxt.show_text (s)
-            ctxt.restore ()
+            helper.relMoveRectOut (ctxt, w, h)
+            ts.paintHere (ctxt, tc)
 
 DiscreteAxis.defaultPainter = DiscreteAxisPainter
 

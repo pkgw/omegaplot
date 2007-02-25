@@ -1,5 +1,31 @@
 2007-02-24  Peter Williams  <peter@newton.cx>
 
+	* omega/layout.py (RightRotationPainter.configurePainting): Whoa!
+	Save and restore our context when there is rotation to not
+	totally break all subsequent configuration. And fix the 180
+	degree rotation case.
+
+	* omega/base.py (_TextStamperBase.paintAt): Rename from stamp()
+	(_TextStamperBase.paintHere): New function, calls paintAt using
+	the context's current point.
+
+	* omega/latex.py (LatexStamper.paintAt): Track rename.
+
+	* omega/rect.py (LinearAxisPainter.paint): Use paintHere.
+	(DiscreteAxisPainter.spaceExterior): Use TextStamper instead
+	of cairo-specific text code.
+	(DiscreteAxisPainter.paint): Same.
+
+	* demo/discrete.py: Import omega.latex to test DiscreteAxisPainter
+	text painting.
+
+	* demo/image.py: Adapt to new TextPainter / RightRotationPainter
+	API.
+
+	* demo/opaint.py: Same. Kill the applied rotations for now.
+
+2007-02-24  Peter Williams  <peter@newton.cx>
+
 	* omega/base.py (_TextPainterBase): New generic template class for
 	something that acts like a text painter.
 	(CairoTextPainter): Default TextPainter implementation that passes

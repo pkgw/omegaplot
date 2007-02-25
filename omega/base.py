@@ -96,8 +96,12 @@ class _TextStamperBase (object):
     def getSize (self, ctxt, style):
         raise NotImplementedError ()
 
-    def stamp (self, ctxt, x, y, color):
+    def paintAt (self, ctxt, x, y, color):
         raise NotImplementedError ()
+
+    def paintHere (self, ctxt, color):
+        x, y = ctxt.get_current_point ()
+        self.paintAt (ctxt, x, y, color)
 
 # Our simple default backend
 
@@ -133,7 +137,7 @@ class CairoTextStamper (_TextStamperBase):
 
         return self.extents[2:4]
 
-    def stamp (self, ctxt, x, y, color):
+    def paintAt (self, ctxt, x, y, color):
         ctxt.save ()
         ctxt.move_to (x, y)
         ctxt.rel_move_to (-self.extents[0], -self.extents[1])

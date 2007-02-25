@@ -228,12 +228,14 @@ class RightRotationPainter (Painter):
 
         if not self.child: return
 
+        ctxt.save ()
+        
         if self.rotation == self.ROT_CW90:
             ctxt.rotate (pi / 2)
             ctxt.translate (0, -w)
         elif self.rotation == self.ROT_180:
             ctxt.rotate (pi)
-            ctxt.translate (-h, -w)
+            ctxt.translate (-w, -h)
         elif self.rotation == self.ROT_CCW90:
             ctxt.rotate (-pi / 2)
             ctxt.translate (-h, 0)
@@ -242,6 +244,8 @@ class RightRotationPainter (Painter):
             self.child.configurePainting (ctxt, style, h, w)
         else:
             self.child.configurePainting (ctxt, style, w, h)
+
+        ctxt.restore ()
         
     def doPaint (self, ctxt, style, firstPaint):
         self.child.paint (ctxt, style, firstPaint)

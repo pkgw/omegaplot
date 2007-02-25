@@ -90,7 +90,7 @@ class LatexStamper (_TextStamperBase):
         surf = self.getBaseSurf ()
         return surf.get_width (), surf.get_height ()
 
-    def stamp (self, ctxt, x, y, color):
+    def paintAt (self, ctxt, x, y, color):
         ctxt.save ()
         ctxt.translate (x, y)
         ctxt.set_source_surface (self.getColorSurf (color))

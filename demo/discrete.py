@@ -4,7 +4,7 @@
 # it easier to create graphs, but this is just testing the
 # bare functionality so far.
 
-import omega
+import omega, omega.latex
 import gtk
 from math import sin, cos, pi
 from numpy import sinc
