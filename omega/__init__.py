@@ -3,7 +3,7 @@
 from base import *
 from rect import *
 
-import bag, gtkThread, gtkUtil, images, layout, rect, \
+import bag, gtkThread, gtkUtil, layout, rect, \
        sources, stamps, styles, util
 
 from bag import Bag

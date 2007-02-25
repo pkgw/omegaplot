@@ -1,3 +1,4 @@
+from math import pi
 from base import Painter, NullPainter
 
 class Overlay (Painter):
@@ -188,3 +189,61 @@ class Grid (Painter):
             for j in xrange (0, self.nh):
                 self[i,j].paint (ctxt, style, firstPaint)
     
+class RightRotationPainter (Painter):
+    ROT_NONE = 0
+    ROT_CW90 = 1
+    ROT_180 = 2
+    ROT_CCW90 = 3
+
+    rotation = 0
+    
+    def __init__ (self, child):
+        Painter.__init__ (self)
+        self.child = None
+        self.setChild (child)
+
+    def setChild (self, child):
+        if self.child:
+            self.child.setParent (None)
+
+        if child:
+            child.setParent (self)
+            self.child = child
+
+    def removeChild (self, child):
+        self.child = None
+    
+    def setRotation (self, value):
+        self.rotation = value
+        
+    def getMinimumSize (self, ctxt, style):
+        w, h = self.child.getMinimumSize (ctxt, style)
+
+        if self.rotation % 2 == 1:
+            return h, w
+        return w, h
+
+    def configurePainting (self, ctxt, style, w, h):
+        Painter.configurePainting (self, ctxt, style, w, h)
+
+        if not self.child: return
+
+        if self.rotation == self.ROT_CW90:
+            ctxt.rotate (pi / 2)
+            ctxt.translate (0, -w)
+        elif self.rotation == self.ROT_180:
+            ctxt.rotate (pi)
+            ctxt.translate (-h, -w)
+        elif self.rotation == self.ROT_CCW90:
+            ctxt.rotate (-pi / 2)
+            ctxt.translate (-h, 0)
+
+        if self.rotation % 2 == 1:
+            self.child.configurePainting (ctxt, style, h, w)
+        else:
+            self.child.configurePainting (ctxt, style, w, h)
+        
+    def doPaint (self, ctxt, style, firstPaint):
+        self.child.paint (ctxt, style, firstPaint)
+
+

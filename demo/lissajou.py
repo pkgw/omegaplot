@@ -4,7 +4,7 @@
 # it easier to create graphs, but this is just testing the
 # bare functionality so far.
 
-import omega
+import omega, omega.latex
 import gtk
 from math import sin, cos, pi
 from numpy import sinc
@@ -41,7 +41,7 @@ rp.fieldAspect = 1.0
 rp.addFieldPainter (rdp1)
 rp.addFieldPainter (rdp2)
 rp.magicAxisPainters ('hv')
-rp.setLabels (r'$\int_0^\infty e^x', r'\sin (\pi x) + \sum_0^10 n')
+rp.setLabels (r'$\int_0^\infty e^x', r'\sin (\pi x) + \sum_0^{10} n^2')
 
 odw = omega.gtkUtil.OmegaDemoWindow (omega.PaintPipeline (bag, style, sources, rp))
 odw.connect ('destroy', gtk.main_quit)

@@ -1,5 +1,51 @@
 2007-02-24  Peter Williams  <peter@newton.cx>
 
+	* omega/base.py (_TextPainterBase): New generic template class for
+	something that acts like a text painter.
+	(CairoTextPainter): Default TextPainter implementation that passes
+	the text to the Cairo text routines.
+	(TextPainter): Return an object that implements _TextPainterBase; defaults
+	to the Cairo implementation.
+	(_TextStamperBase, CairoTextStamper, TextStamper): Analogous to the above.
+	(_setTextBackend): Allow overriding of the default painter and stamper
+	classes.
+	(_ImagePainterBase): Base class for something that needs to paint an
+	ImageSurface.
+	(ImagePainter.__init__): Subclass that just takes a user-passed-in
+	ImageSurface object.
+
+	* omega/latex.py: Move all the LaTeX code into this module, and call
+	base._setTextBackend after everything is initialized. So to enable
+	LaTeX text rendering, just import this module. 
+	(LatexPainter): Derive from _TextPainterBase now.
+	(LatexStamper): Analogous.
+
+	* omega/layout.py (RightRotationPainter.__init__): Move the code
+	that did image right-angle rotation into a separate class so that 
+	we can use it for any Painter we wish.
+
+	* omega/images.py: Remove, now unnecessary.
+
+	* omega/__init__.py: Do not import images anymore.
+
+	* omega/rect.py (LinearAxisPainter.getLabelInfos): Now we can create
+	a generic TextStamper and not always have to use the (slow) LatexStamper.
+	(RectPlot.setSideLabel): Improve the rotation hack. If we're creating our
+	own Painter object and it's on the side, wrap it in a RightRotationPainter 
+	here...
+	(RectPlot._calcOuterExtents): ... and here, if it is a RRP and the aspect
+	ratio is too high, apply the rotation.
+
+	* demo/lissajou.py: Fix a typo in my LaTeX and now import omega.latex
+	to initialize the LaTeX rendery goodness.
+
+	* demo/latexColor.py: import omega.latex.
+
+	* demo/sinc.py: Give short labels to the lower graph so we can check if
+	the conditional axis label rotation is working.
+	
+2007-02-24  Peter Williams  <peter@newton.cx>
+
 	* omega/images.py (ImagePainter.getSurf): Make this abstract and let
 	it vary on the style.
 	(_colorizeLatex): New function to do magic mojo to take black-on-white

@@ -3,7 +3,8 @@
 import math
 import bag
 from base import *
-from images import LatexPainter, LatexStamper
+from base import _TextPainterBase
+from layout import RightRotationPainter
 
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
@@ -309,10 +310,11 @@ class LinearAxisPainter (BlankAxisPainter):
             val += inc
             coeff += 1
 
-    def getLabelInfos (self):
-        # Create the LatexPainter objects all at once, so that we can
-        # generate their PNG images all in one go. (That will happen
-        # upon the first invocation of getMinimumSize.)
+    def getLabelInfos (self, ctxt, style):
+        # Create the TextStamper objects all at once, so that if we
+        # are using the LaTeX backend, we can generate their PNG
+        # images all in one go. (That will happen upon the first
+        # invocation of getMinimumSize.)
         
         labels = []
         
@@ -321,17 +323,17 @@ class LinearAxisPainter (BlankAxisPainter):
 
             s = self.formatLabel (val)
 
-            labels.append ((LatexStamper (s), xformed, isMajor))
+            labels.append ((TextStamper (s), xformed, isMajor))
 
-        for (ls, xformed, isMajor) in labels:
-            w, h = ls.getSize ()
+        for (ts, xformed, isMajor) in labels:
+            w, h = ts.getSize (ctxt, style)
 
-            yield (ls, xformed, w, h)
+            yield (ts, xformed, w, h)
 
     def spaceExterior (self, helper, ctxt, style):
         outside, along = 0, 0
         
-        for (ls, xformed, w, h) in self.getLabelInfos ():
+        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
             outside = max (outside, helper.spaceRectOut (w, h))
             along = max (along, helper.spaceRectAlong (w, h))
 
@@ -358,12 +360,12 @@ class LinearAxisPainter (BlankAxisPainter):
         style.apply (ctxt, self.labelStyle)
         tc = style.getColor (self.textColor)
         
-        for (ls, xformed, w, h) in self.getLabelInfos ():
+        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
             helper.moveToAlong (ctxt, xformed)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
             helper.relMoveRectOut (ctxt, w, h)
             x, y = ctxt.get_current_point ()
-            ls.stamp (ctxt, x, y, tc)
+            ts.stamp (ctxt, x, y, tc)
 
 LinearAxis.defaultPainter = LinearAxisPainter
 
@@ -678,8 +680,19 @@ class RectPlot (Painter):
         if self.mainLabels[side]:
             self.removeChild (self.mainLabels[side])
 
+        # (To the tune of the DragNet fanfare:)
+        # Hack, hack hack hack... hack, hack hack hack haaack!
+        # If the text is going on a side axis, encapsulate it
+        # in a RightRotationPainter, so that we can rotate it
+        # later if it's awkwardly wide.
+            
         if not isinstance (val, Painter):
-            val = LatexPainter (str (val))
+            val = TextPainter (str (val))
+
+            if side % 2 == 1:
+                val = RightRotationPainter (val)
+                
+        # End hack for now. Rest is in _calcOuterExtents.
 
         self.addOuterPainter (val, side, 0.5)
         self.mainLabels[side] = val
@@ -724,23 +737,22 @@ class RectPlot (Painter):
             any[side] = True
             w, h = op.getMinimumSize (ctxt, style)
 
-            # Hack, hack hack hack... hack, hack hack hack haaack!
-            # Autorotate axis labels if they appear to be text
-            
+            # Second part of the side label rotation hack. If the
+            # aspect ratio is too big, rotate.
+
             if op in self.mainLabels and side % 2 == 1 and \
-                   isinstance (op, LatexPainter):
-                
+                   isinstance (op, RightRotationPainter):
                 aspect = float (w) / h
 
                 if aspect > 3.:
                     if side == R:
-                        op.setRotation (LatexPainter.ROT_CW90)
+                        op.setRotation (RightRotationPainter.ROT_CW90)
                     elif side == L:
-                        op.setRotation (LatexPainter.ROT_CCW90)
-                        
+                        op.setRotation (RightRotationPainter.ROT_CCW90)
+                
                     w, h = h, w
 
-            # End hack.
+            # End second part of hack.
             
             if side == T:
                 trueoe[T] = max (trueoe[T], h)

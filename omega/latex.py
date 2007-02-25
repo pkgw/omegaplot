@@ -3,59 +3,10 @@ import latexsnippet
 import atexit
 
 from base import *
-from math import pi
+from base import _ImagePainterBase, _TextPainterBase, _TextStamperBase
+import base
 
 globalCache = latexsnippet.SnippetCache ()
-
-class ImagePainter (Painter):
-    def __init__ (self, surf=None):
-        Painter.__init__ (self)
-
-    def getSurf (self, style):
-        raise NotImplementedError ()
-
-    ROT_NONE = 0
-    ROT_CW90 = 1
-    ROT_180 = 2
-    ROT_CCW90 = 3
-
-    rotation = 0
-    
-    def setRotation (self, value):
-        self.rotation = value
-        
-    def getMinimumSize (self, ctxt, style):
-        surf = self.getSurf (style)
-
-        if not isinstance (surf, cairo.ImageSurface):
-            raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
-        
-        w, h = surf.get_width (), surf.get_height ()
-
-        if self.rotation % 2 == 1:
-            return h, w
-        return w, h
-
-    def doPaint (self, ctxt, style, firstPaint):
-        if not firstPaint: return
-
-        surf = self.getSurf (style)
-
-        if self.rotation == self.ROT_CW90:
-            ctxt.rotate (pi / 2)
-            ctxt.translate (0, -surf.get_height())
-        elif self.rotation == self.ROT_180:
-            ctxt.rotate (pi)
-            ctxt.translate (-surf.get_width(), -surf.get_height ())
-        elif self.rotation == self.ROT_CCW90:
-            ctxt.rotate (-pi / 2)
-            ctxt.translate (-surf.get_width (), 0)
-
-        ctxt.set_source_surface (surf)
-        # Whatever the default is, it seems to do the right thing.
-        #ctxt.set_operator (cairo.OPERATOR_ATOP)
-
-        ctxt.paint ()
 
 def _colorizeLatex (surf, color):
     if color == (0, 0, 0):
@@ -73,7 +24,19 @@ def _colorizeLatex (surf, color):
 
     if len (basedata) != len (cdata):
         raise Exception ('Disagreeing image data lengths? Can\'t happen!')
-        
+
+    # I must confess that I do not understand why this algorithm
+    # works, but it does. Also it is not exactly efficient. I would like to
+    # find a way to have Cairo do this effect efficiently, but we basically
+    # need to multiply the basedata image values by the color values,
+    # which doesn't seem to fit into the Porter-Duff compositing model.
+    # Fortunately, LaTeX snippet images are probably going to be small, so
+    # this chunk of the code ought not be too much of a bottleneck.
+    # (If we could somehow get the LaTeX PNG to carry all of the brightness
+    # information into the alpha channel, we could fill the csurf with the
+    # color and then somehow snarf the LaTeX alpha information into it,
+    # I think ...)
+    
     for i in range (0, len (basedata), 4):
         basealpha = ord (basedata[i+3])
 
@@ -82,7 +45,6 @@ def _colorizeLatex (surf, color):
         else:
             level = 255 - ord (basedata[i])
             
-        # I *think* we use premultiplied alpha ...
         cdata[i+0] = chr (color[0] * level)
         cdata[i+1] = chr (color[1] * level)
         cdata[i+2] = chr (color[2] * level)
@@ -90,11 +52,9 @@ def _colorizeLatex (surf, color):
         
     return csurf
     
-class LatexPainter (ImagePainter):
-    color = 'foreground'
-    
+class LatexPainter (_ImagePainterBase, _TextPainterBase):
     def __init__ (self, snippet, cache=globalCache):
-        ImagePainter.__init__ (self, None)
+        _ImagePainterBase.__init__ (self)
         
         self.cache = cache
         self.handle = self.cache.addSnippet (snippet)
@@ -110,7 +70,7 @@ class LatexPainter (ImagePainter):
     def __del__ (self):
         self.cache.expire (self.handle)
 
-class LatexStamper (object):
+class LatexStamper (_TextStamperBase):
     def __init__ (self, snippet, cache=globalCache):
         self.cache = cache
         self.handle = self.cache.addSnippet (snippet)
@@ -126,7 +86,7 @@ class LatexStamper (object):
     def getColorSurf (self, color):
         return _colorizeLatex (self.getBaseSurf (), color)
         
-    def getSize (self):
+    def getSize (self, ctxt, style):
         surf = self.getBaseSurf ()
         return surf.get_width (), surf.get_height ()
 
@@ -141,3 +101,6 @@ def _atexit ():
     globalCache.close ()
 
 atexit.register (_atexit)
+
+base._setTextBackend (LatexPainter, LatexStamper)
+
