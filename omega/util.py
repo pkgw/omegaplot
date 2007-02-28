@@ -186,6 +186,7 @@ def resetDumpSerial ():
 # Generating quick-and-dirty pipelines from data
 
 import sources, base, bag, styles, stamps
+from rect import RectDataPainter, RectPlot
 
 def makeQuickPipeline (xinfo, yinfo=None, lines=True):
     """Construct a PaintPipeline object that tries to represent
@@ -209,7 +210,7 @@ def makeQuickPipeline (xinfo, yinfo=None, lines=True):
     
     src = sources.StoredData ('FF', zip (xinfo, yinfo))
 
-    rdp = base.RectDataPainter (b)
+    rdp = RectDataPainter (b)
     rdp.setBounds (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
     rdp.expose ('data')
 
@@ -217,7 +218,7 @@ def makeQuickPipeline (xinfo, yinfo=None, lines=True):
         rdp.lines = False
         rdp.pointStamp = stamps.X ()
     
-    rp = base.RectPlot ()
+    rp = RectPlot ()
     rp.addFieldPainter (rdp)
     rp.magicAxisPainters ('lb')
 
