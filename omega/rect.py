@@ -29,6 +29,30 @@ class LinearAxis (object):
         """Return True if the given value is within the bounds of this axis."""
         return value >= self.min and value <= self.max
     
+class LogarithmicAxis (object):
+    """A class that defines a logarithmic axis for a rectangular plot. Note
+    that this class does not paint the axis; it just maps values from
+    the bounds to a [0, 1] range so that the RectPlot class knows
+    where to locate points."""
+
+    coordSpec = 'F'
+    
+    def __init__ (self, logmin=-3., logmax=3.):
+        self.logmin = logmin
+        self.logmax = logmax
+
+    def transform (self, value):
+        """Return where the given value should reside on this axis, 0
+        indicating all the way towards the physical minimum of the
+        plotting area, 1 indicating all the way to the maximum."""
+
+        return float (math.log10 (value) - self.logmin) / (self.logmax - self.logmin)
+
+    def inbounds (self, value):
+        """Return True if the given value is within the bounds of this axis."""
+        lv = math.log10 (value)
+        return lv >= self.logmin and lv <= self.logmax
+
 class DiscreteAxis (object):
     """A class that defines a discrete axis for a rectangular plot. That is,
     the abscissa values are abitrary and mapped to sequential points along
@@ -314,12 +338,12 @@ class LinearAxisPainter (BlankAxisPainter):
         # Create the TextStamper objects all at once, so that if we
         # are using the LaTeX backend, we can generate their PNG
         # images all in one go. (That will happen upon the first
-        # invocation of getMinimumSize.)
+        # invocation of getSize.)
         
         labels = []
         
         for (val, xformed, isMajor) in self.getTickLocations ():
-            if not isMajor: continue
+            if not isMajor and not self.labelMinorTicks: continue
 
             s = self.formatLabel (val)
 
@@ -367,6 +391,113 @@ class LinearAxisPainter (BlankAxisPainter):
             ts.paintHere (ctxt, tc)
 
 LinearAxis.defaultPainter = LinearAxisPainter
+
+class LogarithmicAxisPainter (BlankAxisPainter):
+    """An axisPainter for the RectPlot class. Paints a standard logarithmic
+    axis with evenly spaced tick marks."""
+
+    def __init__ (self, axis):
+        BlankAxisPainter.__init__ (self)
+
+        if not isinstance (axis, LogarithmicAxis):
+            raise Exception ('Giving logarithmicAxisPainter a'
+                             'non-logarithmicAxis axis')
+        
+        self.axis = axis
+
+    labelSeparation = 2 # in smallScale
+    numFormat = '$10^{%d}$' # can be a function mapping float -> str
+    formatLogValue = True # if true, format log10(x value), not the raw x value
+    majorTickScale = 2 # in largeScale
+    minorTickScale = 2 # in smallScale
+    tickStyle = 'bgLinework' # style ref.
+    textColor = 'foreground'
+    labelStyle = None
+    avoidBounds = True # do not draw ticks at extremes of axes
+    labelMinorTicks = False # draw value labels at the minor tick points?
+    
+    def formatLabel (self, val):
+        if self.formatLogValue: val = math.log10 (val)
+        
+        if callable (self.numFormat): return self.numFormat (val)
+        return self.numFormat % (val)
+
+    def getTickLocations (self):
+        # Tick spacing variables
+
+        inc = 10. ** math.floor (self.axis.logmin)
+        val = inc * math.ceil (10. ** self.axis.logmin / inc)
+        coeff = int (val / inc)
+        
+        while self.axis.inbounds (val):
+            v = self.axis.transform (val)
+
+            if coeff % 10 == 0:
+                inc *= 10.
+                yield (val, v, True)
+            else:
+                yield (val, v, False)
+
+            val += inc
+            coeff += 1
+
+    def getLabelInfos (self, ctxt, style):
+        # Create the TextStamper objects all at once, so that if we
+        # are using the LaTeX backend, we can generate their PNG
+        # images all in one go. (That will happen upon the first
+        # invocation of getSize.)
+        
+        labels = []
+        
+        for (val, xformed, isMajor) in self.getTickLocations ():
+            if not isMajor and not self.labelMinorTicks: continue
+
+            s = self.formatLabel (val)
+
+            labels.append ((TextStamper (s), xformed, isMajor))
+
+        for (ts, xformed, isMajor) in labels:
+            w, h = ts.getSize (ctxt, style)
+
+            yield (ts, xformed, w, h)
+
+    def spaceExterior (self, helper, ctxt, style):
+        outside, along = 0, 0
+        
+        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
+            outside = max (outside, helper.spaceRectOut (w, h))
+            along = max (along, helper.spaceRectAlong (w, h))
+
+        return outside + self.labelSeparation * style.smallScale, along
+
+    def paint (self, helper, ctxt, style):
+        BlankAxisPainter.paint (self, helper, ctxt, style)
+
+        style.apply (ctxt, self.tickStyle)
+
+        for (val, xformed, isMajor) in self.getTickLocations ():
+            if isMajor: len = self.majorTickScale * style.largeScale
+            else: len = self.minorTickScale * style.smallScale
+            
+            # If our tick would land right on the bounds of the plot field,
+            # it might overplot on the baseline of the axis adjacent to ours.
+            # This is ugly, so don't do it. However, this behavior can be
+            # disabled by setting avoidBounds to false, so that if the adjacent
+            # axes don't draw their baselines, we'll see the ticks as desired.
+            
+            if not self.avoidBounds or (xformed != 0. and xformed != 1.):
+                helper.paintTickIn (ctxt, xformed, len)
+
+        style.apply (ctxt, self.labelStyle)
+        tc = style.getColor (self.textColor)
+        
+        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
+            helper.moveToAlong (ctxt, xformed)
+            helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
+            helper.relMoveRectOut (ctxt, w, h)
+            ts.paintHere (ctxt, tc)
+
+LogarithmicAxis.defaultPainter = LogarithmicAxisPainter
 
 class DiscreteAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a tick mark and label
@@ -674,6 +805,70 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
+    def toggleLinLogAxes (self, wantxlog, wantylog):
+        df = self.defaultField
+        if not df: raise Exception ('Need a default field!')
+
+        if isinstance (df.xaxis, LinearAxis):
+            xislog = False
+        elif isinstance (df.xaxis, LogarithmicAxis):
+            xislog = True
+        else:
+            raise Exception ('X axis is neither linear nor logarithmic!')
+
+        if isinstance (df.yaxis, LinearAxis):
+            yislog = False
+        elif isinstance (df.yaxis, LogarithmicAxis):
+            yislog = True
+        else:
+            raise Exception ('Y axis is neither linear nor logarithmic!')
+
+        def logify (axis):
+            if axis.min <= 0.:
+                logmin = -8
+            else:
+                logmin = math.log10 (axis.min)
+
+            # Axes may be running large to small ... not sure if this
+            # code will work, but it has a better chance of working than
+            # if it's not here.
+            
+            if axis.max <= 0.:
+                logmax = -8
+            else:
+                logmax = math.log10 (axis.max)
+                
+            return LogarithmicAxis (logmin, logmax)
+
+        def linify (axis):
+            return LinearAxis (10. ** axis.logmin, 10. ** axis.logmax)
+            
+        if wantxlog and not xislog:
+            df.xaxis = logify (df.xaxis)
+        elif not wantxlog and xislog:
+            df.xaxis = linify (df.xaxis)
+            
+        if wantylog and not yislog:
+            df.yaxis = logify (df.yaxis)
+        elif not wantylog and yislog:
+            df.yaxis = linify (df.yaxis)
+
+        # Now update any axispainters that need it.
+        # Make the logic more restrictive in case the
+        # user has some custom axes.
+        
+        def fixpainter (wantlog, axis, painter):
+            if wantlog and isinstance (painter, LinearAxisPainter):
+                return LogarithmicAxisPainter (axis)
+            elif not wantlog and isinstance (painter, LogarithmicAxisPainter):
+                return LinearAxisPainter (axis)
+            return painter
+
+        self.tpainter = fixpainter (wantxlog, df.xaxis, self.tpainter)
+        self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter)
+        self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter)
+        self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter)
+    
     def addStream (self, stream, name, bag, sources):
         rdp = RectDataPainter (bag)
         bag.exposeSink (rdp, name)

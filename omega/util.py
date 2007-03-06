@@ -199,6 +199,8 @@ def makeQuickPipeline (xinfo, yinfo=None, lines=True):
     if callable (yinfo):
         raise Exception ('write this bit')
 
+    yinfo = list (yinfo)
+    
     try:
         tmp = float (xinfo[0])
         tmp = float (yinfo[0])
