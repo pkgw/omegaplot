@@ -12,10 +12,22 @@ class PaintPipeline (object):
         self.bag = bag
         self.style = style
         self.sources = sources
+        self.autoIdSerial = 0
 
         self.removeChild (None) # reset to NullPainter child
         self.setPainter (painter)
 
+    def generateSourceId (self):
+        for i in xrange (0, 1000):
+            name = '_autoId%03d' % self.autoIdSerial
+            self.autoIdSerial += 1
+
+            if name not in self.sources:
+                return name
+
+        raise Exception ('Can only autogenerate 1000 source IDs just '
+                         'because I am afraid of infinite loops.')
+    
     def setPainter (self, painter):
         if self._painter: self._painter.setParent (None)
 
@@ -186,20 +198,52 @@ def resetDumpSerial ():
 # Generating quick-and-dirty pipelines from data
 
 import sources, base, bag, styles, stamps
-from rect import RectDataPainter, RectPlot
+from rect import RectDataPainter, RectPlot, FieldPainter
 
-def makeQuickPipeline (xinfo, yinfo=None, lines=True):
-    """Construct a PaintPipeline object that tries to represent
-    the passed-in data reasonably in a plot."""
+def makeRectSkeletonPipeline ():
+    """Construct a PaintPipeline object with some default choices for
+    a rectangular plot.
+
+    Returns: tuple of (pl, rp), where pl is a PaintPipeline and rp is
+    a RectPlot. The bag, style, and sources hash can be accessed via
+    the PaintPipeline object."""
+    
+    rp = RectPlot ()
+    return PaintPipeline (bag.Bag (), styles.BlackOnWhiteBitmap (), {}, rp), rp
+
+def makeQuickSource (xinfo, yinfo=None):
+    """Construct an object to which a StreamSink can be attached for
+    plotting. Currently just expands out the xinfo and yinfo into an
+    array; we should add a higher level of cleverness to, eg, call an
+    expensive function incrementally or use a generator.
+
+    Returns: (src, bounds), where src is some kind of object to which
+    a StreamSink can be linked, and bounds is a tuple of (xmin, xmax,
+    ymin, ymax), giving the minima and maxima of the x and y value."""
     
     if yinfo is None:
         yinfo = xinfo
         xinfo = xrange (0, len(yinfo))
 
     if callable (yinfo):
-        raise Exception ('write this bit')
+        # It would be nice to not go and evaluate the function
+        # everywhere all at once, but we're going to have to find
+        # the min and max anyway, so I think we pretty much have to
+        # do it now.
+        yinfo = [yinfo (x) for x in xinfo]
 
-    yinfo = list (yinfo)
+    # Make sure that we can subscript the x and y data objects,
+    # for the test below, and since we need to be finding mins and
+    # maxes so we might as well despool into a list () if the info
+    # is a generator or something. (If the list is huge and y(x) is
+    # easy to evaluate, listifying is not a win; it would be nice to
+    # avoid doing that.)
+    
+    if not hasattr (xinfo, '__getitem__'): xinfo = list (xinfo)
+    if not hasattr (yinfo, '__getitem__'): yinfo = list (yinfo)
+
+    # Can we actually treat the data as floats? FIXME: handle non-float
+    # data types sensibly.
     
     try:
         tmp = float (xinfo[0])
@@ -207,24 +251,71 @@ def makeQuickPipeline (xinfo, yinfo=None, lines=True):
     except:
         raise
 
-    b = bag.Bag ()
-    style = styles.BlackOnWhiteBitmap ()
+    bounds = (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
     
-    src = sources.StoredData ('FF', zip (xinfo, yinfo))
+    # OK, we now know that we have a workable (if inefficient)
+    # representation.
+    
+    return (sources.StoredData ('FF', zip (xinfo, yinfo)), bounds)
 
-    rdp = RectDataPainter (b)
-    rdp.setBounds (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
-    rdp.expose ('data')
+def makeQuickRectDataPainter (pl, xinfo, yinfo=None, lines=True, tmpl=None,
+                              sourceid=None):
+    """Construct a RectDataPainter object that should plot the
+    passed-in data reasonably when hooked up to a RectPlot. If no
+    template object is passed to this function, the pipeline's bag is
+    used as the argument to the RectDataPainter constructor. If
+    the template is a preexisting FieldPainter, its axes are expanded
+    if necessary to show the new dataset; if it is not a FieldPainter,
+    the axes of the RectDataPainter's new axes are set to the appropriate
+    bounds.
 
+    A source is added to the pipeline's sources dictionary. If no source
+    name is specified, a unique one is generated.
+
+    Returns: a new RectDataPainter object."""
+
+    if not tmpl: tmpl = pl.bag
+    if not sourceid: sourceid = pl.generateSourceId ()
+    
+    (src, bounds) = makeQuickSource (xinfo, yinfo)
+    pl.sources[sourceid] = src
+    
+    rdp = RectDataPainter (tmpl)
+
+    if not isinstance (tmpl, FieldPainter):
+        rdp.setBounds (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
+    else:
+        rdp.field.xaxis.min = min (rdp.field.xaxis.min, bounds[0])
+        rdp.field.xaxis.max = max (rdp.field.xaxis.max, bounds[1])
+        rdp.field.yaxis.min = min (rdp.field.yaxis.min, bounds[2])
+        rdp.field.yaxis.max = max (rdp.field.yaxis.max, bounds[3])
+        
+    rdp.expose (sourceid)
+    
     if not lines:
         rdp.lines = False
         rdp.pointStamp = stamps.X ()
-    
-    rp = RectPlot ()
-    rp.addFieldPainter (rdp)
-    rp.magicAxisPainters ('lb')
 
-    return PaintPipeline (b, style, {'data': src}, rp), rp
+    return rdp
+
+def addQuickRectDataPainter (pl, rp, xinfo, yinfo=None, **kwargs):
+    """Construct a RectDataPainter object with makeQuickRectDataPainter
+    and add it to the specified RectPlot.
+
+    Returns: the new RectDataPainter"""
+
+    rdp = makeQuickRectDataPainter (pl, xinfo, yinfo, **kwargs)
+    rp.addFieldPainter (rdp)
+    return rdp
+
+def makeQuickPipeline (xinfo, yinfo=None, **kwargs):
+    """Construct a PaintPipeline object that tries to represent
+    the passed-in data reasonably in a plot."""
+
+    (pl, rp) = makeRectSkeletonPipeline ()
+    addQuickRectDataPainter (pl, rp, xinfo, yinfo, **kwargs)
+    rp.magicAxisPainters ('lb')
+    return pl
 
 def makeQuickDisplay (*args, **kwargs):
     """Create a LiveDisplay object that attempts to represent the
@@ -234,4 +325,4 @@ def makeQuickDisplay (*args, **kwargs):
     Returns: LiveDisplay object, PaintPipeline object, RectPlot object."""
     
     pl, rp = makeQuickPipeline (*args, **kwargs)
-    return LiveDisplay (pl), pl, rp
+    return (LiveDisplay (pl), pl, rp)

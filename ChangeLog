@@ -1,3 +1,45 @@
+2007-03-22  Peter Williams  <peter@newton.cx>
+
+	* omega/__init__.py (RSP): Add a shortcut for 
+	util.makeRectSkeletonPipeline.
+
+	* omega/rect.py (LogarithmicAxis.getMin): Add 'min' and 'max'
+	properties that help us behave isomorphically to a LinearAxis.
+	(LogarithmicAxisPainter.getTickLocations): Rework the code here
+	to reset the variables from integers every decade, to avoid
+	rounding errors (which of course are likely to be a big deal if
+	we're working a large logarithmic range).
+	(RectPlot.quickAdd): New utility function that calls 
+	util.addQuickRectDataPainter. Kind of ugly since it requires a 
+	pipeline object.
+
+	* omega/util.py (PaintPipeline.generateSourceId): Add a little 
+	function to automatically generate string names for sources.
+	(makeRectSkeletonPipeline): Just create a RectPlot, a Bag,
+	and a BlackOnWhiteBitmap style and stuff them into a pipeline.
+	(makeQuickSource): Break out the code that generates a data
+	source into here.
+	(makeQuickRectDataPainter): And break out code to make a 
+	RectDataPainter here.
+	(addQuickRectDataPainter): New function to create a quick RDP
+	and add it to an existing RectPlot.
+	(makeQuickPipeline): Simplify to branch out to the above
+	functions.
+
+2007-03-05  Peter Williams  <peter@newton.cx>
+
+	* omega/rect.py (LogarithmicAxis.__init__): Implement a logical
+	logarithmic axis. Right now the log base is fixed at 10.
+	(LinearAxisPainter.getLabelInfos): Oops, honor self.labelMinorTicks.
+	(LogarithmicAxisPainter.__init__): New painter for 
+	LogarithmicAxis. Lots of redundant code with LinearAxisPainter.
+	(RectPlot.toggleLinLogAxes): Utility; changes the x and/or y axes
+	to linear or logarithmic scales, according to the arguments. Also
+	resets the axis painters.
+
+	* omega/util.py (makeQuickPipeline): Listify the yinfo since we
+	need to find its min and max anyway.
+
 2007-02-28  Peter Williams  <peter@newton.cx>
 
 	* omega/util.py (makeQuickPipeline): RectDataPainter and RectPlot

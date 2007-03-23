@@ -14,3 +14,4 @@ from util import dump, LiveDisplay, PaintPipeline, LetterFile, InchesFile, Large
 
 QP = util.makeQuickPipeline
 QD = util.makeQuickDisplay
+RSP = util.makeRectSkeletonPipeline

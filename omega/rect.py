@@ -41,6 +41,22 @@ class LogarithmicAxis (object):
         self.logmin = logmin
         self.logmax = logmax
 
+    def getMin (self):
+        return 10 ** self.logmin
+    
+    def setMin (self, value):
+        self.logmin = math.log10 (value)
+
+    min = property (getMin, setMin)
+    
+    def getMax (self):
+        return 10 ** self.logmax
+    
+    def setMax (self, value):
+        self.logmax = math.log10 (value)
+
+    max = property (getMax, setMax)
+    
     def transform (self, value):
         """Return where the given value should reside on this axis, 0
         indicating all the way towards the physical minimum of the
@@ -425,15 +441,24 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     def getTickLocations (self):
         # Tick spacing variables
 
-        inc = 10. ** math.floor (self.axis.logmin)
-        val = inc * math.ceil (10. ** self.axis.logmin / inc)
-        coeff = int (val / inc)
-        
+        curpow = int (math.floor (self.axis.logmin))
+        inc = 10. ** curpow
+        coeff = int (math.ceil (10. ** self.axis.logmin / inc)) - 1
+        val = inc * (coeff + 1)
+
+        if coeff == 0:
+            # The loop bumps this up again.
+            curpow -= 1
+            inc /= 10.
+            
         while self.axis.inbounds (val):
             v = self.axis.transform (val)
 
-            if coeff % 10 == 0:
-                inc *= 10.
+            if coeff % 9 == 0:
+                # Avoid rounding errors by nudging our variables.
+                curpow += 1
+                inc = 10. ** curpow
+                val = inc
                 yield (val, v, True)
             else:
                 yield (val, v, False)
@@ -701,7 +726,13 @@ class RectPlot (Painter):
         self.fpainters = [] # field painters
         self.opainters = [] # outer painters
         self.mainLabels = [None] * 4
-        
+
+    def setDefaultAxes (self, xaxis, yaxis):
+        self.defaultField = RectField (xaxis, yaxis)
+                      
+    def setDefaultField (self, field):
+        self.defaultField = field
+    
     def addFieldPainter (self, fp):
         fp.setParent (self)
         self.fpainters.append (fp)
@@ -710,6 +741,13 @@ class RectPlot (Painter):
                isinstance (fp.field, RectField):
             self.defaultField = fp.field
 
+    def quickAdd (self, pl, xinfo, yinfo=None, **kwargs):
+        # We need to do this because util imports rect, so rect
+        # can't import util globally because rect will be incompletely
+        # defined.
+        import util
+        return util.addQuickRectDataPainter (pl, self, xinfo, yinfo, **kwargs)
+    
     def addOuterPainter (self, op, side, position):
         op.setParent (self)
         self.opainters.append ((op, side, position))
@@ -825,7 +863,7 @@ class RectPlot (Painter):
 
         def logify (axis):
             if axis.min <= 0.:
-                logmin = -8
+                logmin = -8 # FIXME: arbitrary magic number.
             else:
                 logmin = math.log10 (axis.min)
 
