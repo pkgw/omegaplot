@@ -741,12 +741,15 @@ class RectPlot (Painter):
                isinstance (fp.field, RectField):
             self.defaultField = fp.field
 
-    def quickAdd (self, pl, xinfo, yinfo=None, **kwargs):
+    def quickAdd (self, pl, xinfo, yinfo=None, tmpl=None, **kwargs):
+        if tmpl is None and len (self.fpainters) > 0:
+            tmpl = self.fpainters[0]
+        
         # We need to do this because util imports rect, so rect
         # can't import util globally because rect will be incompletely
         # defined.
         import util
-        return util.addQuickRectDataPainter (pl, self, xinfo, yinfo, **kwargs)
+        return util.addQuickRectDataPainter (pl, self, xinfo, yinfo, tmpl=tmpl, **kwargs)
     
     def addOuterPainter (self, op, side, position):
         op.setParent (self)

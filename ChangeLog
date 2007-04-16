@@ -1,3 +1,23 @@
+2007-04-16  Peter Williams  <peter@newton.cx>
+
+	* demo/sinc-ps.py (pl): Update to new dump() API.
+
+	* omega/util.py (makeQuickPipeline): Also return the RectPainter so that
+	the caller can futz with it.
+
+2007-04-11  Peter Williams  <peter@newton.cx>
+
+	* omega/util.py (makeQuickRectDataPainter): Update for better bounds
+	setting.
+
+	* omega/rect.py (RectPlot.quickAdd): Add a default template if none
+	is specified and we have a FieldPainter to reference.
+
+2007-03-22  Peter Williams  <peter@newton.cx>
+
+	* omega/util.py (dump): Continue moving to a more 
+	pipeline-centric model.
+
 2007-03-22  Peter Williams  <peter@newton.cx>
 
 	* omega/__init__.py (RSP): Add a shortcut for 

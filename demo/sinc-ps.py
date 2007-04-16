@@ -49,4 +49,5 @@ g[1] = rp2
 g.hBorderSize = 4
 g.vBorderSize = 4
 
-omega.dump (g, bag, style, sources)
+pl = omega.util.PaintPipeline (bag, style, sources, g)
+omega.dump (pl)

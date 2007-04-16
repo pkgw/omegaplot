@@ -182,13 +182,12 @@ _dumpSerial = 0
 dumpName = 'omegaDump%02d.ps'
 dumpSurfgen = LetterFile
 
-def dump (painter, bag, style, sources):
+def dump (pl):
     global _dumpSerial, dumpName
 
     _dumpSerial += 1
     f = dumpName % (_dumpSerial)
 
-    pl = PaintPipeline (bag, style, sources, painter)
     dumpSurfgen (f).renderPipeline (pl)
 
 def resetDumpSerial ():
@@ -283,7 +282,7 @@ def makeQuickRectDataPainter (pl, xinfo, yinfo=None, lines=True, tmpl=None,
     rdp = RectDataPainter (tmpl)
 
     if not isinstance (tmpl, FieldPainter):
-        rdp.setBounds (min (xinfo), max (xinfo), min (yinfo), max(yinfo))
+        rdp.setBounds (*bounds)
     else:
         rdp.field.xaxis.min = min (rdp.field.xaxis.min, bounds[0])
         rdp.field.xaxis.max = max (rdp.field.xaxis.max, bounds[1])
@@ -310,12 +309,15 @@ def addQuickRectDataPainter (pl, rp, xinfo, yinfo=None, **kwargs):
 
 def makeQuickPipeline (xinfo, yinfo=None, **kwargs):
     """Construct a PaintPipeline object that tries to represent
-    the passed-in data reasonably in a plot."""
+    the passed-in data reasonably in a plot.
+
+    Returns: (pl, rp) where pl is the new PaintPipline and rp
+    is a RectPainter that the pipeline draws."""
 
     (pl, rp) = makeRectSkeletonPipeline ()
     addQuickRectDataPainter (pl, rp, xinfo, yinfo, **kwargs)
     rp.magicAxisPainters ('lb')
-    return pl
+    return (pl, rp)
 
 def makeQuickDisplay (*args, **kwargs):
     """Create a LiveDisplay object that attempts to represent the
