@@ -1,3 +1,8 @@
+2007-06-29  Peter Williams  <peter@newton.cx>
+
+	* omega/gtkUtil.py (LiveDisplay.linger): Make this a timeout since the
+	idle chews up CPU.
+
 2007-06-28  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (LiveDisplay.linger): New function: block the caller

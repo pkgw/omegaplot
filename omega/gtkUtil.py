@@ -245,7 +245,13 @@ class LiveDisplay (object):
             if self.win: self.win.forceReconfigure ()
         gtkThread.send (doit)
 
+    lingerInterval = 250
+    
     def linger (self):
+        """Block the caller until the LiveDisplay window has been closed
+        by the user. Useful for semi-interactive programs to pause while
+        the user examines a plot."""
+        
         from Queue import Queue, Empty
 
         q = Queue ()
@@ -257,7 +263,8 @@ class LiveDisplay (object):
             return False
         
         def doit ():
-            gobject.idle_add (check_done)
+            gobject.timeout_add (self.lingerInterval,
+                                 check_done)
 
         gtkThread.send (doit)
         q.get ()
