@@ -245,6 +245,23 @@ class LiveDisplay (object):
             if self.win: self.win.forceReconfigure ()
         gtkThread.send (doit)
 
+    def linger (self):
+        from Queue import Queue, Empty
+
+        q = Queue ()
+
+        def check_done ():
+            if self.win is not None:
+                return True
+            q.put (True)
+            return False
+        
+        def doit ():
+            gobject.idle_add (check_done)
+
+        gtkThread.send (doit)
+        q.get ()
+    
 # FIXME: some mechanism for user expressing their pref here?
 # But the odds of 'import omega.gtkUtil, omega.qtUtil' are
 # pretty low, I think.
