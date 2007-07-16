@@ -1,3 +1,8 @@
+2007-07-16  Peter Williams  <peter@newton.cx>
+
+	* omega/stamps.py (Box.doPaint): Make stamps bigger by default; collect
+	the default value of the size parameter in one variable.
+	
 2007-06-29  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (LiveDisplay.linger): Make this a timeout since the

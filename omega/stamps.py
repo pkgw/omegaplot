@@ -7,6 +7,8 @@ Mainly useful for marking specific data points."""
 import cairo as _cairo
 import math as _math
 
+_defaultStampSize = 5
+
 class Stamp (object):
     stampSpec = 'XY'
     mainStyle = 'genericStamp'
@@ -25,21 +27,21 @@ class SizedDot (Stamp):
         ctxt.fill ()
 
 class Dot (Stamp):
-    size = 3 # diameter of dot in style.smallScale
+    size = _defaultStampSize # diameter of dot in style.smallScale
     
     def doPaint (self, ctxt, style, data):
         ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.fill ()
 
 class Circle (Stamp):
-    size = 3 # diameter of circle in style.smallScale
+    size = _defaultStampSize # diameter of circle in style.smallScale
     
     def doPaint (self, ctxt, style, data):
         ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.stroke ()
 
 class UpTriangle (Stamp):
-    size = 3 # size of triangle in style.smallScale
+    size = _defaultStampSize # size of triangle in style.smallScale
 
     def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
@@ -51,7 +53,7 @@ class UpTriangle (Stamp):
         ctxt.stroke ()
     
 class DownTriangle (Stamp):
-    size = 3 # size of triangle in style.smallScale
+    size = _defaultStampSize # size of triangle in style.smallScale
 
     def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
@@ -63,7 +65,7 @@ class DownTriangle (Stamp):
         ctxt.stroke ()
     
 class X (Stamp):
-    size = 3 # size of the X in style.smallScale; corrected by
+    size = _defaultStampSize # size of the X in style.smallScale; corrected by
     # sqrt(2) so that X and Plus lay down the same amount of "ink"
 
     def doPaint (self, ctxt, style, data):
@@ -78,7 +80,7 @@ class X (Stamp):
         ctxt.stroke ()
     
 class Plus (Stamp):
-    size = 3 # size of the + in style.smallScale
+    size = _defaultStampSize # size of the + in style.smallScale
 
     def doPaint (self, ctxt, style, data):
         s = self.size * style.smallScale
@@ -92,7 +94,7 @@ class Plus (Stamp):
         ctxt.stroke ()
     
 class Box (Stamp):
-    size = 3 # size of the box in style.smallScale; this is
+    size = _defaultStampSize # size of the box in style.smallScale; this is
     # reduced by sqrt(2) so that the area of the Box and
     # Diamond stamps are the same for the same values of size.
 
@@ -103,7 +105,7 @@ class Box (Stamp):
         ctxt.stroke ()
     
 class Diamond (Stamp):
-    size = 3 # size of the diamond in style.smallScale
+    size = _defaultStampSize # size of the diamond in style.smallScale
 
     def doPaint (self, ctxt, style, data):
         s2 = self.size * style.smallScale / 2
