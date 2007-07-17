@@ -258,7 +258,7 @@ def makeQuickSource (xinfo, yinfo=None):
     return (sources.StoredData ('FF', zip (xinfo, yinfo)), bounds)
 
 def makeQuickRectDataPainter (pl, xinfo, yinfo=None, lines=True, tmpl=None,
-                              sourceid=None):
+                              sourceid=None, pointStamp=None):
     """Construct a RectDataPainter object that should plot the
     passed-in data reasonably when hooked up to a RectPlot. If no
     template object is passed to this function, the pipeline's bag is
@@ -293,8 +293,12 @@ def makeQuickRectDataPainter (pl, xinfo, yinfo=None, lines=True, tmpl=None,
     
     if not lines:
         rdp.lines = False
-        rdp.pointStamp = stamps.X ()
-
+        rdp.pointStamp = pointStamp or stamps.X ()
+    elif pointStamp:
+        # if lines=True, but given pointstamp, they presumably
+        # want lines and points to be drawn.
+        rdp.pointStamp = pointStamp
+    
     return rdp
 
 def addQuickRectDataPainter (pl, rp, xinfo, yinfo=None, **kwargs):
