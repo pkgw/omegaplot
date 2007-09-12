@@ -1,5 +1,7 @@
 2007-09-11  Peter Williams  <peter@newton.cx>
 
+	* omega/__init__.py (MQD): Ah, fuck it, commit this utility thingie.
+
 	* omega/gtkUtil.py (OmegaDemoWindow.__init__): Set some more window
 	properties to try to make things slightly prettier, sort of.
 
