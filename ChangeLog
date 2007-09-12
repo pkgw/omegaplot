@@ -1,5 +1,8 @@
 2007-09-11  Peter Williams  <peter@newton.cx>
 
+	* omega/gtkUtil.py (OmegaDemoWindow.__init__): Set some more window
+	properties to try to make things slightly prettier, sort of.
+
 	* omega/rect.py (LinearAxisPainter.getTickLocations): Raise a more
 	helpful exception if min = max.
 

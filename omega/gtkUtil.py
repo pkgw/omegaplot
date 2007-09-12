@@ -101,13 +101,20 @@ class OmegaDemoWindow (gtk.Window):
 
     __gsignals__ = { 'key-press-event' : 'override' }
     
-    def __init__ (self, pipeline):
-        gtk.Window.__init__ (self)
+    def __init__ (self, pipeline, parent=None):
+        gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
         
         self.set_title ('OmegaPlot Test Window Canvas')
         self.set_default_size (640, 480)
         self.set_border_width (4)
+        self.set_position (gtk.WIN_POS_CENTER_ON_PARENT)
+        self.set_type_hint (gtk.gdk.WINDOW_TYPE_HINT_UTILITY) #? eh.
+        #self.set_urgency_hint (True)
+
+        if parent is not None: self.set_transient_for (parent)
         
+        # window_position GtkWindowPosition, type_hint GdkWindowTypeHint
+        # urgency_hint, GdkGravity gravity, 
         self.oa = OmegaArea (pipeline, True)
         self.add (self.oa)
 
