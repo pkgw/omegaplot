@@ -1,3 +1,8 @@
+2007-09-11  Peter Williams  <peter@newton.cx>
+
+	* omega/rect.py (LinearAxisPainter.getTickLocations): Raise a more
+	helpful exception if min = max.
+
 2007-07-16  Peter Williams  <peter@newton.cx>
 
 	* omega/util.py (makeQuickRectDataPainter): Allow the caller to specify

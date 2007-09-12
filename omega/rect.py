@@ -322,6 +322,9 @@ class LinearAxisPainter (BlankAxisPainter):
         # Tick spacing variables
         
         span = self.axis.max - self.axis.min
+
+        if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
+        
         mip = math.floor (math.log10 (span)) # major interval power
 
         inc = 10. ** mip / self.minorTicks # incr. between minor ticks
