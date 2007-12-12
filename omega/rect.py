@@ -1,10 +1,30 @@
 # Rectangular plots.
 
-import math
-import bag
+import numpy as N
 from base import *
-from base import _TextPainterBase
+from base import _TextPainterBase, _kwordDefaulted, _checkKwordsConsumed
 from layout import RightRotationPainter
+
+class RectDataHolder (DataHolder):
+    AxisX = 2
+    AxisY = 3
+    
+    def __init__ (self, xtype, ytype):
+        self.axistypes += (xtype, ytype)
+
+    def getMapped (self, cinfo, xform):
+        imisc, fmisc, x, y = self.get (cinfo)
+        x = xform.mapX (x)
+        y = xform.mapY (y)
+        return imisc, fmisc, x, y
+
+    def getMappedXY (self, cinfo, xform):
+        imisc, fmisc, x, y = self.get (cinfo)
+        return xform.mapX (x[0]), xform.mapY (y[0])
+
+    def getRawXY (self, cinfo):
+        imisc, fmisc, x, y = self.get (cinfo)
+        return x[0], y[0]
 
 class LinearAxis (object):
     """A class that defines a linear axis for a rectangular plot. Note
@@ -12,22 +32,21 @@ class LinearAxis (object):
     the bounds to a [0, 1] range so that the RectPlot class knows
     where to locate points."""
 
-    coordSpec = 'F'
-    
     def __init__ (self, min=0., max=10.):
-        self.min = min # XXX should be a bagprop!
-        self.max = max # XXX should be a bagprop!
+        self.min = min
+        self.max = max
 
-    def transform (self, value):
-        """Return where the given value should reside on this axis, 0
+    def transform (self, values):
+        """Return where the given values should reside on this axis, 0
         indicating all the way towards the physical minimum of the
         plotting area, 1 indicating all the way to the maximum."""
 
-        return float (value - self.min) / (self.max - self.min)
+        # Force floating-point evaluation.
+        return (values + 0.0 - self.min) / (self.max - self.min)
 
-    def inbounds (self, value):
-        """Return True if the given value is within the bounds of this axis."""
-        return value >= self.min and value <= self.max
+    def inbounds (self, values):
+        """Return True for each value that is within the bounds of this axis."""
+        return N.logical_and (values >= self.min, values <= self.max)
     
 class LogarithmicAxis (object):
     """A class that defines a logarithmic axis for a rectangular plot. Note
@@ -35,8 +54,6 @@ class LogarithmicAxis (object):
     the bounds to a [0, 1] range so that the RectPlot class knows
     where to locate points."""
 
-    coordSpec = 'F'
-    
     def __init__ (self, logmin=-3., logmax=3.):
         self.logmin = logmin
         self.logmax = logmax
@@ -45,7 +62,7 @@ class LogarithmicAxis (object):
         return 10 ** self.logmin
     
     def setMin (self, value):
-        self.logmin = math.log10 (value)
+        self.logmin = N.log10 (value)
 
     min = property (getMin, setMin)
     
@@ -53,81 +70,98 @@ class LogarithmicAxis (object):
         return 10 ** self.logmax
     
     def setMax (self, value):
-        self.logmax = math.log10 (value)
+        self.logmax = N.log10 (value)
 
     max = property (getMax, setMax)
     
-    def transform (self, value):
-        """Return where the given value should reside on this axis, 0
+    def transform (self, values):
+        """Return where the given values should reside on this axis, 0
         indicating all the way towards the physical minimum of the
         plotting area, 1 indicating all the way to the maximum."""
 
-        return float (math.log10 (value) - self.logmin) / (self.logmax - self.logmin)
+        return (N.log10 (values) - self.logmin) / (self.logmax - self.logmin)
 
-    def inbounds (self, value):
-        """Return True if the given value is within the bounds of this axis."""
-        lv = math.log10 (value)
-        return lv >= self.logmin and lv <= self.logmax
+    def inbounds (self, values):
+        """Return True for each value that is within the bounds of this axis."""
+        lv = N.log10 (value)
+        return N.logical_and (lv >= self.logmin, lv <= self.logmax)
 
 class DiscreteAxis (object):
     """A class that defines a discrete axis for a rectangular plot. That is,
     the abscissa values are abitrary and mapped to sequential points along
     the axis with even spacing."""
 
-    # If true, and there are N abscissae, map values to 1 / (N + 1) to
-    # N / (N + 1), so that no data points land on the left and right edges
+    # If true, and there are N abscissae, map values to 1 / (N + 0.5) to
+    # N / (N + 0.5), so that no data points land on the left and right edges
     # of the field. If false, map them to 0 / (N - 1) to (N - 1) / (N - 1),
     # so that the first value lands on the left edge and the last value on
     # the right edge.
     
     padBoundaries = True
     
-    def __init__ (self, coordSpec):
-        self.coordSpec = coordSpec
-
     def numAbscissae (self):
         raise NotImplementedError ()
 
-    def valueToIndex (self, value):
+    def allIndices (self):
+        return N.indices ((self.numAbscissae (), ))[0]
+    
+    def valuesToIndices (self, values):
         raise NotImplementedError ()
         
-    def indexToValue (self, index):
+    def indicesToValues (self, indices):
         raise NotImplementedError ()
         
-    def inbounds (self, value):
+    def inbounds (self, values):
         raise NotImplementedError ()
     
-    def transform (self, value):
-        try:
-            idx = self.valueToIndex (value)
+    def transform (self, values):
+        return self.transformIndices (self.valuesToIndices (values))
 
-            if self.padBoundaries:
-                return float (idx + 1) / (self.numAbscissae () + 1)
-            
-            return float (idx) / (self.numAbscissae () - 1)
-        except ValueError:
-            # What would a proper retval be here?
-            return 0.
+    def transformIndices (self, idxs):
+        # Coerce floating-point evaluation in either case.
+        
+        if self.padBoundaries:
+            ret = (idxs + 0.5) / (self.numAbscissae () + 0.0)
+        else:
+            ret = (idxs + 0.0) / (self.numAbscissae () - 1)
+
+        # FIXME: better way to handle this?
+        ret[N.where (idxs < 0)] = 0.0
+        
+        return ret
 
 class EnumeratedDiscreteAxis (DiscreteAxis):
     """A discrete axis in which the abscissae values are stored in memory in
-    an array."""
+    an ndarray."""
     
-    def __init__ (self, coordSpec, abscissae):
-        DiscreteAxis.__init__ (self, coordSpec)
-        self.abscissae = list (abscissae)
+    def __init__ (self, abscissae):
+        asarr = N.asarray (abscissae)
+
+        self.idxs = asarr.argsort ()
+        self.sorted = asarr[self.idxs]
 
     def numAbscissae (self):
-        return len (self.abscissae)
+        return len (self.sorted)
 
-    def valueToIndex (self, value):
-        return self.abscissae.index (value)
+    def valuesToIndices (self, values):
+        # This works. Honest.
+        
+        ret = self.sorted.searchsorted (values)
 
-    def indexToValue (self, index):
-        return self.abscissae[index]
+        for i in xrange (0, ret.size):
+            if values.flat[i] != self.sorted[ret.flat[i]]:
+                ret.flat[i] = -1
+            else:
+                ret.flat[i] = self.idxs[ret.flat[i]]
 
-    def inbounds (self, value): 
-        return value in self.abscissae
+        return ret
+    
+
+    def indicesToValues (self, indices):
+        return self.sorted[self.idxs[indices]]
+    
+    def inbounds (self, values): 
+        return self.valuesToIndices (values) >= 0
     
 class DiscreteIntegerAxis (DiscreteAxis):
     """A discrete axis in which the abscissae values are integers, specified
@@ -149,20 +183,20 @@ class DiscreteIntegerAxis (DiscreteAxis):
     def numAbscissae (self):
         return (self.max - self.min) // self.step + 1
 
-    def valueToIndex (self, value):
-        return (value - self.min) // self.step
+    def valuesToIndices (self, values):
+        return (values - self.min) // self.step
 
-    def indexToValue (self, index):
-        return index * self.step + self.min
+    def indicesToValues (self, indices):
+        return indices * self.step + self.min
 
-    def inbounds (self, value): 
-        return value >= self.min and value <= self.max
-    
+    def inbounds (self, values): 
+        return N.logical_and (value >= self.min, value <= self.max)
+
 class BlankAxisPainter (object):
     """An axisPainter for the RectPlot class. Either paints nothing at
     all, or just the line on the plot with no tick marks or labels."""
     
-    drawBaseline = True # XXX bagprop
+    drawBaseline = True
     lineStyle = 'bgLinework'
 
     # FIXME: minimum size should reflect current style's
@@ -325,10 +359,10 @@ class LinearAxisPainter (BlankAxisPainter):
 
         if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
         
-        mip = math.floor (math.log10 (span)) # major interval power
+        mip = N.floor (N.log10 (span)) # major interval power
 
         inc = 10. ** mip / self.minorTicks # incr. between minor ticks
-        coeff = int (math.ceil (self.axis.min / inc)) # coeff. of first tick
+        coeff = int (N.ceil (self.axis.min / inc)) # coeff. of first tick
         val = coeff * inc # location of first tick
 
         # If we cross zero, floating-point rounding errors cause the
@@ -436,7 +470,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     labelMinorTicks = False # draw value labels at the minor tick points?
     
     def formatLabel (self, val):
-        if self.formatLogValue: val = math.log10 (val)
+        if self.formatLogValue: val = N.log10 (val)
         
         if callable (self.numFormat): return self.numFormat (val)
         return self.numFormat % (val)
@@ -444,9 +478,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     def getTickLocations (self):
         # Tick spacing variables
 
-        curpow = int (math.floor (self.axis.logmin))
+        curpow = int (N.floor (self.axis.logmin))
         inc = 10. ** curpow
-        coeff = int (math.ceil (10. ** self.axis.logmin / inc)) - 1
+        coeff = int (N.ceil (10. ** self.axis.logmin / inc)) - 1
         val = inc * (coeff + 1)
 
         if coeff == 0:
@@ -543,6 +577,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
         self.axis = axis
         self.formatLabel = formatLabel or self.genericFormat
 
+    ticksBetween = False
     labelSeparation = 2 # in smallScale
     tickScale = 2 # in largeScale
     tickStyle = 'bgLinework' # style ref.
@@ -554,12 +589,14 @@ class DiscreteAxisPainter (BlankAxisPainter):
     def spaceExterior (self, helper, ctxt, style):
         n = self.axis.numAbscissae ()
         skip = max (n / 10, 1) # this is more than a little sketchy
-
-        stampers = []
+        useidxs = range (0, n, skip)
         
-        for i in range (0, n, skip):
-            s = self.formatLabel (self.axis.indexToValue (i))
-            stampers.append ((TextStamper (s), i))
+        stampers = []
+        values = self.axis.indicesToValues (useidxs)
+
+        for i in xrange (0, len (useidxs)):
+            s = self.formatLabel (values[i])
+            stampers.append ((TextStamper (s), useidxs[i]))
 
         outside, along = 0, 0
 
@@ -580,15 +617,22 @@ class DiscreteAxisPainter (BlankAxisPainter):
         style.apply (ctxt, self.tickStyle)
 
         n = self.axis.numAbscissae ()
+        idxs = self.axis.allIndices ()
+        vals = self.axis.transformIndices (idxs)
 
-        for i in range (0, n):
-            val = self.axis.transform (self.axis.indexToValue (i))
-            helper.paintTickIn (ctxt, val, self.tickScale * style.largeScale)
+        if self.ticksBetween:
+            for i in xrange (1, n):
+                pos = (vals[i-1] + vals[i]) / 2
+                helper.paintTickIn (ctxt, pos, self.tickScale * style.largeScale)
+        else:
+            for i in xrange (0, n):
+                helper.paintTickIn (ctxt, vals[i], self.tickScale * style.largeScale)
 
+            
         tc = style.getColor (self.textColor)
         
         for (ts, idx, w, h) in self.stampers:
-            val = self.axis.transform (self.axis.indexToValue (idx))
+            val = vals[idx]
             helper.moveToAlong (ctxt, val)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
             helper.relMoveRectOut (ctxt, w, h)
@@ -605,6 +649,7 @@ class RectField (object):
         if isinstance (xaxisOrField, RectField):
             xaxis = xaxisOrField.xaxis
             yaxis = xaxisOrField.yaxis
+            return
             
         if not xaxisOrField: xaxisOrField = LinearAxis ()
         if not yaxis: yaxis = LinearAxis ()
@@ -612,23 +657,15 @@ class RectField (object):
         self.xaxis = xaxisOrField
         self.yaxis = yaxis
     
-    def mapSpec (self, spec):
-        """Objects which reference a field and source or sink X and Y values should
-        call use this function to generate the correct 'sinkSpec'. For instance, if
-        a Y error bar stamp painter might have a sink specification of 'XYYY', corresponding
-        to an X/Y location, a lower Y error bound, and an upper Y error bound. This function
-        might then map these values into FFFF, if the axes both take floats as inputs,
-        or perhaps SFFF, if the X axis is indexed by strings."""
-        
-        return spec.replace ('X', self.xaxis.coordSpec).replace ('Y', self.yaxis.coordSpec)
-
     class Transformer (object):
         """A utility class tied to a RectField object. Has three members:
 
-        - mapData (spec, data): Given a sink specification and a tuple or list
-        of data, maps those data corresponding to 'X' or 'Y' values in the specification
+        - mapItem (spec, item): Given a sink specification and a data item, maps those 
+        elements corresponding to 'X' or 'Y' values in the specification
         to an appropriate floating point number using the axes associated with the
         RectField
+
+        - mapData (spec, data): As above for a set of data items.
 
         - mapX (val): Transforms val to an X value within the field using
         the RectField's X axis.
@@ -636,64 +673,58 @@ class RectField (object):
         - mapY (val): Analogous to transformX.
         """
         
-        def __init__ (self, field, width, height):
+        def __init__ (self, field, width, height, weakClamp):
             self.field = field
             self.width = float (width)
             self.height = float (height)
 
-        def mapX (self, val):
+            if weakClamp:
+                self.mapX = self._mapX_weakClamp
+                self.mapY = self._mapY_weakClamp
+            else:
+                self.mapX = self._mapX_raw
+                self.mapY = self._mapY_raw
+
+        def _mapX_raw (self, val):
             return self.field.xaxis.transform (val) * self.width
         
-        def mapY (self, val):
+        def _mapY_raw (self, val):
             # Mathematical Y axes have 0 on the bottom, while cairo has 0 at the
             # top. The one-minus accounts for that difference. (We transform from
             # math sense to cairo sense.)
             
             return (1. - self.field.yaxis.transform (val)) * self.height
 
-        def mapData (self, spec, data):
-            mapped = list (data)
+        def _mapX_weakClamp (self, val):
+            raw = self.field.xaxis.transform (val)
+
+            raw = N.maximum (raw, -1.0)
+            raw = N.minimum (raw, 2.0)
+
+            return raw * self.width
         
-            for i in range (0, len(mapped)):
-                if spec[i] == 'X':
-                    mapped[i] = self.mapX (data[i])
-                elif spec[i] == 'Y':
-                    mapped[i] = self.mapY (data[i])
+        def _mapY_weakClamp (self, val):
+            raw = 1. - self.field.yaxis.transform (val)
 
-            return mapped
+            raw = N.maximum (raw, -1.0)
+            raw = N.minimum (raw, 2.0)
 
-        def mapChunk (self, spec, chunk):
-            # FIXME: could probably make this a bit more efficient
-            # Could maybe precompile a specific mapData function
-            # somehow. That would be cute.
-            
-            xmaps = []
-            ymaps = []
+            return raw * self.height
 
-            for i in range (0, len(spec)):
-                if spec[i] == 'X':
-                    xmaps.append (i)
-                elif spec[i] == 'Y':
-                    ymaps.append (i)
-
-            for data in chunk:
-                mapped = list (data)
-
-                for idx in xmaps:
-                    mapped[idx] = self.mapX (data[idx])
-                for idx in ymaps:
-                    mapped[idx] = self.mapY (data[idx])
-
-                yield mapped
-                
-    def makeTransformer (self, width, height):
-        return self.Transformer (self, width, height)
+    def makeTransformer (self, width, height, weakClamp):
+        return self.Transformer (self, width, height, weakClamp)
 
     def setBounds (self, xmin, xmax, ymin, ymax):
         self.xaxis.min = xmin
         self.xaxis.max = xmax
         self.yaxis.min = ymin
         self.yaxis.max = ymax
+
+    def expandBounds (self, xmin, xmax, ymin, ymax):
+        self.xaxis.min = min (self.xaxis.min, xmin)
+        self.xaxis.max = max (self.xaxis.max, xmax)
+        self.yaxis.min = min (self.yaxis.min, ymin)
+        self.yaxis.max = max (self.yaxis.max, ymax)
 
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
@@ -713,12 +744,9 @@ class RectPlot (Painter):
         # we might want to plot two data sets with different logical axes,
         # but store default ones here to make life easier in the common case.
 
-        if not emulate:
-            self.defaultField = None
-            self.bpainter = BlankAxisPainter () # bottom (primary x) axis painter
-            self.lpainter = BlankAxisPainter () # left (primary y) axis painter
-            self.rpainter = BlankAxisPainter () # right (secondary x) axis painter
-            self.tpainter = BlankAxisPainter () # top (secondary y) axis painter
+        if emulate is None:
+            self.defaultField = RectField ()
+            self.magicAxisPainters ('lb')
         else:
             self.defaultField = emulate.defaultField
             self.bpainter = emulate.bpainter
@@ -735,24 +763,63 @@ class RectPlot (Painter):
                       
     def setDefaultField (self, field):
         self.defaultField = field
-    
-    def addFieldPainter (self, fp):
+
+    def addFieldPainter (self, fp, rebound=True):
         fp.setParent (self)
         self.fpainters.append (fp)
         
-        if not self.defaultField and hasattr (fp, 'field') and \
-               isinstance (fp.field, RectField):
-            self.defaultField = fp.field
+        if fp.field is None:
+            fp.field = self.defaultField
 
-    def quickAdd (self, pl, xinfo, yinfo=None, tmpl=None, **kwargs):
-        if tmpl is None and len (self.fpainters) > 0:
-            tmpl = self.fpainters[0]
+        if rebound:
+            self.rebound ()
+
+    def addXY (self, *args, **kwargs):
+        l = len (args)
+
+        rebound = _kwordDefaulted (kwargs, 'rebound', bool, True)
+        lines = _kwordDefaulted (kwargs, 'lines', bool, True)
+        lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, 'genericLine')
+        pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
+        _checkKwordsConsumed (kwargs)
+
+        if l == 1 and isinstance (args[0], FieldPainter):
+            self.addFieldPainter (args[0], rebound=rebound)
+            return
+
+        x, y, label = None, None, None
         
-        # We need to do this because util imports rect, so rect
-        # can't import util globally because rect will be incompletely
-        # defined.
-        import util
-        return util.addQuickRectDataPainter (pl, self, xinfo, yinfo, tmpl=tmpl, **kwargs)
+        if l == 3:
+            x, y = map (N.asarray, args[0:2])
+            label = args[2]
+        elif l == 2:
+            x, y = map (N.asarray, args)
+        elif l == 1:
+            y = N.asarray (args[0])
+            x = N.linspace (0, len (y) - 1, len (y))
+        else:
+            raise Exception ("Don't know how to handle magic addXY() args '%s'" % args)
+
+        dp = XYDataPainter (lines=lines, pointStamp=pointStamp)
+        dp.setFloats (x, y)
+        dp.lineStyle = lineStyle
+        self.addFieldPainter (dp, rebound=rebound)
+    
+    def rebound (self):
+        """Recalculate the bounds of the default field based on the data
+        that it contains."""
+
+        first = True
+
+        for fp in self.fpainters:
+            if fp.field is not self.defaultField:
+                continue
+
+            if first:
+                self.defaultField.setBounds (*fp.getDataBounds ())
+                first = False
+            else:
+                self.defaultField.expandBounds (*fp.getDataBounds ())
     
     def addOuterPainter (self, op, side, position):
         op.setParent (self)
@@ -760,13 +827,13 @@ class RectPlot (Painter):
 
     def _outerPainterIndex (self, op):
         for i in xrange (0, len(self.opainters)):
-            if self.opainters[i][0] == self: return 1
+            if self.opainters[i][0] is self: return i
 
         raise ValueError ('%s not in list of outer painters' % (op))
 
     def moveOuterPainter (self, op, side, position):
         idx = self._outerPainterIndex (self, op)
-        self.opainters[i] = (op, side, position)
+        self.opainters[idx] = (op, side, position)
     
     def removeChild (self, child):
         try:
@@ -807,13 +874,13 @@ class RectPlot (Painter):
 
         Examples:
 
-           rdp.magicAxisPainters ('lb') will give a classical plot
+           rp.magicAxisPainters ('lb') will give a classical plot
            in which the left and bottom sides of the field are marked with axes.
 
-           rdp.magicAxisPainters ('hv') will give an IDL-style plot
+           rp.magicAxisPainters ('hv') will give an IDL-style plot
            in which all sides of the field are marked with axes.
 
-           rdp.magicAxisPainters ('r') will give an unusual plot in which
+           rp.magicAxisPainters ('r') will give an unusual plot in which
            only the right side is labeled with axes.
         """
 
@@ -871,7 +938,7 @@ class RectPlot (Painter):
             if axis.min <= 0.:
                 logmin = -8 # FIXME: arbitrary magic number.
             else:
-                logmin = math.log10 (axis.min)
+                logmin = N.log10 (axis.min)
 
             # Axes may be running large to small ... not sure if this
             # code will work, but it has a better chance of working than
@@ -880,7 +947,7 @@ class RectPlot (Painter):
             if axis.max <= 0.:
                 logmax = -8
             else:
-                logmax = math.log10 (axis.max)
+                logmax = N.log10 (axis.max)
                 
             return LogarithmicAxis (logmin, logmax)
 
@@ -913,15 +980,14 @@ class RectPlot (Painter):
         self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter)
         self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter)
     
-    def addStream (self, stream, name, bag, sources):
-        rdp = RectDataPainter (bag)
-        bag.exposeSink (rdp, name)
-        sources[name] = stream
-
-        self.addFieldPainter (rdp)
-
     # X and Y axis label helpers
-
+    # FIXME: should have a setTitle too. Not the same as a top-side
+    # label since it should be centered over the whole allocation,
+    # not just the field.
+    
+    def setBounds (self, xmin, xmax, ymin, ymax):
+        self.defaultField.setBounds (xmin, xmax, ymin, ymax)
+    
     def setSideLabel (self, side, val):
         if self.mainLabels[side]:
             self.removeChild (self.mainLabels[side])
@@ -1134,256 +1200,263 @@ class RectPlot (Painter):
             op.configurePainting (ctxt, style, ow, oh)
             ctxt.restore ()
 
-    def doPaint (self, ctxt, style, firstPaint):
+    def doPaint (self, ctxt, style):
         """Paint the rectangular plot: axes and data items."""
 
-        if firstPaint:
-            ctxt.save ()
-            ctxt.translate (self.ext_total[3], self.ext_total[0])
-            self._axisApplyHelper (self.fieldw, self.fieldh, \
-                                   'paint', ctxt, style)
-            ctxt.restore ()
+        # Axes
+        
+        ctxt.save ()
+        ctxt.translate (self.ext_total[3], self.ext_total[0])
+        self._axisApplyHelper (self.fieldw, self.fieldh, \
+                               'paint', ctxt, style)
+        ctxt.restore ()
 
+        # Clip to the field, then paint the field items.
+        
         ctxt.save ()
         ctxt.rectangle (self.ext_total[3], self.ext_total[0],
                         self.fieldw, self.fieldh)
         ctxt.clip ()
         
         for fp in self.fpainters:
-            fp.paint (ctxt, style, firstPaint)
+            fp.paint (ctxt, style)
 
         ctxt.restore ()
 
+        # Now, outer painters
+        
         for (op, side, pos) in self.opainters:
-            op.paint (ctxt, style, firstPaint)
+            op.paint (ctxt, style)
 
-class FieldPainter (StreamSink):
-    rawSpec = 'XY'
+# Actual field painters.
+
+class FieldPainter (Painter):
     field = None
-    
-    def __init__ (self, bagOrFP):
-        if isinstance (bagOrFP, bag.Bag):
-            StreamSink.__init__ (self, bagOrFP)
-            self.field = RectField ()
-        else:
-            StreamSink.__init__ (self, bagOrFP.getBag ())
-            self.field = bagOrFP.field
-
-    @property
-    def sinkSpec (self):
-        return self.field.mapSpec (self.rawSpec)
-    
-    def doFirstPaint (self, ctxt, style):
-        self.xform = self.field.makeTransformer (self.width, self.height)
+        
+    def doPaint (self, ctxt, style):
+        if self.field is None:
+            raise Exception ('Need to set field of FieldPainter before painting!')
+        
+        self.xform = self.field.makeTransformer (self.width, self.height, True)
 
     def setBounds (self, *args):
         self.field.setBounds (*args)
 
-class RectDataPainter (FieldPainter):
+    def getDataBounds (self):
+        raise NotImplementedError ()
+
+class XYDataPainter (FieldPainter):
     lineStyle = 'genericLine'
     lines = True
     pointStamp = None
-    
-    def __init__ (self, bagOrFP):
-        FieldPainter.__init__ (self, bagOrFP)
 
-    @property
-    def rawSpec (self):
-        if not self.pointStamp:
-            return 'XY'
-        
-        spec = self.pointStamp.stampSpec
-        
-        if spec[0:2] != 'XY':
-            raise Exception ('trying to paint rect data with invalid stamp!')
-        
-        return spec
-    
-    def doFirstPaint (self, ctxt, style):
-        FieldPainter.doFirstPaint (self, ctxt, style)
-        self.lastx = None
-        self.lasty = None
-
-    def doChunkPaint (self, ctxt, style, chunk):
-        chunk = list (self.xform.mapChunk (self.rawSpec, chunk))
-        
-        style.apply (ctxt, self.lineStyle)
-        
-        if self.lastx == None:
-            try:
-                self.lastx, self.lasty = chunk[0][0:2]
-            except StopIteration:
-                return
-
-        ctxt.move_to (self.lastx, self.lasty)
-
-        if self.lines:
-            for data in chunk:
-                ctxt.line_to (data[0], data[1])
-
-            self.lastx, self.lasty = ctxt.get_current_point ()
-            ctxt.stroke ()
-        elif self.pointStamp:
-            self.lastx, self.lasty = chunk[-1][0:2]
-
-        if self.pointStamp:
-            for data in chunk:
-                self.pointStamp.paint (ctxt, style, data)
-
-class BandPainter (FieldPainter):
-    bandStyle = 'genericBand'
-    rawSpec = 'XYY'
-    
-    def __init__ (self, bagOrFP):
-        FieldPainter.__init__ (self, bagOrFP)
-
-    def doFirstPaint (self, ctxt, style):
-        FieldPainter.doFirstPaint (self, ctxt, style)
-        self.lastx = None
-        self.lastylow = None
-        self.lastyhigh = None
-
-    def doChunkPaint (self, ctxt, style, chunk):
-        # FIXME this will require lots of ... fixing
-        style.apply (ctxt, self.bandStyle)
-
-        chunk = list (self.xform.mapChunk (self.rawSpec, chunk))
-        l = len (chunk)
-        
-        ctxt.move_to (chunk[0][0], chunk[0][2])
-
-        for i in xrange (1, l):
-            ctxt.line_to (chunk[i][0], chunk[i][2])
-
-        for i in xrange (1, l + 1):
-            ctxt.line_to (chunk[l - i][0], chunk[l - i][1])
-
-        ctxt.close_path ()
-        ctxt.fill ()
-
-class DiscreteHistogramPainter (FieldPainter):
-    lineStyle = 'genericLine'
-    
-    def __init__ (self, bagOrFP):
-        FieldPainter.__init__ (self, bagOrFP)
-
-        if isinstance (bagOrFP, bag.Bag):
-            self.field.xaxis = None # User needs to specify a DiscreteAxis
-
-    def nextX (self, preval):
-        # uuuugly
-        idx = self.field.xaxis.valueToIndex (preval)
-        idx += 1
-
-        if idx >= self.field.xaxis.numAbscissae ():
-            return -1
-
-        # We should really use a Transformer returned by
-        # the field somehow.
-        val = self.field.xaxis.indexToValue (idx)
-        return self.width * self.field.xaxis.transform (val)
-    
-    def doFirstPaint (self, ctxt, style):
-        if not self.field.xaxis:
-            raise Exception ('Need to specify an X axis for this class!')
-
-        FieldPainter.doFirstPaint (self, ctxt, style)
-        
-        self.lastx = 0
-        self.lasty = self.height
-
-    def doChunkPaint (self, ctxt, style, chunk):
-        # FIXME: we assume that xaxis.padBoundaries = True
-        # We also assume that the data show up in order!
-        # If padBoundaries = False, this code actually somehow
-        # works. I have no idea why.
-        #
-        # This algorithm is really gross. I needed to sketch it
-        # out on paper in detail to check that it worked.
-        
-        style.apply (ctxt, self.lineStyle)
-
-        #try:
-        #    xyvals = chunk.next ()
-        #    next_ctr_x, nexty = self.transform (xyvals)
-        #except StopIteration:
-        #    return
-
-        #ctxt.move_to (self.lastx, self.lasty)
-        #ctxt.line_to (self.lastx, nexty)
-
-        #lastx = (next_ctr_x + self.nextX (xyvals[0])) / 2
-        #lasty = nexty
-        #lastctrx = next_ctr_x
-
-        lastx = self.lastx
-        lasty = self.lasty
-        lastctrx = 0
-        
-        for ctrx, y in self.xform.mapChunk (self.rawSpec, chunk):
-            #if lastctrx < 0:
-            #    rt_edge_x = self.lastx
-            #else:
-            rt_edge_x = (ctrx + lastctrx) / 2
-            
-            ctxt.line_to (lastx, lasty)
-            ctxt.line_to (rt_edge_x, lasty)
-
-            lastx = rt_edge_x
-            lastctrx = ctrx
-            lasty = y
-
-        # Finish off the current bar in prep for the next
-        # chunk, cause we don't know if we're the last chunk
-        # or not.
-        
-        next_ctr_x = self.nextX (ctrx)
-
-        if next_ctr_x < 0:
-            # We just painted the last item in the list;
-            # don't just draw the horizontal, drop it down to 0
-            rt_edge_x = (self.width + lastctrx) / 2
-            ctxt.line_to (lastx, lasty)
-            ctxt.line_to (rt_edge_x, lasty)
-            ctxt.line_to (rt_edge_x, self.height)
-            # This is to match the left-hand side of the histogram;
-            # it might be better not to draw it, but then the first-chunk
-            # and beginning-of-chunk algorithm will need to be tweaked somehow.
-            ctxt.line_to (self.width, self.height)
-        else:
-            ctxt.line_to (lastx, lasty)
-            ctxt.line_to ((ctrx + next_ctr_x)/2, lasty)
-        
-        ctxt.stroke ()
-
-        self.lastx = lastx
-        self.lasty = lasty
-    
-class LinePainter (Painter):
-    lineStyle = 'genericLine'
-    x0 = 0
-    y0 = 0
-    x1 = 10
-    y1 = 10
-    
-    def __init__ (self, field, *pts):
+    def __init__ (self, lines=True, pointStamp=None):
         Painter.__init__ (self)
         
-        self.field = field or RectField ()
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+        
+        if lines is False and pointStamp is None:
+            import stamps
+            pointStamp = stamps.X ()
+        
+        self.lines = lines
+        self.pointStamp = pointStamp
 
-        if len (pts) == 4:
-            self.x0, self.y0, self.x1, self.y1 = pts
-        elif len (pts) == 0:
-            return
-        else:
-            raise Exception ('Invalid argument to LinePainter(): should have 0 or 4 elements')
-    
-    def doPaint (self, ctxt, style, firstPaint):
-        if not firstPaint: return
+        if pointStamp is not None:
+            self.stampCInfo = self.data.register (*pointStamp.axisInfo)
+
+    def configurePainting (self, ctxt, style, w, h):
+        FieldPainter.configurePainting (self, ctxt, style, w, h)
+
+    def getDataBounds (self):
+        ign, ign, xs, ys = self.data.getAll ()
+
+        if xs.shape[1] < 1:
+            # Not great semantics -- say other data sets extend
+            # from 1e6 to 2e6 in both dimensions? But throwing
+            # an exception or returning None seems like a worse
+            # alternative.
+            
+            return (0., 0., 0., 0.,)
+        
+        return xs.min (), xs.max (), ys.min (), ys.max ()
+        
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
+        
+        if allx.shape[1] < 1: return
 
         style.apply (ctxt, self.lineStyle)
 
-        xform = self.field.makeTransformer (self.width, self.height)
-        ctxt.move_to (xform.mapX (self.x0), xform.mapY (self.y0))
-        ctxt.line_to (xform.mapX (self.x1), xform.mapY (self.y1))
+        x, y = allx[0], ally[0]
+        
+        ctxt.move_to (x[0], y[0])
+        
+        if self.lines:
+            for i in xrange (1, x.size):
+                ctxt.line_to (x[i], y[i])
+
+            ctxt.stroke ()
+
+        if self.pointStamp is not None:
+            for i in xrange (0, x.size):
+                self.pointStamp.paint (ctxt, style, imisc[:,i], fmisc[:,i],
+                                       allx[:,i], ally[:,i])
+
+class DiscreteSteppedPainter (FieldPainter):
+    lineStyle = 'genericLine'
+    connectors = True
+    
+    def __init__ (self, lineStyle='genericLine', connectors=True):
+        Painter.__init__ (self)
+
+        self.lineStyle = lineStyle
+        self.connectors = connectors
+        
+        self.data = RectDataHolder (DataHolder.AxisTypeInt,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+
+    def configurePainting (self, ctxt, style, w, h):
+        FieldPainter.configurePainting (self, ctxt, style, w, h)
+
+    def getDataBounds (self):
+        ign, ign, xs, ys = self.data.getAll ()
+
+        return xs.min (), xs.max (), ys.min (), ys.max ()
+        
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        axis = self.field.xaxis
+        if not isinstance (axis, DiscreteAxis):
+            raise Exception ('Field axis must be a DiscreteAxis')
+
+        imisc, fmisc, allx, ally = self.data.get (self.cinfo)
+        
+        if allx.shape[1] < 1: return
+
+        idxs = axis.valuesToIndices (allx[0])
+        nidx = axis.numAbscissae ()
+        xpos = axis.transformIndices (axis.allIndices ()) * self.width
+        ys = self.xform.mapY (ally[0])
+        
+        style.apply (ctxt, self.lineStyle)
+
+        for i in xrange (0, ys.size):
+            idx = idxs[i]
+            y = ys[i]
+
+            if idx == 0:
+                xleft = 0.0
+            else:
+                xleft = (xpos[idx] + xpos[idx-1]) / 2
+
+            if idx == nidx - 1:
+                xright = self.width
+            else:
+                xright = (xpos[idx] + xpos[idx+1]) / 2
+
+            # FIXME: if drawing connectors, we should really do a
+            # bunch of line-tos and one stroke, so that say dashed
+            # lines work out OK.
+            
+            if self.connectors and i > 0:
+                if idx <= previdx:
+                    raise Exception ('Data must be sorted by X to draw connectors')
+
+                if xleft == prevxright:
+                    ctxt.move_to (xleft, prevy)
+                    ctxt.line_to (xleft, y)
+                    ctxt.stroke ()
+            
+            ctxt.move_to (xleft, y)
+            ctxt.line_to (xright, y)
+            ctxt.stroke ()
+
+            prevy = y
+            prevxright = xright
+            previdx = idx
+
+class ContinuousSteppedPainter (FieldPainter):
+    """The X values are the left edges of the bins."""
+    
+    lineStyle = 'genericLine'
+    connectors = True
+    
+    def __init__ (self, lineStyle='genericLine', connectors=True):
+        Painter.__init__ (self)
+
+        self.lineStyle = lineStyle
+        self.connectors = connectors
+        
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+
+    def configurePainting (self, ctxt, style, w, h):
+        FieldPainter.configurePainting (self, ctxt, style, w, h)
+
+    def _calcMaxX (self, d):
+        # FIXME: assuming data are sorted in X. We check in doPaint ()
+        # but could stand to check here too.
+
+        if d.size == 1:
+            return 2 * d[0]
+        elif d.size == 0:
+            return 0.0
+        
+        return 2 * d[-1] - d[-2]
+    
+    def getDataBounds (self):
+        imisc, fmisc, xs, ys = self.data.getAll ()
+
+        return xs.min (), self._calcMaxX (xs[0]), ys.min (), ys.max ()
+        
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        xs, ys = self.data.getRawXY (self.cinfo)
+        finalx = self.xform.mapX (self._calcMaxX (xs))
+        xs = self.xform.mapX (xs)
+        ys = self.xform.mapY (ys)
+        
+        if xs.size < 1: return
+
+        style.apply (ctxt, self.lineStyle)
+
+        prevx, prevy = xs[0], ys[0]
+        ctxt.move_to (prevx, prevy)
+
+        if self.connectors:
+            for i in xrange (1, xs.size):
+                x, y = xs[i], ys[i]
+                if x <= prevx:
+                    raise Exception ('Arguments must be sorted in X')
+                
+                ctxt.line_to (x, prevy)
+                ctxt.line_to (x, y)
+
+                prevx, prevy = x, y
+        else:
+            for i in xrange (1, xs.size):
+                x, y = xs[i], ys[i]
+                if x <= prevx:
+                    raise Exception ('Arguments must be sorted in X')
+                
+                ctxt.line_to (x, prevy)
+                ctxt.stroke ()
+
+                ctxt.move_to (x, y)
+
+                prevx, prevy = x, y
+
+        ctxt.line_to (finalx, prevy)
         ctxt.stroke ()

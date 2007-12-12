@@ -32,10 +32,9 @@ the main loop to exit, the interpreter will hang upon exit."""
 
 from threading import Thread
 from Queue import Queue, Empty
-import atexit
+import sys, atexit
 
-import gobject
-import gtk
+import gobject, gtk
 
 __all__ = [ 'send', 'interval' ]
 
@@ -65,6 +64,8 @@ class _gtkThread (Thread):
             func = _queue.get_nowait ()
             func ()
         except Empty: pass
+        except Exception, e:
+            print >>sys.stderr, 'Exception in queue callback:', e
         return True
     
 def send (func):

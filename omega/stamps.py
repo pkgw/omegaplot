@@ -10,43 +10,36 @@ import math as _math
 _defaultStampSize = 5
 
 class Stamp (object):
-    stampSpec = 'XY'
+    axisInfo = (0, 0, 0, 0)
     mainStyle = 'genericStamp'
 
-    def paint (self, ctxt, style, data):
+    def paint (self, ctxt, style, imisc, fmisc, allx, ally):
         ctxt.save ()
         style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style, data)
+        self.doPaint (ctxt, style, imisc, fmisc, allx, ally)
         ctxt.restore ()
-
-class SizedDot (Stamp):
-    stampSpec = 'XYF' # size of dot in style.smallScale
-
-    def doPaint (self, ctxt, style, data):
-        ctxt.arc (data[0], data[1], data[2] * style.smallScale, 0, 2 * _math.pi)
-        ctxt.fill ()
 
 class Dot (Stamp):
     size = _defaultStampSize # diameter of dot in style.smallScale
     
-    def doPaint (self, ctxt, style, data):
-        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.fill ()
 
 class Circle (Stamp):
     size = _defaultStampSize # diameter of circle in style.smallScale
     
-    def doPaint (self, ctxt, style, data):
-        ctxt.arc (data[0], data[1], self.size * style.smallScale / 2, 0, 2 * _math.pi)
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.stroke ()
 
 class UpTriangle (Stamp):
     size = _defaultStampSize # size of triangle in style.smallScale
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s = self.size * style.smallScale
         
-        ctxt.move_to (data[0], data[1] - s * 0.666666)
+        ctxt.move_to (allx[0], ally[0] - s * 0.666666)
         ctxt.rel_line_to (s/2, s)
         ctxt.rel_line_to (-s, 0)
         ctxt.rel_line_to (s/2, -s)
@@ -55,10 +48,10 @@ class UpTriangle (Stamp):
 class DownTriangle (Stamp):
     size = _defaultStampSize # size of triangle in style.smallScale
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s = self.size * style.smallScale
         
-        ctxt.move_to (data[0], data[1] + s * 0.666666)
+        ctxt.move_to (allx[0], ally[0] + s * 0.666666)
         ctxt.rel_line_to (-s/2, -s)
         ctxt.rel_line_to (s, 0)
         ctxt.rel_line_to (-s/2, s)
@@ -68,9 +61,9 @@ class X (Stamp):
     size = _defaultStampSize # size of the X in style.smallScale; corrected by
     # sqrt(2) so that X and Plus lay down the same amount of "ink"
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s = self.size * style.smallScale / _math.sqrt (2)
-        x, y = data
+        x, y = allx[0], ally[0]
         
         ctxt.move_to (x - s/2, y - s/2)
         ctxt.rel_line_to (s, s)
@@ -82,14 +75,14 @@ class X (Stamp):
 class Plus (Stamp):
     size = _defaultStampSize # size of the + in style.smallScale
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s = self.size * style.smallScale
-        x, y = data
+        x, y = allx[0], ally[0]
         
         ctxt.move_to (x - s/2, y)
         ctxt.rel_line_to (s, 0)
         ctxt.stroke ()
-        ctxt.move_to (data[0], y - s/2)
+        ctxt.move_to (x, y - s/2)
         ctxt.rel_line_to (0, s)
         ctxt.stroke ()
     
@@ -98,61 +91,60 @@ class Box (Stamp):
     # reduced by sqrt(2) so that the area of the Box and
     # Diamond stamps are the same for the same values of size.
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s = self.size * style.smallScale / _math.sqrt (2)
         
-        ctxt.rectangle (data[0] - s/2, data[1] - s/2, s, s)
+        ctxt.rectangle (allx[0] - s/2, ally[0] - s/2, s, s)
         ctxt.stroke ()
     
 class Diamond (Stamp):
     size = _defaultStampSize # size of the diamond in style.smallScale
 
-    def doPaint (self, ctxt, style, data):
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         s2 = self.size * style.smallScale / 2
 
-        ctxt.move_to (data[0], data[1] - s2)
+        ctxt.move_to (allx[0], ally[0] - s2)
         ctxt.rel_line_to (s2, s2)
         ctxt.rel_line_to (-s2, s2)
         ctxt.rel_line_to (-s2, -s2)
         ctxt.rel_line_to (s2, -s2)
         ctxt.stroke ()
 
-class DotYErrorBars (Dot):
-    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
+class WithSizing (Stamp):
+    def __init__ (self, substamp):
+        self.substamp = substamp
+        
+        self.axisInfo = list (substamp.axisInfo)
+        self.axisInfo[1] += 1
 
-    def doPaint (self, ctxt, style, data):
-        Dot.doPaint (self, ctxt, style, data[0:2])
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        substamp.size = fmisc[0]
+        substamp.doPaint (self, ctxt, style, imisc, fmisc[1:], allx, ally)
+    
+class WithYErrorBars (Stamp):
+    def __init__ (self, substamp):
+        self.substamp = substamp
 
-        ctxt.move_to (data[0], data[2])
-        ctxt.line_to (data[0], data[3])
+        self.axisInfo = list (substamp.axisInfo)
+        self.axisInfo[3] += 2
+
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        substamp.doPaint (self, ctxt, style, imisc, fmisc, allx, ally)
+
+        ctxt.move_to (allx[0], ally[2])
+        ctxt.line_to (allx[0], ally[3])
         ctxt.stroke ()
 
-class CrossYErrorBars (X):
-    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
+class WithXErrorBars (Stamp):
+    def __init__ (self, substamp):
+        self.substamp = substamp
 
-    def doPaint (self, ctxt, style, data):
-        X.doPaint (self, ctxt, style, data[0:2])
+        self.axisInfo = list (substamp.axisInfo)
+        self.axisInfo[2] += 2
 
-        ctxt.move_to (data[0], data[2])
-        ctxt.line_to (data[0], data[3])
-        ctxt.stroke ()
+    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        substamp.doPaint (self, ctxt, style, imisc, fmisc, allx, ally)
 
-class BoxYErrorBars (Box):
-    stampSpec = 'XYYY' # x, y, lower error bound, upper error bound
-
-    def doPaint (self, ctxt, style, data):
-        Box.doPaint (self, ctxt, style, data[0:2])
-
-        ctxt.move_to (data[0], data[2])
-        ctxt.line_to (data[0], data[3])
-        ctxt.stroke ()
-
-class CrossXErrorBars (X):
-    stampSpec = 'XYXX' # x, y, lower error bound, upper error bound
-
-    def doPaint (self, ctxt, style, data):
-        X.doPaint (self, ctxt, style, data[0:2])
-
-        ctxt.move_to (data[2], data[1])
-        ctxt.line_to (data[3], data[1])
+        ctxt.move_to (allx[2], ally[0])
+        ctxt.line_to (allx[3], ally[0])
         ctxt.stroke ()

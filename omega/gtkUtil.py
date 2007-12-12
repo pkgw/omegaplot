@@ -5,13 +5,14 @@ import gtkThread
 import sys #exc_info
 
 from base import NullPainter, Painter
-from util import PaintPipeline, ContextTooSmallError
+import styles
 
 class OmegaArea (gtk.DrawingArea):
-    def __init__ (self, pipeline, autoRepaint):
+    def __init__ (self, painter, style, autoRepaint):
         gtk.DrawingArea.__init__ (self)
 
-        self.pipeline = pipeline
+        self.omegaStyle = style
+        self.setPainter (painter)
 
         self.lastException = None
         self.paintId = -1
@@ -21,10 +22,22 @@ class OmegaArea (gtk.DrawingArea):
         self.connect ('destroy', self._destroyed)
 
     # Painting
+
+    def removeChild (self, child):
+        self.painter = NullPainter ()
+        self.painter.setParent (self)
     
     def _expose (self, widget, event):
+        if self.lastException is not None:
+            # oops we blew up
+            from traceback import print_exception
+            print 'Unprocessed exception from last painting:'
+            print_exception (*self.lastException)
+            return False
+            
         ctxt = widget.window.cairo_create()
-    
+        style = self.omegaStyle
+        
         # set a clip region for the expose event
         ctxt.rectangle (event.area.x, event.area.y,
                         event.area.width, event.area.height)
@@ -33,9 +46,15 @@ class OmegaArea (gtk.DrawingArea):
         w, h = self.allocation.width, self.allocation.height
 
         try:
-            self.pipeline.paintToContext (ctxt, w, h)
-        except ContextTooSmallError, ctse:
-            print ctse
+            minw, minh = self.painter.getMinimumSize (ctxt, style)
+
+            if w < minw or h < minh:
+                raise Exception ('Context too small: got (%d, %d) ; need (%d, %d)' % \
+                                 (w, h, minw, minh))
+            self.painter.configurePainting (ctxt, style, w, h)
+            self.painter.paint (ctxt, style)
+        #except ContextTooSmallError, ctse:
+        #    print ctse
         except:
             self.lastException = sys.exc_info ()
         
@@ -71,8 +90,8 @@ class OmegaArea (gtk.DrawingArea):
             self.paintId = -1
             return False
 
-        if self.autoReconfigure:
-            self.forceReconfigure ()
+        #if self.autoReconfigure:
+        #    self.forceReconfigure ()
                 
         self.queue_draw ()
         return True
@@ -80,14 +99,13 @@ class OmegaArea (gtk.DrawingArea):
     # Python interface
     
     def setPainter (self, p):
-        self.pipeline.setPainter (p)
-
-    def forceReconfigure (self):
-        self.pipeline.forceReconfigure ()
-
-    def getPipeline (self):
-        return self.pipeline
+        if p is not None: p.setParent (self)
+        self.painter = p
+        self.queue_draw ()
     
+    #def forceReconfigure (self):
+    #    self.pipeline.forceReconfigure ()
+
     # Cleanup
     
     def _destroyed (self, unused):
@@ -96,28 +114,38 @@ class OmegaArea (gtk.DrawingArea):
     def __del__ (self):
         self._destroyed (self)
 
+_slowMode = False
+
+def slowMode (value=True):
+    global _slowMode
+    _slowMode = value
+
 class OmegaDemoWindow (gtk.Window):
     isFullscreen = False
 
     __gsignals__ = { 'key-press-event' : 'override' }
     
-    def __init__ (self, pipeline, parent=None):
+    def __init__ (self, painter, style, parent=None):
         gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
         
         self.set_title ('OmegaPlot Test Window Canvas')
         self.set_default_size (640, 480)
         self.set_border_width (4)
         self.set_position (gtk.WIN_POS_CENTER_ON_PARENT)
-        self.set_type_hint (gtk.gdk.WINDOW_TYPE_HINT_UTILITY) #? eh.
+        self.set_type_hint (gtk.gdk.WINDOW_TYPE_HINT_NORMAL)
         #self.set_urgency_hint (True)
 
         if parent is not None: self.set_transient_for (parent)
         
         # window_position GtkWindowPosition, type_hint GdkWindowTypeHint
         # urgency_hint, GdkGravity gravity, 
-        self.oa = OmegaArea (pipeline, True)
+        self.oa = OmegaArea (painter, style, True)
         self.add (self.oa)
 
+        if _slowMode:
+            self.oa.autoRepaint = False
+            self.oa.autoReconfigure = False
+    
     # Fun
 
     def do_key_press_event (self, event):
@@ -161,17 +189,24 @@ class OmegaDemoWindow (gtk.Window):
     def setPainter (self, p):
         self.oa.setPainter (p)
 
-    def forceReconfigure (self):
-        self.oa.forceReconfigure ()
+    #def forceReconfigure (self):
+    #    self.oa.forceReconfigure ()
 
-    def getPipeline (self):
-        return self.oa.getPipeline ()
+def showBlocking (painter, style=None):
+    if style is None: 
+            style = styles.BlackOnWhiteBitmap ()
+            
+    win = OmegaDemoWindow (painter, style)
+    win.connect ('destroy', gtk.main_quit)
+    win.show_all ()
     
+    gtk.main ()
+
 class LiveDisplay (object):
-    def __init__ (self, pipeline):
+    def __init__ (self, painter, style):
         self.win = None
 
-        # Here we set up a destroy function that the window will use.
+        # Here we set up a destroy function that our windows will use.
         # We only hold a weak reference to 'self' here, so that 'del
         # [instance-of-LiveDisplay]' will actually destroy the object
         # (and hence the window), which is a functionality that I
@@ -189,34 +224,63 @@ class LiveDisplay (object):
             
             if instance != None:
                 instance.win = None
-                
-        # End of wacky code.
+
+        self._clearFunc = clear
         
-        def init ():
-            self.win = OmegaDemoWindow (pipeline)
-            self.win.connect ('destroy', clear)
-            self.win.show_all ()
-            
-        gtkThread.send (init)
+        # End of wacky code.
+
+        if painter is not None:
+            self.setPainter (painter, style)
 
     def __del__ (self):
         if self.win == None: return
         if gtkThread == None: return # this can get GC'd before us!
+        if gtkThread._queue == None: return # same!
+        
+        # I'm not sure if we're exposed to problems here. If
+        # calling w.destroy () deallocates the underlying object,
+        # then it might be that if the window is manually destroyed
+        # before self._clearFunc has a chance to run, then we'll
+        # be referencing a nuked GObject below. But some simple tests
+        # make it seem like it's ok to do effectively call w.destroy ()
+        # twice while a Python ref is held to it.
 
-        # The user may destroy the window via the WM
-        # and then delete this object before the clear()
-        # function has had a chance to run ...
-
+        w = self.win
+        
         def doit ():
-            if self.win != None:
-                self.win.destroy ()
-                self.win = None
+            w.destroy ()
             
         gtkThread.send (doit)
 
+    def setPainter (self, painter, style=None, winTrack=True):
+        # Note that we do not honor @style if the window already
+        # exists. Should add a setStyle () function at some point.
+        
+        if style is None:
+            style = styles.BlackOnWhiteBitmap ()
+        
+        def f ():
+            if self.win is not None:
+                self.win.setPainter (painter)
+
+                if winTrack:
+                    if painter is not None: self.win.present ()
+                    else: self.win.hide ()
+            else:
+                self.win = OmegaDemoWindow (painter, style)
+                self.win.connect ('destroy', self._clearFunc)
+
+                if winTrack:
+                    if painter is not None:
+                        self.win.show_all ()
+                        self.win.present ()
+                    #else: self.win.hide () # redundant
+            
+        gtkThread.send (f)
+
     # More OmegaArea interface emulation, with the added wrinkle
     # of doing everything cross-thread. Don't even bother providing
-    # write access to the attributes.
+    # read access to the attributes.
 
     def set_paintInterval (self, value):
         def doit ():
@@ -242,22 +306,18 @@ class LiveDisplay (object):
 
     autoRepaint = property (None, set_autoRepaint)
     
-    def setPainter (self, p):
-        def doit ():
-            if self.win: self.win.setPainter (p)
-        gtkThread.send (doit)
-
-    def forceReconfigure (self):
-        def doit ():
-            if self.win: self.win.forceReconfigure ()
-        gtkThread.send (doit)
+    #def forceReconfigure (self):
+    #    def doit ():
+    #        if self.win: self.win.forceReconfigure ()
+    #    gtkThread.send (doit)
 
     lingerInterval = 250
     
     def linger (self):
         """Block the caller until the LiveDisplay window has been closed
         by the user. Useful for semi-interactive programs to pause while
-        the user examines a plot."""
+        the user examines a plot. You may avoid using threads altogether
+        with the showBlocking () in module gtkUtil."""
         
         from Queue import Queue, Empty
 
@@ -282,3 +342,5 @@ class LiveDisplay (object):
 
 import util
 util.defaultLiveDisplay = LiveDisplay
+util.defaultShowBlocking = showBlocking
+util.slowMode = slowMode
