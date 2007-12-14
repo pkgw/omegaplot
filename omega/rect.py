@@ -714,17 +714,25 @@ class RectField (object):
     def makeTransformer (self, width, height, weakClamp):
         return self.Transformer (self, width, height, weakClamp)
 
-    def setBounds (self, xmin, xmax, ymin, ymax):
-        self.xaxis.min = xmin
-        self.xaxis.max = xmax
-        self.yaxis.min = ymin
-        self.yaxis.max = ymax
+    def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
+        if xmin is not None:
+            self.xaxis.min = float (xmin)
+        if xmax is not None:
+            self.xaxis.max = float (xmax)
+        if ymin is not None:
+            self.yaxis.min = float (ymin)
+        if ymax is not None:
+            self.yaxis.max = float (ymax)
 
-    def expandBounds (self, xmin, xmax, ymin, ymax):
-        self.xaxis.min = min (self.xaxis.min, xmin)
-        self.xaxis.max = max (self.xaxis.max, xmax)
-        self.yaxis.min = min (self.yaxis.min, ymin)
-        self.yaxis.max = max (self.yaxis.max, ymax)
+    def expandBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
+        if xmin is not None:
+            self.xaxis.min = min (self.xaxis.min, float (xmin))
+        if xmax is not None:
+            self.xaxis.max = max (self.xaxis.max, float (xmax))
+        if ymin is not None:
+            self.yaxis.min = min (self.yaxis.min, float (ymin))
+        if ymax is not None:
+            self.yaxis.max = max (self.yaxis.max, float (ymax))
 
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
@@ -782,10 +790,6 @@ class RectPlot (Painter):
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, 'genericLine')
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
         _checkKwordsConsumed (kwargs)
-
-        if l == 1 and isinstance (args[0], FieldPainter):
-            self.addFieldPainter (args[0], rebound=rebound)
-            return
 
         x, y, label = None, None, None
         
@@ -985,7 +989,7 @@ class RectPlot (Painter):
     # label since it should be centered over the whole allocation,
     # not just the field.
     
-    def setBounds (self, xmin, xmax, ymin, ymax):
+    def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         self.defaultField.setBounds (xmin, xmax, ymin, ymax)
     
     def setSideLabel (self, side, val):

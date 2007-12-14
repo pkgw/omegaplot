@@ -17,10 +17,15 @@ import rect
 
 def quickXY (*args, **kwargs):
     new = _kwordDefaulted (kwargs, 'new', bool, False)
+    xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
+    xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
+    ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
+    ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
     
     rp = rect.RectPlot ()
     rp.addXY (*args, **kwargs)
-
+    rp.setBounds (xmin, xmax, ymin, ymax)
+    
     if new:
         ld = rp.showNew ()
         return rp, ld
@@ -32,12 +37,17 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     from numpy import histogram
 
     new = _kwordDefaulted (kwargs, 'new', bool, False)
+    xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
+    xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
+    ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
+    ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
 
     values, edges = histogram (data, bins, range, normed)
 
     rp = rect.RectPlot ()
     fp = rect.ContinuousSteppedPainter (**kwargs)
     rp.addFieldPainter (fp)
+    rp.setBounds (xmin, xmax, ymin, ymax)
 
     fp.setDataSeparate (edges, values)
 
