@@ -16,7 +16,6 @@ def showBlocking (painter, style=None, **kwargs):
 import rect
 
 def quickXY (*args, **kwargs):
-    new = _kwordDefaulted (kwargs, 'new', bool, False)
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
     ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
@@ -25,41 +24,24 @@ def quickXY (*args, **kwargs):
     rp = rect.RectPlot ()
     rp.addXY (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
-    
-    if new:
-        ld = rp.showNew ()
-        return rp, ld
-    
-    rp.show ()
     return rp
 
 def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     from numpy import histogram
 
-    new = _kwordDefaulted (kwargs, 'new', bool, False)
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
-    ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
+    ymin = _kwordDefaulted (kwargs, 'ymin', float, 0.0)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
 
     values, edges = histogram (data, bins, range, normed)
 
-    rp = rect.RectPlot ()
     fp = rect.ContinuousSteppedPainter (**kwargs)
+    fp.setFloats (edges, values)
+    
+    rp = rect.RectPlot ()
     rp.addFieldPainter (fp)
     rp.setBounds (xmin, xmax, ymin, ymax)
-
-    fp.setDataSeparate (edges, values)
-
-    # FIXME: set yaxis minimum to 0. This will be overwritten
-    # when we show () right now because of the _queueRebound
-    # thing. Gotta figure out how to avoid that.
-    
-    if new:
-        ld = rp.showNew ()
-        return rp, ld
-    
-    rp.show ()
     return rp
 
 # Utilities for dumping to various useful output devices.

@@ -16,4 +16,4 @@ import gtkThread, gtkUtil, layout, rect, \
 
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from util import quickXY
+from util import quickXY, quickHist
