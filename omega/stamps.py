@@ -118,8 +118,8 @@ class WithSizing (Stamp):
         self.axisInfo[1] += 1
 
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        substamp.size = fmisc[0]
-        substamp.doPaint (self, ctxt, style, imisc, fmisc[1:], allx, ally)
+        self.substamp.size = fmisc[0]
+        self.substamp.doPaint (ctxt, style, imisc, fmisc[1:], allx, ally)
     
 class WithYErrorBars (Stamp):
     def __init__ (self, substamp):
@@ -129,10 +129,10 @@ class WithYErrorBars (Stamp):
         self.axisInfo[3] += 2
 
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        substamp.doPaint (self, ctxt, style, imisc, fmisc, allx, ally)
+        self.substamp.doPaint (ctxt, style, imisc, fmisc, allx, ally)
 
-        ctxt.move_to (allx[0], ally[2])
-        ctxt.line_to (allx[0], ally[3])
+        ctxt.move_to (allx[0], ally[1])
+        ctxt.line_to (allx[0], ally[2])
         ctxt.stroke ()
 
 class WithXErrorBars (Stamp):
@@ -143,8 +143,8 @@ class WithXErrorBars (Stamp):
         self.axisInfo[2] += 2
 
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        substamp.doPaint (self, ctxt, style, imisc, fmisc, allx, ally)
+        self.substamp.doPaint (ctxt, style, imisc, fmisc, allx, ally)
 
-        ctxt.move_to (allx[2], ally[0])
-        ctxt.line_to (allx[3], ally[0])
+        ctxt.move_to (allx[1], ally[0])
+        ctxt.line_to (allx[2], ally[0])
         ctxt.stroke ()

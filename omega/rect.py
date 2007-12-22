@@ -18,6 +18,12 @@ class RectDataHolder (DataHolder):
         y = xform.mapY (y)
         return imisc, fmisc, x, y
 
+    def getAllMapped (self, xform):
+        imisc, fmisc, x, y = self.getAll ()
+        x = xform.mapX (x)
+        y = xform.mapY (y)
+        return imisc, fmisc, x, y
+
     def getMappedXY (self, cinfo, xform):
         imisc, fmisc, x, y = self.get (cinfo)
         return xform.mapX (x[0]), xform.mapY (y[0])
@@ -1291,13 +1297,13 @@ class XYDataPainter (FieldPainter):
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
 
-        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
+        imisc, fmisc, allx, ally = self.data.getAllMapped (self.xform)
         
         if allx.shape[1] < 1: return
 
         style.apply (ctxt, self.lineStyle)
 
-        x, y = allx[0], ally[0]
+        x, y = allx[0,:], ally[0,:]
         
         ctxt.move_to (x[0], y[0])
         
