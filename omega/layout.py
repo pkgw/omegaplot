@@ -104,14 +104,15 @@ class Grid (Painter):
         if prev is value: return
 
         # This will recurse to our own removeChild
-        if prev: prev.setParent (None)
+        if prev is not None: prev.setParent (None)
 
         # Do this before modifying self._elements, so that
         # if value is already in _elements and is being
         # moved to an earlier position, removeChild doesn't
         # remove the wrong entry.
         
-        if value: value.setParent (self)
+        if value is not None: value.setParent (self)
+        else: value = NullPainter ()
         
         self._elements[midx] = value
 
