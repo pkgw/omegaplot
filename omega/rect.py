@@ -89,7 +89,7 @@ class LogarithmicAxis (object):
 
     def inbounds (self, values):
         """Return True for each value that is within the bounds of this axis."""
-        lv = N.log10 (value)
+        lv = N.log10 (values)
         return N.logical_and (lv >= self.logmin, lv <= self.logmax)
 
 class DiscreteAxis (object):
