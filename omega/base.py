@@ -352,6 +352,20 @@ class DataHolder (object):
 
 _mainLiveDisplay = None
 
+class HeadlessPaintParent (object):
+    painter = None
+
+    def setPainter (self, painter):
+        if self.painter is not None:
+            self.painter.setParent (None)
+        if painter is not None:
+            painter.setParent (self)
+
+        self.painter = painter
+
+    def removeChild (self, child):
+        self.painter = None
+
 class Painter (object):
     mainStyle = None
     parent = None
@@ -424,12 +438,17 @@ class Painter (object):
         return self
     
     def renderBasic (self, ctxt, style, w, h):
+        self.getMinimumSize (ctxt, style) # sometimes needed to set up constants
         self.configurePainting (ctxt, style, w, h)
         style.initContext (ctxt, w, h)
         self.paint (ctxt, style)
 
-    def render (self, func): func (self)
-
+    def render (self, func):
+        prev = self.parent
+        self.setParent (HeadlessPaintParent ())
+        func (self)
+        self.setParent (prev)
+    
     def save (self, filename, **kwargs):
         import util
         util.savePainter (self, filename, **kwargs)
