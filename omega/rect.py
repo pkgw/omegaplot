@@ -32,33 +32,41 @@ class RectDataHolder (DataHolder):
         imisc, fmisc, x, y = self.get (cinfo)
         return x[0], y[0]
 
-class LinearAxis (object):
-    """A class that defines a linear axis for a rectangular plot. Note
-    that this class does not paint the axis; it just maps values from
-    the bounds to a [0, 1] range so that the RectPlot class knows
-    where to locate points."""
+class RectAxis (object):
+    """Generic class for a logical axis on a rectangular plot. Note that
+    this class does not paint the axis; it just maps values from the bounds
+    to a [0, 1] range so that the RectPlot class knows where to locate
+    points.
+
+    Implementations must have read-write attributes "min" and "max" which
+    control the axis bounds."""
+
+    def transform (self, values):
+        """Return where the given values should reside on this axis, 0
+        indicating all the way towards the physical minimum of the
+        plotting area, 1 indicating all the way to the maximum."""
+        raise NotImplementedError ()
+
+    def inbounds (self, values):
+        """Return True for each value that is within the bounds of this axis."""
+        raise NotImplementedError ()
+
+class LinearAxis (RectAxis):
+    """A linear logical axis for a rectangular plot."""
 
     def __init__ (self, min=0., max=10.):
         self.min = min
         self.max = max
 
     def transform (self, values):
-        """Return where the given values should reside on this axis, 0
-        indicating all the way towards the physical minimum of the
-        plotting area, 1 indicating all the way to the maximum."""
-
-        # Force floating-point evaluation.
+        # The +0 forces floating-point evaluation.
         return (values + 0.0 - self.min) / (self.max - self.min)
 
     def inbounds (self, values):
-        """Return True for each value that is within the bounds of this axis."""
         return N.logical_and (values >= self.min, values <= self.max)
     
-class LogarithmicAxis (object):
-    """A class that defines a logarithmic axis for a rectangular plot. Note
-    that this class does not paint the axis; it just maps values from
-    the bounds to a [0, 1] range so that the RectPlot class knows
-    where to locate points."""
+class LogarithmicAxis (RectAxis):
+    """A logarithmic logical axis for a rectangular plot."""
 
     def __init__ (self, logmin=-3., logmax=3.):
         self.logmin = logmin
@@ -81,19 +89,14 @@ class LogarithmicAxis (object):
     max = property (getMax, setMax)
     
     def transform (self, values):
-        """Return where the given values should reside on this axis, 0
-        indicating all the way towards the physical minimum of the
-        plotting area, 1 indicating all the way to the maximum."""
-
         return (N.log10 (values) - self.logmin) / (self.logmax - self.logmin)
 
     def inbounds (self, values):
-        """Return True for each value that is within the bounds of this axis."""
         lv = N.log10 (values)
         return N.logical_and (lv >= self.logmin, lv <= self.logmax)
 
-class DiscreteAxis (object):
-    """A class that defines a discrete axis for a rectangular plot. That is,
+class DiscreteAxis (RectAxis):
+    """A discrete logical axis for a rectangular plot. That is,
     the abscissa values are abitrary and mapped to sequential points along
     the axis with even spacing."""
 
@@ -197,6 +200,8 @@ class DiscreteIntegerAxis (DiscreteAxis):
 
     def inbounds (self, values): 
         return N.logical_and (value >= self.min, value <= self.max)
+
+# Axis Painters
 
 class BlankAxisPainter (object):
     """An axisPainter for the RectPlot class. Either paints nothing at
