@@ -229,6 +229,13 @@ class BlankAxisPainter (object):
         we're on, second is along it."""
         return 0, 0
 
+    def nudgeBounds (self):
+        """Modify the bounds of our axis to a superset of the inputs.
+        The new bounds should be "nice" for this axis, i.e., rounded off 
+        to some reasonable value. For instance, for a regular base-10 linear
+        axis, nudging (1, 9) should probably yield (0, 10)."""
+        pass
+
 class AxisPaintHelper (object):
     """A helper class that makes common axis-painting operations
     agnostic to the orientation of the axis we are painting. More
@@ -358,6 +365,24 @@ class LinearAxisPainter (BlankAxisPainter):
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
     labelMinorTicks = False # draw value labels at the minor tick points?
+
+    def nudgeBounds (self):
+        span = self.axis.max - self.axis.min
+
+        if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
+        
+        mip = N.floor (N.log10 (span)) # major interval power
+        step = 10. ** mip
+
+        #if span / step > 8:
+        #    # upgrade to bigger range
+        #    mip += 1
+        #    step *= 10
+        
+        newmin = N.floor (self.axis.min / step) * step
+        newmax = N.ceil (self.axis.max / step) * step
+        
+        self.axis.min, self.axis.max = newmin, newmax
     
     def formatLabel (self, val):
         if callable (self.numFormat): return self.numFormat (val)
@@ -479,7 +504,11 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
     labelMinorTicks = False # draw value labels at the minor tick points?
-    
+
+    def nudgeBounds (self):
+        self.axis.logmin = N.floor (self.axis.logmin)
+        self.axis.logmax = N.ceil (self.axis.logmax)
+
     def formatLabel (self, val):
         if self.formatLogValue: val = N.log10 (val)
         
@@ -1002,6 +1031,15 @@ class RectPlot (Painter):
     
     def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         self.defaultField.setBounds (xmin, xmax, ymin, ymax)
+    
+
+    def nudgeBounds (self, nudgex=True, nudgey=True):
+        if nudgex:
+            self.bpainter.nudgeBounds ()
+            self.tpainter.nudgeBounds ()
+        if nudgey:
+            self.lpainter.nudgeBounds ()
+            self.rpainter.nudgeBounds ()
     
     def setSideLabel (self, side, val):
         if self.mainLabels[side]:
