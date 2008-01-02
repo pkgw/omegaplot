@@ -508,10 +508,16 @@ class _TextStamperBase (object):
 import cairo
 
 class CairoTextPainter (_TextPainterBase):
-    def __init__ (self, text):
+    hAlign = 0.5
+    vAlign = 0.5
+
+    def __init__ (self, text, hAlign=None, vAlign=None):
         _TextPainterBase.__init__ (self)
         self.text = text
         self.extents = None
+
+        if hAlign is not None: self.hAlign = hAlign
+        if vAlign is not None: self.vAlign = vAlign
         
     def getMinimumSize (self, ctxt, style):
         if not self.extents:
@@ -520,7 +526,10 @@ class CairoTextPainter (_TextPainterBase):
         return self.extents[2:4]
 
     def doPaint (self, ctxt, style):
-        ctxt.move_to (-self.extents[0], -self.extents[1])
+        dx = (self.width - self.extents[2]) * self.hAlign
+        dy = (self.height - self.extents[3]) * self.vAlign
+
+        ctxt.move_to (dx - self.extents[0], dy - self.extents[1])
         ctxt.set_source_rgb (*style.getColor (self.color))
         ctxt.show_text (self.text)
 
