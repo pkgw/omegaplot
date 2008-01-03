@@ -124,6 +124,28 @@ def PNG (filename, imgsize, style=None):
         
     return f
 
+def SVG (filename, imgsize, style=None):
+    """Return a render function that will render a painter to an SVG
+    file with the specified filename and image dimensions (in points),
+    with an optionally specified style (which defaults to
+    BlackOnWhiteBitmap). This function should be passed to
+    Painter.render () to actually create the file.
+
+    A suggested default for imgsize is omega.util.LetterDims."""
+
+    w, h = imgsize
+
+    if style is None: style = styles.BlackOnWhiteBitmap ()
+    
+    def f (painter):
+        surf = cairo.SVGSurface (filename, w, h)
+        ctxt = cairo.Context (surf)
+        painter.renderBasic (ctxt, style, w, h)
+        ctxt.show_page ()
+        surf.finish ()
+        
+    return f
+
 def savePainter (painter, filename, type=None, dims=None, **kwargs):
     """Save the specified painter to a file.
 
@@ -148,8 +170,9 @@ def savePainter (painter, filename, type=None, dims=None, **kwargs):
     elif type == 'pdf' or filename[-4:] == '.pdf':
         if dims is None: dims = LetterDims
         f = PDF (filename, dims, **kwargs)
-    #elif type == 'svg' or filename[-4:] == '.svg':
-    #        self.surf = cairo.SVGSurface
+    elif type == 'svg' or filename[-4:] == '.svg':
+        if dims is None: dims = LetterDims
+        f = SVG (filename, dims, **kwargs)
     elif type == 'png' or filename[-4:] == '.png':
         if dims is None: dims = BigImageSize
         f = PNG (filename, dims, **kwargs)
