@@ -1348,6 +1348,7 @@ class XYDataPainter (FieldPainter):
         
         if allx.shape[1] < 1: return
 
+        ctxt.save ()
         style.apply (ctxt, self.lineStyle)
 
         x, y = allx[0,:], ally[0,:]
@@ -1359,6 +1360,7 @@ class XYDataPainter (FieldPainter):
                 ctxt.line_to (x[i], y[i])
 
             ctxt.stroke ()
+        ctxt.restore ()
 
         if self.pointStamp is not None:
             for i in xrange (0, x.size):
