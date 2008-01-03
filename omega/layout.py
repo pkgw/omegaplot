@@ -111,8 +111,8 @@ class Grid (Painter):
         # moved to an earlier position, removeChild doesn't
         # remove the wrong entry.
         
-        if value is not None: value.setParent (self)
-        else: value = NullPainter ()
+        if value is None: value = NullPainter ()
+        value.setParent (self)
         
         self._elements[midx] = value
 
@@ -184,6 +184,8 @@ class Grid (Painter):
                 ctxt.translate (dx, dy)
                 self[i,j].configurePainting (ctxt, style, childw, childh)
                 ctxt.translate (-dx, -dy)
+
+        ctxt.restore ()
 
     def doPaint (self, ctxt, style):
         for i in xrange (0, self.nw):
@@ -356,6 +358,8 @@ class VBox (Painter):
 
             hspace -= childh + padReal
             totwt -= wt
+
+        ctxt.restore ()
 
     def doPaint (self, ctxt, style):
         for i in xrange (0, self.size):

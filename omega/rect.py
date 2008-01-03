@@ -1171,7 +1171,8 @@ class RectPlot (Painter):
     def getMinimumSize (self, ctxt, style):
         # First, we figure out how much space our axes need. Then, we
         # add to that the amount of space that our outer painters need.
-        
+        # Then, we incorporate what the fieldpainters need.
+
         s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
         self.ext_axis = self._calcExteriors ([0] * 4, s)
         
@@ -1183,8 +1184,14 @@ class RectPlot (Painter):
         self.ext_total = [self.ext_axis[i] + oe_true[i] \
                           for i in range (0, 4)]
 
-        return combined[1] + combined[3], \
-               combined[0] + combined[2]
+        # Field painters
+        fw, fh = 0, 0
+        for fp in self.fpainters:
+            w, h = fp.getMinimumSize (ctxt, style)
+            fw, fh = max (fw, w), max (fh, h)
+
+        return combined[1] + combined[3] + fw, \
+               combined[0] + combined[2] + fh
     
     def configurePainting (self, ctxt, style, w, h):
         Painter.configurePainting (self, ctxt, style, w, h)
@@ -1321,9 +1328,6 @@ class XYDataPainter (FieldPainter):
         if pointStamp is not None:
             self.stampCInfo = self.data.register (*pointStamp.axisInfo)
 
-    def configurePainting (self, ctxt, style, w, h):
-        FieldPainter.configurePainting (self, ctxt, style, w, h)
-
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
 
@@ -1375,9 +1379,6 @@ class DiscreteSteppedPainter (FieldPainter):
                                     DataHolder.AxisTypeFloat)
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
-
-    def configurePainting (self, ctxt, style, w, h):
-        FieldPainter.configurePainting (self, ctxt, style, w, h)
 
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
@@ -1454,9 +1455,6 @@ class ContinuousSteppedPainter (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
 
-    def configurePainting (self, ctxt, style, w, h):
-        FieldPainter.configurePainting (self, ctxt, style, w, h)
-
     def _calcMaxX (self, d):
         # FIXME: assuming data are sorted in X. We check in doPaint ()
         # but could stand to check here too.
@@ -1513,3 +1511,65 @@ class ContinuousSteppedPainter (FieldPainter):
 
         ctxt.line_to (finalx, prevy)
         ctxt.stroke ()
+
+class CornerFieldPainter (FieldPainter):
+    onLeft = True
+    onTop = True
+    child = None
+    hPadding = 3 # in style.smallScale
+    vPadding = 3 # in style.smallScale
+
+    def __init__ (self, child=None, onLeft=True, onTop=True):
+        Painter.__init__ (self)
+
+        self.setChild (child)
+
+        self.onLeft = bool (onLeft)
+        self.onTop = bool (onTop)
+
+    def setChild (self, child):
+        if child is self.child: return
+        
+        if self.child is not None:
+            self.child.setParent (None)
+
+        if child is None:
+            child = NullPainter ()
+
+        child.setParent (self)
+        self.child = child
+
+    def removeChild (self, p):
+        self.child = None
+
+    def getMinimumSize (self, ctxt, style):
+        hAct = self.hPadding * style.smallScale
+        vAct = self.vPadding * style.smallScale
+
+        self.chsize = self.child.getMinimumSize (ctxt, style)
+        return (self.chsize[0] + hAct, self.chsize[1] + vAct)
+
+    def configurePainting (self, ctxt, style, w, h):
+        Painter.configurePainting (self, ctxt, style, w, h)
+
+        hAct = self.hPadding * style.smallScale
+        vAct = self.vPadding * style.smallScale
+        
+        if self.onLeft: dx = hAct
+        else: dx = w - self.chsize[0] - hAct
+
+        if self.onTop: dy = vAct
+        else: dy = h - self.chsize[0] - vAct
+
+        ctxt.save ()
+        ctxt.translate (dx, dy)
+        self.child.configurePainting (ctxt, style, self.chsize[0],
+                                      self.chsize[1])
+        ctxt.restore ()
+
+    def getDataBounds (self):
+        return None, None, None, None
+    
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+        self.child.paint (ctxt, style)
