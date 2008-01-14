@@ -1,14 +1,26 @@
 import cairo
 
-from base import  _kwordDefaulted
+from base import _kwordDefaulted
 
 defaultLiveDisplay = None
 defaultShowBlocking = None
 
+def _loadLiveBackend ():
+    # Once we have multiple backends, we should try them
+    # sequentially, etc.
+    
+    import gtkThread, gtkUtil
+    omega.gtkThread = gtkThread
+    omega.gtkUtil = gtkUtil
+
 def LiveDisplay (painter, style=None, **kwargs):
+    if defaultLiveDisplay is None: _loadLiveBackend ()
+
     return defaultLiveDisplay (painter, style, **kwargs)
 
 def showBlocking (painter, style=None, **kwargs):
+    if defaultShowBlocking is None: _loadLiveBackend ()
+
     defaultShowBlocking (painter, style, **kwargs)
     
 # Quick display of plots
@@ -67,8 +79,8 @@ def PostScript (filename, pagedims, style=None):
     def f (painter):
         surf = cairo.PSSurface (filename, w, h)
         surf.dsc_begin_page_setup ()
-        surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
-        surf.dsc_comment ('%%PageOrientation: Landscape')
+        #surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
+        #surf.dsc_comment ('%%PageOrientation: Landscape')
 
         ctxt = cairo.Context (surf)
 

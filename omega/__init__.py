@@ -11,8 +11,7 @@ Names exported in the top-level namespace are:
 from base import *
 from rect import *
 
-import gtkThread, gtkUtil, layout, rect, \
-       stamps, styles, util
+import layout, rect, stamps, styles, util
 
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap

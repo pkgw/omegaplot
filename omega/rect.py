@@ -1332,12 +1332,7 @@ class XYDataPainter (FieldPainter):
         ign, ign, xs, ys = self.data.getAll ()
 
         if xs.shape[1] < 1:
-            # Not great semantics -- say other data sets extend
-            # from 1e6 to 2e6 in both dimensions? But throwing
-            # an exception or returning None seems like a worse
-            # alternative.
-            
-            return (0., 0., 0., 0.,)
+            return (None, None, None, None)
         
         return xs.min (), xs.max (), ys.min (), ys.max ()
         
@@ -1358,6 +1353,10 @@ class XYDataPainter (FieldPainter):
         if self.lines:
             for i in xrange (1, x.size):
                 ctxt.line_to (x[i], y[i])
+
+                if i > 0 and i % 100 == 0:
+                    ctxt.stroke ()
+                    ctxt.move_to (x[i], y[i])
 
             ctxt.stroke ()
         ctxt.restore ()

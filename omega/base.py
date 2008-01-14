@@ -444,10 +444,12 @@ class Painter (object):
         self.paint (ctxt, style)
 
     def render (self, func):
-        prev = self.parent
+        if self.parent is not None:
+            raise Exception ("Can't render in-use Painter")
+
         self.setParent (HeadlessPaintParent ())
         func (self)
-        self.setParent (prev)
+        self.setParent (None)
     
     def save (self, filename, **kwargs):
         import util
