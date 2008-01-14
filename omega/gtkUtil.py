@@ -46,13 +46,7 @@ class OmegaArea (gtk.DrawingArea):
         w, h = self.allocation.width, self.allocation.height
 
         try:
-            minw, minh = self.painter.getMinimumSize (ctxt, style)
-
-            if w < minw or h < minh:
-                raise Exception ('Context too small: got (%d, %d) ; need (%d, %d)' % \
-                                 (w, h, minw, minh))
-            self.painter.configurePainting (ctxt, style, w, h)
-            self.painter.paint (ctxt, style)
+            self.painter.renderBasic (ctxt, style, w, h)
         #except ContextTooSmallError, ctse:
         #    print ctse
         except:
@@ -194,7 +188,7 @@ class OmegaDemoWindow (gtk.Window):
 
 def showBlocking (painter, style=None):
     if style is None: 
-            style = styles.BlackOnWhiteBitmap ()
+            style = styles.WhiteOnBlackBitmap ()
             
     win = OmegaDemoWindow (painter, style)
     win.connect ('destroy', gtk.main_quit)
@@ -257,7 +251,7 @@ class LiveDisplay (object):
         # exists. Should add a setStyle () function at some point.
         
         if style is None:
-            style = styles.BlackOnWhiteBitmap ()
+            style = styles.WhiteOnBlackBitmap ()
         
         def f ():
             if self.win is not None:

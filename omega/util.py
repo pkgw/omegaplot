@@ -9,7 +9,7 @@ def _loadLiveBackend ():
     # Once we have multiple backends, we should try them
     # sequentially, etc.
     
-    import gtkThread, gtkUtil
+    import omega, gtkThread, gtkUtil
     omega.gtkThread = gtkThread
     omega.gtkUtil = gtkUtil
 

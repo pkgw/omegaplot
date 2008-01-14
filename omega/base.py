@@ -438,7 +438,12 @@ class Painter (object):
         return self
     
     def renderBasic (self, ctxt, style, w, h):
-        self.getMinimumSize (ctxt, style) # sometimes needed to set up constants
+        minw, minh = self.getMinimumSize (ctxt, style)
+
+        if w < minw or h < minh:
+            raise Exception ('Context too small: got (%d, %d) ; need (%d, %d)' % \
+                                 (w, h, minw, minh))
+
         self.configurePainting (ctxt, style, w, h)
         style.initContext (ctxt, w, h)
         self.paint (ctxt, style)
