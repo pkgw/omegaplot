@@ -819,7 +819,7 @@ class RectPlot (Painter):
             import layout
             self.defaultKey = layout.VBox (0)
             self.defaultKeyOverlay = AbsoluteFieldOverlay (self.defaultKey)
-            self.addFieldPainter (self.defaultKeyOverlay, rebound=False)
+            self.add (self.defaultKeyOverlay, rebound=False)
 
         if isinstance (item, basestring):
             item = TextPainter (item)
@@ -828,16 +828,17 @@ class RectPlot (Painter):
 
         self.defaultKey.appendChild (item)
     
-    def addFieldPainter (self, fp, rebound=True):
+    def add (self, fp, autokey=True, rebound=True):
         fp.setParent (self)
         self.fpainters.append (fp)
         
         if fp.field is None:
             fp.field = self.defaultField
 
-        kp = fp.getKeyPainter ()
-        if kp is not None:
-            self.addKeyItem (kp)
+        if autokey:
+            kp = fp.getKeyPainter ()
+            if kp is not None:
+                self.addKeyItem (kp)
         
         if rebound:
             self.rebound ()
@@ -845,11 +846,9 @@ class RectPlot (Painter):
     def addXY (self, *args, **kwargs):
         l = len (args)
 
-        rebound = _kwordDefaulted (kwargs, 'rebound', bool, True)
         lines = _kwordDefaulted (kwargs, 'lines', bool, True)
-        lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, 'genericLine')
+        lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
-        _checkKwordsConsumed (kwargs)
 
         x, y, label = None, None, None
         
@@ -869,8 +868,9 @@ class RectPlot (Painter):
 
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y)
-        dp.lineStyle = lineStyle
-        self.addFieldPainter (dp, rebound=rebound)
+        if lineStyle is not None: dp.lineStyle = lineStyle
+        
+        self.add (dp, **kwargs)
     
     def rebound (self):
         """Recalculate the bounds of the default field based on the data
