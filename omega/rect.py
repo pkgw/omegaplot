@@ -1513,20 +1513,20 @@ class ContinuousSteppedPainter (FieldPainter):
         ctxt.line_to (finalx, prevy)
         ctxt.stroke ()
 
-class CornerFieldPainter (FieldPainter):
-    onLeft = True
-    onTop = True
+class AbsoluteFieldOverlay (FieldPainter):
     child = None
+    hAlign = 0.0
+    vAlign = 0.0
     hPadding = 3 # in style.smallScale
     vPadding = 3 # in style.smallScale
 
-    def __init__ (self, child=None, onLeft=True, onTop=True):
+    def __init__ (self, child=None, hAlign=0.0, vAlign=0.0):
         Painter.__init__ (self)
 
         self.setChild (child)
 
-        self.onLeft = bool (onLeft)
-        self.onTop = bool (onTop)
+        self.hAlign = float (hAlign)
+        self.vAlign = float (vAlign)
 
     def setChild (self, child):
         if child is self.child: return
@@ -1556,11 +1556,8 @@ class CornerFieldPainter (FieldPainter):
         hAct = self.hPadding * style.smallScale
         vAct = self.vPadding * style.smallScale
         
-        if self.onLeft: dx = hAct
-        else: dx = w - self.chsize[0] - hAct
-
-        if self.onTop: dy = vAct
-        else: dy = h - self.chsize[0] - vAct
+        dx = hAct + self.hAlign * (w - self.chsize[0] - 2 * hAct)
+        dy = vAct + self.vAlign * (h - self.chsize[1] - 2 * vAct)
 
         ctxt.save ()
         ctxt.translate (dx, dy)

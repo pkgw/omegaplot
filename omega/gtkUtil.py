@@ -330,10 +330,6 @@ class LiveDisplay (object):
         gtkThread.send (doit)
         q.get ()
     
-# FIXME: some mechanism for user expressing their pref here?
-# But the odds of 'import omega.gtkUtil, omega.qtUtil' are
-# pretty low, I think.
-
 import util
 util.defaultLiveDisplay = LiveDisplay
 util.defaultShowBlocking = showBlocking
