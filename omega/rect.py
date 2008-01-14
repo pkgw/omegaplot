@@ -805,6 +805,8 @@ class RectPlot (Painter):
         self.fpainters = [] # field painters
         self.opainters = [] # outer painters
         self.mainLabels = [None] * 4
+        self.defaultKey = None
+        self.defaultKeyOverlay = None
 
     def setDefaultAxes (self, xaxis, yaxis):
         self.defaultField = RectField (xaxis, yaxis)
@@ -812,6 +814,20 @@ class RectPlot (Painter):
     def setDefaultField (self, field):
         self.defaultField = field
 
+    def addKeyItem (self, item):
+        if self.defaultKey is None:
+            import layout
+            self.defaultKey = layout.VBox (0)
+            self.defaultKeyOverlay = AbsoluteFieldOverlay (self.defaultKey)
+            self.addFieldPainter (self.defaultKeyOverlay, rebound=False)
+
+        if isinstance (item, basestring):
+            item = TextPainter (item)
+            item.hAlign = self.defaultKeyOverlay.hAlign
+            item.vAlign = self.defaultKeyOverlay.vAlign
+
+        self.defaultKey.appendChild (item)
+    
     def addFieldPainter (self, fp, rebound=True):
         fp.setParent (self)
         self.fpainters.append (fp)
@@ -819,6 +835,10 @@ class RectPlot (Painter):
         if fp.field is None:
             fp.field = self.defaultField
 
+        kp = fp.getKeyPainter ()
+        if kp is not None:
+            self.addKeyItem (kp)
+        
         if rebound:
             self.rebound ()
 
@@ -844,7 +864,10 @@ class RectPlot (Painter):
         else:
             raise Exception ("Don't know how to handle magic addXY() args '%s'" % args)
 
-        dp = XYDataPainter (lines=lines, pointStamp=pointStamp)
+        if label is None:
+            label = 'Data'
+
+        dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y)
         dp.lineStyle = lineStyle
         self.addFieldPainter (dp, rebound=rebound)
@@ -1305,12 +1328,57 @@ class FieldPainter (Painter):
     def getDataBounds (self):
         raise NotImplementedError ()
 
+    def getKeyPainter (self):
+        raise NotImplementedError ()
+
+class XYKeyPainter (Painter):
+    vDrawSize = 2 # in style.largeScale
+    hDrawSize = 5 # in style.largeScale
+    hPadding = 3 # in style.smallScale
+    textColor = 'foreground'
+    
+    def __init__ (self, owner):
+        self.owner = owner
+
+    def getMinimumSize (self, ctxt, style):
+        self.ts = TextStamper (self.owner.keyText)
+        self.tw, self.th = self.ts.getSize (ctxt, style)
+
+        h = max (self.th, self.vDrawSize * style.largeScale)
+
+        w = self.hDrawSize * style.largeScale
+        w += self.hPadding * style.smallScale
+        w += self.tw
+
+        return w, h
+
+    def doPaint (self, ctxt, style):
+        w, h = self.width, self.height
+        dw = w - self.hPadding * style.smallScale - self.tw
+
+        ctxt.save ()
+        style.apply (ctxt, self.owner.lineStyle)
+        ctxt.move_to (0, h / 2)
+        ctxt.line_to (dw, h / 2)
+        ctxt.stroke ()
+        ctxt.restore ()
+
+        if self.owner.pointStamp is not None:
+            self.owner.pointStamp.paintSample (ctxt, style, dw / 2, h / 2)
+
+        tx = w - self.tw
+        ty = (h - self.th) / 2
+        tc = style.getColor (self.textColor)
+
+        self.ts.paintAt (ctxt, tx, ty, tc)
+            
 class XYDataPainter (FieldPainter):
     lineStyle = 'genericLine'
     lines = True
     pointStamp = None
+    keyText = 'Data'
 
-    def __init__ (self, lines=True, pointStamp=None):
+    def __init__ (self, lines=True, pointStamp=None, keyText=None):
         Painter.__init__ (self)
         
         self.data = RectDataHolder (DataHolder.AxisTypeFloat,
@@ -1328,6 +1396,8 @@ class XYDataPainter (FieldPainter):
         if pointStamp is not None:
             self.stampCInfo = self.data.register (*pointStamp.axisInfo)
 
+        if keyText is not None: self.keyText = keyText
+
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
 
@@ -1335,7 +1405,10 @@ class XYDataPainter (FieldPainter):
             return (None, None, None, None)
         
         return xs.min (), xs.max (), ys.min (), ys.max ()
-        
+
+    def getKeyPainter (self):
+        return XYKeyPainter (self)
+    
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
 
@@ -1567,6 +1640,8 @@ class AbsoluteFieldOverlay (FieldPainter):
 
     def getDataBounds (self):
         return None, None, None, None
+
+    def getKeyPainter (self): return None
     
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)

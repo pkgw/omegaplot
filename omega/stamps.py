@@ -9,6 +9,10 @@ import math as _math
 
 _defaultStampSize = 5
 
+def _makeSampleArray (self, ct):
+    if ct == 0: return None
+    return N.ndarray (ct)
+    
 class Stamp (object):
     axisInfo = (0, 0, 0, 0)
     mainStyle = 'genericStamp'
@@ -18,6 +22,23 @@ class Stamp (object):
         style.apply (ctxt, self.mainStyle)
         self.doPaint (ctxt, style, imisc, fmisc, allx, ally)
         ctxt.restore ()
+
+    def paintSample (self, ctxt, style, x, y):
+        imisc, fmisc, allx, ally = self._getSampleValues (style, x, y)
+        ctxt.save ()
+        style.apply (ctxt, self.mainStyle)
+        self.doPaint (ctxt, style, imisc, fmisc, allx, ally)
+        ctxt.restore ()
+
+    def _getSampleValues (self, style, x, y):
+        imisc = _makeSampleArray (self.axisInfo[0])
+        fmisc = _makeSampleArray (self.axisInfo[1])
+        allx = _makeSampleArray (self.axisInfo[2] + 1)
+        allx[0] = x
+        ally = _makeSampleArray (self.axisInfo[3] + 1)
+        ally[0] = y
+        
+        return imisc, fmisc, allx, ally
 
 class Dot (Stamp):
     size = _defaultStampSize # diameter of dot in style.smallScale
@@ -120,6 +141,10 @@ class WithSizing (Stamp):
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
         self.substamp.size = fmisc[0]
         self.substamp.doPaint (ctxt, style, imisc, fmisc[1:], allx, ally)
+
+    def _getSampleValues (self, style, x, y):
+        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
+        fmisc[0] = style.smallScale * 3
     
 class WithYErrorBars (Stamp):
     def __init__ (self, substamp):

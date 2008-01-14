@@ -289,6 +289,11 @@ class VBox (Painter):
         
         self._elements[idx] = (value, prevwt, prevmin)
 
+    def appendChild (self, child):
+        self._elements.append ((None, 1.0, 0.0))
+        self.size += 1
+        self[self.size - 1] = child
+    
     def removeChild (self, child):
         for i in xrange (0, self.size):
             (ptr, wt, minh) = self._elements[i]
@@ -311,12 +316,13 @@ class VBox (Painter):
         dw = 0
 
         for i in xrange (0, self.size):
-            (ptr, wt, minh) = self._elements[i]
+            (ptr, wt, oldminh) = self._elements[i]
             childw, childh = ptr.getMinimumSize (ctxt, style)
             self._elements[i] = (ptr, wt, childh)
             
             dw = max (childw, dw)
             minh += childh
+            #print i, childh, minh
 
         minw += dw
         
