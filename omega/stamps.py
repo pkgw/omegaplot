@@ -6,12 +6,13 @@ Mainly useful for marking specific data points."""
 
 import cairo as _cairo
 import math as _math
+import numpy as _N
 
 _defaultStampSize = 5
 
-def _makeSampleArray (self, ct):
+def _makeSampleArray (ct):
     if ct == 0: return None
-    return N.ndarray (ct)
+    return _N.ndarray (ct)
     
 class Stamp (object):
     axisInfo = (0, 0, 0, 0)
