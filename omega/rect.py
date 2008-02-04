@@ -1356,12 +1356,13 @@ class XYKeyPainter (Painter):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
 
-        ctxt.save ()
-        style.apply (ctxt, self.owner.lineStyle)
-        ctxt.move_to (0, h / 2)
-        ctxt.line_to (dw, h / 2)
-        ctxt.stroke ()
-        ctxt.restore ()
+        if self.owner.lines:
+            ctxt.save ()
+            style.apply (ctxt, self.owner.lineStyle)
+            ctxt.move_to (0, h / 2)
+            ctxt.line_to (dw, h / 2)
+            ctxt.stroke ()
+            ctxt.restore ()
 
         if self.owner.pointStamp is not None:
             self.owner.pointStamp.paintSample (ctxt, style, dw / 2, h / 2)
