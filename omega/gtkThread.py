@@ -82,10 +82,12 @@ def send (func):
         _thread.start ()
 
 def _atexit ():
-    global _thread
-    
-    send (gtk.main_quit)
-    _thread.join ()
-    _thread = None
+    global _thread, _queue
+
+    if _thread is not None:
+        send (gtk.main_quit)
+        _thread.join ()
+        _thread = None
+        _queue = None
 
 atexit.register (_atexit)
