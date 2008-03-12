@@ -305,6 +305,11 @@ class LiveDisplay (object):
     #        if self.win: self.win.forceReconfigure ()
     #    gtkThread.send (doit)
 
+    def queueRedraw (self):
+        def doit ():
+            if self.win: self.win.queue_draw ()
+        gtkThread.send (doit)
+        
     lingerInterval = 250
     
     def linger (self):
