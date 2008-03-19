@@ -19,8 +19,8 @@ def _colorizeLatex (surf, color):
                                           cairo.CONTENT_COLOR_ALPHA,
                                           surf.get_width (),
                                           surf.get_height ())
-    basedata = surf.get_data ()
-    cdata = csurf.get_data ()
+    basedata = surf.get_data_as_rgba ()
+    cdata = csurf.get_data_as_rgba ()
 
     if len (basedata) != len (cdata):
         raise Exception ('Disagreeing image data lengths? Can\'t happen!')

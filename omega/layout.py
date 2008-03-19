@@ -52,12 +52,11 @@ class Overlay (Painter):
         for p in self.painters:
             p.paint (ctxt, style)
 
-    def addPainter (self, p):
-        p.setParent (self)
+    def add (self, p):
+        if p is None:
+            return
+        
         self.painters.append (p)
-
-    def removeChild (self, p):
-        self.painters.remove (p)
 
 class Grid (Painter):
     def __init__ (self, nw, nh):
@@ -103,24 +102,10 @@ class Grid (Painter):
         
         if prev is value: return
 
-        # This will recurse to our own removeChild
-        if prev is not None: prev.setParent (None)
-
-        # Do this before modifying self._elements, so that
-        # if value is already in _elements and is being
-        # moved to an earlier position, removeChild doesn't
-        # remove the wrong entry.
-        
         if value is None: value = NullPainter ()
-        value.setParent (self)
         
         self._elements[midx] = value
 
-    def removeChild (self, child):
-        midx = self._elements.index (child)
-        self._elements[midx] = NullPainter ()
-        self._elements[midx].setParent (self)
-        
     def getMinimumSize (self, ctxt, style):
         minw = 2 * self.hBorderSize * style.smallScale
         minh = 2 * self.vBorderSize * style.smallScale
@@ -206,16 +191,9 @@ class RightRotationPainter (Painter):
         self.setChild (child)
 
     def setChild (self, child):
-        if self.child:
-            self.child.setParent (None)
+        if child is None: child = NullPainter ()
+        self.child = child
 
-        if child:
-            child.setParent (self)
-            self.child = child
-
-    def removeChild (self, child):
-        self.child = None
-    
     def setRotation (self, value):
         self.rotation = value
         
@@ -277,32 +255,16 @@ class VBox (Painter):
         
         if prevptr is value: return
 
-        # This will recurse to our own removeChild
-        if prevptr is not None: prevptr.setParent (None)
-
-        # Do this before modifying self._elements, so that
-        # if value is already in _elements and is being
-        # moved to an earlier position, removeChild doesn't
-        # remove the wrong entry.
-        
-        if value is not None: value.setParent (self)
+        if value is None: value = NullPainter ()
         
         self._elements[idx] = (value, prevwt, prevmin)
 
     def appendChild (self, child):
-        self._elements.append ((None, 1.0, 0.0))
+        if child is None: child = NullPainter ()
+        
+        self._elements.append ((child, 1.0, 0.0))
         self.size += 1
-        self[self.size - 1] = child
     
-    def removeChild (self, child):
-        for i in xrange (0, self.size):
-            (ptr, wt, minh) = self._elements[i]
-
-            if ptr is child:
-                newptr = NullPainter ()
-                self._elements[i] = (newptr, wt, 0.0)
-                newptr.setParent (self)
-
     def setWeight (self, index, wt):
         (ptr, oldwt, minh) = self._elements[index]
         self._elements[index] = (ptr, wt, minh)

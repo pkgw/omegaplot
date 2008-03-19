@@ -8,9 +8,10 @@ from base import NullPainter, Painter
 import styles
 
 class OmegaArea (gtk.DrawingArea):
-    def __init__ (self, painter, style, autoRepaint):
+    def __init__ (self, painter, style, autoRepaint, weak=False):
         gtk.DrawingArea.__init__ (self)
 
+        self.weakRef = weak
         self.omegaStyle = style
         self.setPainter (painter)
 
@@ -23,10 +24,6 @@ class OmegaArea (gtk.DrawingArea):
 
     # Painting
 
-    def removeChild (self, child):
-        self.painter = NullPainter ()
-        self.painter.setParent (self)
-    
     def _expose (self, widget, event):
         if self.lastException is not None:
             # oops we blew up
@@ -34,6 +31,16 @@ class OmegaArea (gtk.DrawingArea):
             print 'Unprocessed exception from last painting:'
             print_exception (*self.lastException)
             return False
+
+        # Figure out if we still have our painter
+
+        if not self.weakRef:
+            p = self.painter
+        else:
+            p = self.pRef ()
+
+            if p is None:
+                p = NullPainter ()
             
         ctxt = widget.window.cairo_create()
         style = self.omegaStyle
@@ -46,7 +53,7 @@ class OmegaArea (gtk.DrawingArea):
         w, h = self.allocation.width, self.allocation.height
 
         try:
-            self.painter.renderBasic (ctxt, style, w, h)
+            p.renderBasic (ctxt, style, w, h)
         #except ContextTooSmallError, ctse:
         #    print ctse
         except:
@@ -93,8 +100,12 @@ class OmegaArea (gtk.DrawingArea):
     # Python interface
     
     def setPainter (self, p):
-        if p is not None: p.setParent (self)
-        self.painter = p
+        if not self.weakRef:
+            self.painter = p
+        else:
+            import weakref
+            self.pRef = weakref.ref (p)
+        
         self.queue_draw ()
     
     #def forceReconfigure (self):
@@ -119,7 +130,7 @@ class OmegaDemoWindow (gtk.Window):
 
     __gsignals__ = { 'key-press-event' : 'override' }
     
-    def __init__ (self, painter, style, parent=None):
+    def __init__ (self, painter, style, parent=None, weak=False):
         gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
         
         self.set_title ('OmegaPlot Test Window Canvas')
@@ -133,7 +144,7 @@ class OmegaDemoWindow (gtk.Window):
         
         # window_position GtkWindowPosition, type_hint GdkWindowTypeHint
         # urgency_hint, GdkGravity gravity, 
-        self.oa = OmegaArea (painter, style, True)
+        self.oa = OmegaArea (painter, style, True, weak=weak)
         self.add (self.oa)
 
         if _slowMode:
@@ -200,51 +211,8 @@ class LiveDisplay (object):
     def __init__ (self, painter, style):
         self.win = None
 
-        # Here we set up a destroy function that our windows will use.
-        # We only hold a weak reference to 'self' here, so that 'del
-        # [instance-of-LiveDisplay]' will actually destroy the object
-        # (and hence the window), which is a functionality that I
-        # really like, for no particular reason. If we pass a
-        # reference to an instance function, the reference to 'self'
-        # is tracked by python/pygtk, preventing 'del [i-o-LD]' from
-        # removing the final reference to the instance, so that
-        # __del__ (below) isn't called.
-
-        import weakref
-        sref = weakref.ref (self)
-
-        def clear (obj):
-            instance = sref ()
-            
-            if instance != None:
-                instance.win = None
-
-        self._clearFunc = clear
-        
-        # End of wacky code.
-
         if painter is not None:
             self.setPainter (painter, style)
-
-    def __del__ (self):
-        if self.win == None: return
-        if gtkThread == None: return # this can get GC'd before us!
-        if gtkThread._queue == None: return # same!
-        
-        # I'm not sure if we're exposed to problems here. If
-        # calling w.destroy () deallocates the underlying object,
-        # then it might be that if the window is manually destroyed
-        # before self._clearFunc has a chance to run, then we'll
-        # be referencing a nuked GObject below. But some simple tests
-        # make it seem like it's ok to do effectively call w.destroy ()
-        # twice while a Python ref is held to it.
-
-        w = self.win
-        
-        def doit ():
-            w.destroy ()
-            
-        gtkThread.send (doit)
 
     def setPainter (self, painter, style=None, winTrack=True):
         # Note that we do not honor @style if the window already
@@ -261,8 +229,7 @@ class LiveDisplay (object):
                     if painter is not None: self.win.present ()
                     else: self.win.hide ()
             else:
-                self.win = OmegaDemoWindow (painter, style)
-                self.win.connect ('destroy', self._clearFunc)
+                self.win = OmegaDemoWindow (painter, style, weak=True)
 
                 if winTrack:
                     if painter is not None:

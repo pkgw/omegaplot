@@ -829,7 +829,6 @@ class RectPlot (Painter):
         self.defaultKey.appendChild (item)
     
     def add (self, fp, autokey=True, rebound=True):
-        fp.setParent (self)
         self.fpainters.append (fp)
         
         if fp.field is None:
@@ -889,7 +888,6 @@ class RectPlot (Painter):
                 self.defaultField.expandBounds (*fp.getDataBounds ())
     
     def addOuterPainter (self, op, side, position):
-        op.setParent (self)
         self.opainters.append ((op, side, position))
 
     def _outerPainterIndex (self, op):
@@ -902,17 +900,6 @@ class RectPlot (Painter):
         idx = self._outerPainterIndex (self, op)
         self.opainters[idx] = (op, side, position)
     
-    def removeChild (self, child):
-        try:
-            self.fpainters.remove (child)
-            return
-        except:
-            pass
-
-        idx = self._outerPainterIndex (child)
-        del self.opainters[idx]
-        return
-        
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
         values. More precisely, the if certain sides are specified in
@@ -983,7 +970,7 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
-    def toggleLinLogAxes (self, wantxlog, wantylog):
+    def setLinLogAxes (self, wantxlog, wantylog):
         df = self.defaultField
         if not df: raise Exception ('Need a default field!')
 
@@ -1054,7 +1041,6 @@ class RectPlot (Painter):
     
     def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         self.defaultField.setBounds (xmin, xmax, ymin, ymax)
-    
 
     def nudgeBounds (self, nudgex=True, nudgey=True):
         if nudgex:
@@ -1065,9 +1051,6 @@ class RectPlot (Painter):
             self.rpainter.nudgeBounds ()
     
     def setSideLabel (self, side, val):
-        if self.mainLabels[side]:
-            self.removeChild (self.mainLabels[side])
-
         # (To the tune of the DragNet fanfare:)
         # Hack, hack hack hack... hack, hack hack hack haaack!
         # If the text is going on a side axis, encapsulate it
@@ -1605,17 +1588,9 @@ class AbsoluteFieldOverlay (FieldPainter):
     def setChild (self, child):
         if child is self.child: return
         
-        if self.child is not None:
-            self.child.setParent (None)
+        if child is None: child = NullPainter ()
 
-        if child is None:
-            child = NullPainter ()
-
-        child.setParent (self)
         self.child = child
-
-    def removeChild (self, p):
-        self.child = None
 
     def getMinimumSize (self, ctxt, style):
         hAct = self.hPadding * style.smallScale

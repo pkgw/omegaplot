@@ -352,34 +352,12 @@ class DataHolder (object):
 
 _mainLiveDisplay = None
 
-class HeadlessPaintParent (object):
-    painter = None
-
-    def setPainter (self, painter):
-        if self.painter is not None:
-            self.painter.setParent (None)
-        if painter is not None:
-            painter.setParent (self)
-
-        self.painter = painter
-
-    def removeChild (self, child):
-        self.painter = None
-
 class Painter (object):
     mainStyle = None
-    parent = None
     
     def __init__ (self):
         self.matrix = None
 
-    def setParent (self, parent):
-        if self.parent:
-            self.parent.removeChild (self)
-
-        self.parent = parent
-        self.matrix = None
-        
     def getMinimumSize (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
@@ -387,9 +365,6 @@ class Painter (object):
         return 0, 0
 
     def configurePainting (self, ctxt, style, w, h):
-        if not self.parent:
-            raise Exception ('Cannot configure parentless painter')
-        
         self.matrix = ctxt.get_matrix ()
         self.width = w
         self.height = h
@@ -449,12 +424,7 @@ class Painter (object):
         self.paint (ctxt, style)
 
     def render (self, func):
-        if self.parent is not None:
-            raise Exception ("Can't render in-use Painter")
-
-        self.setParent (HeadlessPaintParent ())
         func (self)
-        self.setParent (None)
     
     def save (self, filename, **kwargs):
         import util
@@ -474,6 +444,12 @@ def hide ():
     _mainLiveDisplay.setPainter (None)
 
 class NullPainter (Painter):
+    def getMinimumSize (self, ctxt, style):
+        return 0, 0
+
+    def doPaint (self, ctxt, style): pass
+
+class DebugPainter (Painter):
     lineStyle = 'genericLine'
     
     def getMinimumSize (self, ctxt, style):
