@@ -214,6 +214,9 @@ class LiveDisplay (object):
         if painter is not None:
             self.setPainter (painter, style)
 
+    def _clearWin (self, unused):
+        self.win = None
+    
     def setPainter (self, painter, style=None, winTrack=True):
         # Note that we do not honor @style if the window already
         # exists. Should add a setStyle () function at some point.
@@ -230,6 +233,7 @@ class LiveDisplay (object):
                     else: self.win.hide ()
             else:
                 self.win = OmegaDemoWindow (painter, style, weak=True)
+                self.win.connect ('destroy', self._clearWin)
 
                 if winTrack:
                     if painter is not None:
