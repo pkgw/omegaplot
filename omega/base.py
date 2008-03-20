@@ -398,11 +398,11 @@ class Painter (object):
         hide ()
         
     def showNew (self, **kwargs):
-        """Show this painter in a new live display window, returning the live display
-        object's handle."""
+        """Show this painter in a new live display window, returning a
+        tuple of (self, LiveDisplay object)."""
 
         from util import LiveDisplay
-        return LiveDisplay (self, **kwargs)
+        return self, LiveDisplay (self, **kwargs)
 
     def showBlocking (self, **kwargs):
         """Show this painter in a live display, blocking execution until the
