@@ -786,6 +786,8 @@ class RectPlot (Painter):
     SIDE_BOTTOM = 2
     SIDE_LEFT = 3
 
+    _nextPrimaryStyleNum = 0
+    
     def __init__ (self, emulate=None):
         Painter.__init__ (self)
         
@@ -829,12 +831,18 @@ class RectPlot (Painter):
         self.defaultKey.appendChild (item)
     
     def add (self, fp, autokey=True, rebound=True):
+        assert (isinstance (fp, FieldPainter))
+        
         fp.setParent (self)
         self.fpainters.append (fp)
         
         if fp.field is None:
             fp.field = self.defaultField
 
+        if fp.needsPrimaryStyle:
+            fp.primaryStyleNum = self._nextPrimaryStyleNum
+            self._nextPrimaryStyleNum += 1
+        
         if autokey:
             kp = fp.getKeyPainter ()
             if kp is not None:
@@ -1315,7 +1323,8 @@ class RectPlot (Painter):
 
 class FieldPainter (Painter):
     field = None
-        
+    needsPrimaryStyle = False
+    
     def doPaint (self, ctxt, style):
         if self.field is None:
             raise Exception ('Need to set field of FieldPainter before painting!')
@@ -1399,6 +1408,7 @@ class XYKeyPainter (GenericKeyPainter):
         return self.owner.pointStamp is not None
     
     def _applyLineStyle (self, style, ctxt):
+        style.applyPrimary (ctxt, self.owner.primaryStyleNum)
         style.apply (ctxt, self.owner.lineStyle)
 
     def _getStamp (self):
@@ -1406,10 +1416,12 @@ class XYKeyPainter (GenericKeyPainter):
 
 class XYDataPainter (FieldPainter):
     lineStyle = 'genericLine'
+    needsPrimaryStyle = True
+    primaryStyleNum = None
     lines = True
     pointStamp = None
     keyText = 'Data'
-
+    
     def __init__ (self, lines=True, pointStamp=None, keyText=None):
         Painter.__init__ (self)
         
@@ -1449,6 +1461,7 @@ class XYDataPainter (FieldPainter):
         if allx.shape[1] < 1: return
 
         ctxt.save ()
+        style.applyPrimary (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         x, y = allx[0,:], ally[0,:]
@@ -1482,10 +1495,13 @@ class LineOnlyKeyPainter (GenericKeyPainter):
         return False
     
     def _applyLineStyle (self, style, ctxt):
+        style.applyPrimary (ctxt, self.owner.primaryStyleNum)
         style.apply (ctxt, self.owner.lineStyle)
 
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = 'genericLine'
+    needsPrimaryStyle = True
+    primaryStyleNum = None
     connectors = True
     keyText = 'Data'
     
@@ -1526,6 +1542,7 @@ class DiscreteSteppedPainter (FieldPainter):
         xpos = axis.transformIndices (axis.allIndices ()) * self.width
         ys = self.xform.mapY (ally[0])
         
+        style.applyPrimary (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         for i in xrange (0, ys.size):
@@ -1567,6 +1584,8 @@ class ContinuousSteppedPainter (FieldPainter):
     """The X values are the left edges of the bins."""
     
     lineStyle = 'genericLine'
+    needsPrimaryStyle = True
+    primaryStyleNum = None
     connectors = True
     keyText = 'Data'
     
@@ -1612,6 +1631,7 @@ class ContinuousSteppedPainter (FieldPainter):
         
         if xs.size < 1: return
 
+        style.applyPrimary (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         prevx, prevy = xs[0], ys[0]

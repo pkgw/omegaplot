@@ -16,10 +16,11 @@ x = N.linspace (-5, 5, 500)
 y = npts / N.sqrt (2 * N.pi) * N.exp (-x**2/2)
 
 rp = omega.RectPlot ()
-rp.addXY (x, y)
 
 fp = omega.rect.ContinuousSteppedPainter ()
 fp.setFloats (left_edges, counts)
 rp.add (fp)
+
+rp.addXY (x, y)
 
 rp.showBlocking ()

@@ -71,10 +71,34 @@ class WhiteOnBlackColors (object):
     foreground = (1, 1, 1)
     faint = (0.7, 0.7, 0.7)
 
+def _dashedPrimary (style, ctxt, stylenum):
+    if stylenum is None: return
+        
+    u = style.largeScale
+    
+    if stylenum == 0:
+        return
+    elif stylenum == 1:
+        a = [u * 2, u * 2]
+    elif stylenum == 2:
+        a = [u * 3, u]
+    elif stylenum == 3:
+        a = [u * 3, u, u, u]
+    elif stylenum == 4:
+        a = [u * 3, u, u, u, u, u]
+    else:
+        raise Exception ('Only support primary style numbers < 5!')
+
+    ctxt.set_dash (a, 0.)
+    
 class BlackOnWhiteBitmap (BitmapStyle):
     def __init__ (self):
         BitmapStyle.__init__ (self, BlackOnWhiteColors ())
 
+    applyPrimary = _dashedPrimary
+        
 class WhiteOnBlackBitmap (BitmapStyle):
     def __init__ (self):
         BitmapStyle.__init__ (self, WhiteOnBlackColors ())
+
+    applyPrimary = _dashedPrimary
