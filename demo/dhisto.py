@@ -21,6 +21,6 @@ fp = omega.rect.ContinuousSteppedPainter ()
 fp.setFloats (left_edges, counts)
 rp.add (fp)
 
-rp.addXY (x, y)
+rp.addXY (x, y, 'Model')
 
 rp.showBlocking ()

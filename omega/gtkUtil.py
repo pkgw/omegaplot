@@ -188,7 +188,7 @@ class OmegaDemoWindow (gtk.Window):
 
 def showBlocking (painter, style=None):
     if style is None: 
-            style = styles.WhiteOnBlackBitmap ()
+            style = styles.ColorOnBlackBitmap ()
             
     win = OmegaDemoWindow (painter, style)
     win.connect ('destroy', gtk.main_quit)
@@ -211,7 +211,7 @@ class LiveDisplay (object):
         # exists. Should add a setStyle () function at some point.
         
         if style is None:
-            style = styles.WhiteOnBlackBitmap ()
+            style = styles.ColorOnBlackBitmap ()
         
         def f ():
             if self.win is not None:

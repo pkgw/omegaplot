@@ -1415,7 +1415,7 @@ class XYKeyPainter (GenericKeyPainter):
         return self.owner.pointStamp
 
 class XYDataPainter (FieldPainter):
-    lineStyle = 'genericLine'
+    lineStyle = None
     needsPrimaryStyle = True
     primaryStyleNum = None
     lines = True
@@ -1499,13 +1499,13 @@ class LineOnlyKeyPainter (GenericKeyPainter):
         style.apply (ctxt, self.owner.lineStyle)
 
 class DiscreteSteppedPainter (FieldPainter):
-    lineStyle = 'genericLine'
+    lineStyle = None
     needsPrimaryStyle = True
     primaryStyleNum = None
     connectors = True
     keyText = 'Data'
     
-    def __init__ (self, lineStyle='genericLine', connectors=True, keyText=None):
+    def __init__ (self, lineStyle=None, connectors=True, keyText=None):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle
@@ -1583,13 +1583,13 @@ class DiscreteSteppedPainter (FieldPainter):
 class ContinuousSteppedPainter (FieldPainter):
     """The X values are the left edges of the bins."""
     
-    lineStyle = 'genericLine'
+    lineStyle = None
     needsPrimaryStyle = True
     primaryStyleNum = None
     connectors = True
     keyText = 'Data'
     
-    def __init__ (self, lineStyle='genericLine', connectors=True, keyText=None):
+    def __init__ (self, lineStyle=None, connectors=True, keyText=None):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle

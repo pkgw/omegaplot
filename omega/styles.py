@@ -61,6 +61,9 @@ class BitmapStyle (object):
         
         return getattr (self.colors, color)
 
+    def applyPrimary (self, ctxt, stylenum):
+        raise NotImplementedError ()
+
 class BlackOnWhiteColors (object):
     background = (1, 1, 1)
     foreground = (0, 0, 0)
@@ -90,6 +93,7 @@ def _dashedPrimary (style, ctxt, stylenum):
         raise Exception ('Only support primary style numbers < 5!')
 
     ctxt.set_dash (a, 0.)
+    ctxt.set_line_width (style.thickLine)
     
 class BlackOnWhiteBitmap (BitmapStyle):
     def __init__ (self):
@@ -102,3 +106,28 @@ class WhiteOnBlackBitmap (BitmapStyle):
         BitmapStyle.__init__ (self, WhiteOnBlackColors ())
 
     applyPrimary = _dashedPrimary
+
+class ColorOnBlackBitmap (BitmapStyle):
+    def __init__ (self):
+        BitmapStyle.__init__ (self, WhiteOnBlackColors ())
+
+    def applyPrimary (self, ctxt, stylenum):
+        if stylenum is None: return
+
+        if stylenum == 0:
+            c = (0.9, 0.1, 0.1)
+        elif stylenum == 1:
+            c = (0.2, 0.4, 0.9)
+        elif stylenum == 2:
+            c = (0.1, 0.9, 0.4)
+        elif stylenum == 3:
+            c = (0.7, 0.7, 0)
+        elif stylenum == 4:
+            c = (0.7, 0, 0.7)
+        elif stylenum == 5:
+            c = (0, 0.7, 0.7)
+        else:
+            raise Exception ('Only support primary numbers < 6!')
+
+        ctxt.set_source_rgb (*c)
+        ctxt.set_line_width (self.thickLine)
