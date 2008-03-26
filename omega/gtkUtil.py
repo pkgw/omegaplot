@@ -41,8 +41,11 @@ class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
 
         if p is None:
             # We lost our painter, or never had one! Repaint
-            # the whole area as blank.
+            # the whole area as blank. We could set our child
+            # to p, but if we're weak-ref'ing, then it'll get
+            # deallocated when this function exits ...
             p = NullPainter ()
+            p.setParent (self)
         else:
             # set a clip region for the expose event
             ctxt.rectangle (event.area.x, event.area.y,
