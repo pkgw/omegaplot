@@ -506,7 +506,11 @@ class Painter (object):
         if p is not None:
             raise Exception ("Can't render in-use Painter")
 
-        self.setParent (ToplevelPaintParent ())
+        # We have to hold a ref to tpp in this function because setParent
+        # only references it weakly! That shit is bananas.
+        
+        tpp = ToplevelPaintParent (False)
+        self.setParent (tpp)
         func (self)
         self.setParent (None)
     

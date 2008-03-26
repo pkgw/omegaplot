@@ -77,6 +77,9 @@ class WhiteOnBlackColors (object):
 def _dashedPrimary (style, ctxt, stylenum):
     if stylenum is None: return
         
+    ctxt.set_source_rgb (*style.colors.foreground)
+    ctxt.set_line_width (style.thickLine)
+
     u = style.largeScale
     
     if stylenum == 0:
@@ -93,7 +96,6 @@ def _dashedPrimary (style, ctxt, stylenum):
         raise Exception ('Only support primary style numbers < 5!')
 
     ctxt.set_dash (a, 0.)
-    ctxt.set_line_width (style.thickLine)
     
 class BlackOnWhiteBitmap (BitmapStyle):
     def __init__ (self):

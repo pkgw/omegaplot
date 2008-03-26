@@ -104,6 +104,11 @@ class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
     
     def _destroyed (self, unused):
         self.autoRepaint = False # remove the timeout
+
+        p = self.getPainter ()
+
+        if p is not None:
+            p.setParent (None)
         
     def __del__ (self):
         self._destroyed (self)
@@ -139,7 +144,7 @@ class OmegaDemoWindow (gtk.Window):
         if _slowMode:
             self.oa.autoRepaint = False
             self.oa.autoReconfigure = False
-    
+
     # Fun
 
     def do_key_press_event (self, event):
@@ -188,7 +193,7 @@ class OmegaDemoWindow (gtk.Window):
 
 def showBlocking (painter, style=None):
     if style is None: 
-            style = styles.ColorOnBlackBitmap ()
+            style = styles.WhiteOnBlackBitmap ()
             
     win = OmegaDemoWindow (painter, style)
     win.connect ('destroy', gtk.main_quit)
@@ -211,7 +216,7 @@ class LiveDisplay (object):
         # exists. Should add a setStyle () function at some point.
         
         if style is None:
-            style = styles.ColorOnBlackBitmap ()
+            style = styles.WhiteOnBlackBitmap ()
         
         def f ():
             if self.win is not None:
