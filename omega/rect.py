@@ -829,6 +829,7 @@ class RectPlot (Painter):
         self.defaultKey.appendChild (item)
     
     def add (self, fp, autokey=True, rebound=True):
+        fp.setParent (self)
         self.fpainters.append (fp)
         
         if fp.field is None:
@@ -888,6 +889,7 @@ class RectPlot (Painter):
                 self.defaultField.expandBounds (*fp.getDataBounds ())
     
     def addOuterPainter (self, op, side, position):
+        op.setParent (self)
         self.opainters.append ((op, side, position))
 
     def _outerPainterIndex (self, op):
@@ -900,6 +902,17 @@ class RectPlot (Painter):
         idx = self._outerPainterIndex (self, op)
         self.opainters[idx] = (op, side, position)
     
+    def _lostChild (self, child):
+        try:
+            self.fpainters.remove (child)
+            return
+        except:
+            pass
+
+        idx = self._outerPainterIndex (child)
+        del self.opainters[idx]
+        return
+        
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
         values. More precisely, the if certain sides are specified in
@@ -1051,6 +1064,9 @@ class RectPlot (Painter):
             self.rpainter.nudgeBounds ()
     
     def setSideLabel (self, side, val):
+        if self.mainLabels[side]:
+            self.removeChild (self.mainLabels[side])
+
         # (To the tune of the DragNet fanfare:)
         # Hack, hack hack hack... hack, hack hack hack haaack!
         # If the text is going on a side axis, encapsulate it
@@ -1112,7 +1128,8 @@ class RectPlot (Painter):
             # aspect ratio is too big, rotate.
 
             if op in self.mainLabels and side % 2 == 1 and \
-                   isinstance (op, RightRotationPainter):
+                   isinstance (op, RightRotationPainter) and \
+                   w > 0 and h > 0:
                 aspect = float (w) / h
 
                 if aspect > 3.:
@@ -1314,7 +1331,7 @@ class FieldPainter (Painter):
     def getKeyPainter (self):
         raise NotImplementedError ()
 
-class XYKeyPainter (Painter):
+class GenericKeyPainter (Painter):
     vDrawSize = 2 # in style.largeScale
     hDrawSize = 5 # in style.largeScale
     hPadding = 3 # in style.smallScale
@@ -1323,8 +1340,23 @@ class XYKeyPainter (Painter):
     def __init__ (self, owner):
         self.owner = owner
 
+    def _getText (self):
+        raise NotImplementedError ()
+
+    def _drawLine (self):
+        raise NotImplementedError ()
+
+    def _drawStamp (self):
+        raise NotImplementedError ()
+    
+    def _applyLineStyle (self, style, ctxt):
+        raise NotImplementedError ()
+
+    def _getStamp (self):
+        raise NotImplementedError ()
+
     def getMinimumSize (self, ctxt, style):
-        self.ts = TextStamper (self.owner.keyText)
+        self.ts = TextStamper (self._getText ())
         self.tw, self.th = self.ts.getSize (ctxt, style)
 
         h = max (self.th, self.vDrawSize * style.largeScale)
@@ -1339,23 +1371,39 @@ class XYKeyPainter (Painter):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
 
-        if self.owner.lines:
+        if self._drawLine ():
             ctxt.save ()
-            style.apply (ctxt, self.owner.lineStyle)
+            self._applyLineStyle (style, ctxt)
             ctxt.move_to (0, h / 2)
             ctxt.line_to (dw, h / 2)
             ctxt.stroke ()
             ctxt.restore ()
 
-        if self.owner.pointStamp is not None:
-            self.owner.pointStamp.paintSample (ctxt, style, dw / 2, h / 2)
+        if self._drawStamp ():
+            self._getStamp ().paintSample (ctxt, style, dw / 2, h / 2)
 
         tx = w - self.tw
         ty = (h - self.th) / 2
         tc = style.getColor (self.textColor)
 
         self.ts.paintAt (ctxt, tx, ty, tc)
-            
+
+class XYKeyPainter (GenericKeyPainter):
+    def _getText (self):
+        return self.owner.keyText
+
+    def _drawLine (self):
+        return self.owner.lines
+
+    def _drawStamp (self):
+        return self.owner.pointStamp is not None
+    
+    def _applyLineStyle (self, style, ctxt):
+        style.apply (ctxt, self.owner.lineStyle)
+
+    def _getStamp (self):
+        return self.owner.pointStamp
+
 class XYDataPainter (FieldPainter):
     lineStyle = 'genericLine'
     lines = True
@@ -1423,11 +1471,25 @@ class XYDataPainter (FieldPainter):
                 self.pointStamp.paint (ctxt, style, imisc[:,i], fmisc[:,i],
                                        allx[:,i], ally[:,i])
 
+class LineOnlyKeyPainter (GenericKeyPainter):
+    def _getText (self):
+        return self.owner.keyText
+
+    def _drawLine (self):
+        return True
+
+    def _drawStamp (self):
+        return False
+    
+    def _applyLineStyle (self, style, ctxt):
+        style.apply (ctxt, self.owner.lineStyle)
+
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = 'genericLine'
     connectors = True
+    keyText = 'Data'
     
-    def __init__ (self, lineStyle='genericLine', connectors=True):
+    def __init__ (self, lineStyle='genericLine', connectors=True, keyText=None):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle
@@ -1438,11 +1500,16 @@ class DiscreteSteppedPainter (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
 
+        if keyText is not None: self.keyText = keyText
+
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
 
         return xs.min (), xs.max (), ys.min (), ys.max ()
         
+    def getKeyPainter (self):
+        return LineOnlyKeyPainter (self)
+    
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
 
@@ -1501,8 +1568,9 @@ class ContinuousSteppedPainter (FieldPainter):
     
     lineStyle = 'genericLine'
     connectors = True
+    keyText = 'Data'
     
-    def __init__ (self, lineStyle='genericLine', connectors=True):
+    def __init__ (self, lineStyle='genericLine', connectors=True, keyText=None):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle
@@ -1512,6 +1580,8 @@ class ContinuousSteppedPainter (FieldPainter):
                                     DataHolder.AxisTypeFloat)
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
+
+        if keyText is not None: self.keyText = keyText
 
     def _calcMaxX (self, d):
         # FIXME: assuming data are sorted in X. We check in doPaint ()
@@ -1529,6 +1599,9 @@ class ContinuousSteppedPainter (FieldPainter):
 
         return xs.min (), self._calcMaxX (xs[0]), ys.min (), ys.max ()
         
+    def getKeyPainter (self):
+        return LineOnlyKeyPainter (self)
+    
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
 
@@ -1588,9 +1661,18 @@ class AbsoluteFieldOverlay (FieldPainter):
     def setChild (self, child):
         if child is self.child: return
         
-        if child is None: child = NullPainter ()
+        if self.child is not None:
+            self.child.setParent (None)
 
+        if child is None:
+            child = NullPainter ()
+
+        child.setParent (self)
         self.child = child
+
+    def _lostChild (self, p):
+        self.child = NullPainter ()
+        self.child.setParent (self)
 
     def getMinimumSize (self, ctxt, style):
         hAct = self.hPadding * style.smallScale

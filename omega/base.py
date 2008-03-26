@@ -352,12 +352,84 @@ class DataHolder (object):
 
 _mainLiveDisplay = None
 
+class ToplevelPaintParent (object):
+    _painter = None
+    _painterRef = None
+    
+    from weakref import ref as _ref
+    
+    def __init__ (self, weakRef):
+        self._weakRef = bool (weakRef)
+
+    def getPainter (self):
+        if not self._weakRef:
+            return self._painter
+
+        if self._painterRef is None: return None
+
+        p = self._painterRef ()
+
+        if p is None:
+            self._painterRef = None
+            return None
+
+        return p
+    
+    def setPainter (self, painter):
+        pCur = self.getPainter ()
+        
+        if pCur is not None:
+            pCur.setParent (None)
+        
+        if painter is not None:
+            painter.setParent (self)
+
+        if not self._weakRef:
+            self._painter = painter
+        elif painter is not None:
+            self._painterRef = self._ref (painter)
+        else:
+            self._painterRef = None
+
+    def _lostChild (self, child):
+        if not self._weakRef:
+            self._painter = None
+        else:
+            self._painterRef = None
+
 class Painter (object):
     mainStyle = None
+    parentRef = None
+    
+    from weakref import ref as _ref
     
     def __init__ (self):
         self.matrix = None
 
+    def _getParent (self):
+        if self.parentRef is None: return None
+
+        p = self.parentRef ()
+
+        if p is None:
+            self.parentRef = None
+            return None
+
+        return p
+    
+    def setParent (self, parent):
+        p = self._getParent ()
+        
+        if p is not None:
+                p._lostChild (self)
+
+        if parent is None:
+            self.parentRef = None
+        else:
+            self.parentRef = self._ref (parent)
+        
+        self.matrix = None
+        
     def getMinimumSize (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
@@ -365,6 +437,11 @@ class Painter (object):
         return 0, 0
 
     def configurePainting (self, ctxt, style, w, h):
+        p = self._getParent ()
+        
+        if p is None:
+            raise Exception ('Cannot configure parentless painter')
+        
         self.matrix = ctxt.get_matrix ()
         self.width = w
         self.height = h
@@ -424,7 +501,14 @@ class Painter (object):
         self.paint (ctxt, style)
 
     def render (self, func):
+        p = self._getParent ()
+        
+        if p is not None:
+            raise Exception ("Can't render in-use Painter")
+
+        self.setParent (ToplevelPaintParent ())
         func (self)
+        self.setParent (None)
     
     def save (self, filename, **kwargs):
         import util

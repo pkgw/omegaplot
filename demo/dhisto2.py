@@ -13,7 +13,7 @@ rp.bpainter.ticksBetween = True
 fp = omega.rect.DiscreteSteppedPainter ()
 fp.setInts (xs)
 fp.setFloats (xs**2)
-rp.addFieldPainter (fp)
+rp.add (fp)
 
 rp.showBlocking ()
 

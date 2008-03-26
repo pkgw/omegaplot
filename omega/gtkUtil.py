@@ -4,14 +4,14 @@ import gtkThread
 
 import sys #exc_info
 
-from base import NullPainter, Painter
+from base import NullPainter, Painter, ToplevelPaintParent
 import styles
 
-class OmegaArea (gtk.DrawingArea):
+class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
     def __init__ (self, painter, style, autoRepaint, weak=False):
         gtk.DrawingArea.__init__ (self)
-
-        self.weakRef = weak
+        ToplevelPaintParent.__init__ (self, weak)
+        
         self.omegaStyle = style
         self.setPainter (painter)
 
@@ -32,25 +32,22 @@ class OmegaArea (gtk.DrawingArea):
             print_exception (*self.lastException)
             return False
 
-        # Figure out if we still have our painter
-
-        if not self.weakRef:
-            p = self.painter
-        else:
-            p = self.pRef ()
-
-            if p is None:
-                p = NullPainter ()
-            
         ctxt = widget.window.cairo_create()
         style = self.omegaStyle
-        
-        # set a clip region for the expose event
-        ctxt.rectangle (event.area.x, event.area.y,
-                        event.area.width, event.area.height)
-        ctxt.clip()
 
         w, h = self.allocation.width, self.allocation.height
+
+        p = self.getPainter ()
+
+        if p is None:
+            # We lost our painter, or never had one! Repaint
+            # the whole area as blank.
+            p = NullPainter ()
+        else:
+            # set a clip region for the expose event
+            ctxt.rectangle (event.area.x, event.area.y,
+                            event.area.width, event.area.height)
+            ctxt.clip()
 
         try:
             p.renderBasic (ctxt, style, w, h)
@@ -97,17 +94,6 @@ class OmegaArea (gtk.DrawingArea):
         self.queue_draw ()
         return True
 
-    # Python interface
-    
-    def setPainter (self, p):
-        if not self.weakRef:
-            self.painter = p
-        else:
-            import weakref
-            self.pRef = weakref.ref (p)
-        
-        self.queue_draw ()
-    
     #def forceReconfigure (self):
     #    self.pipeline.forceReconfigure ()
 
