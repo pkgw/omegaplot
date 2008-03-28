@@ -87,11 +87,11 @@ def _dashedPrimary (style, ctxt, stylenum):
     elif stylenum == 1:
         a = [u * 2, u * 2]
     elif stylenum == 2:
-        a = [u * 3, u]
+        a = [u * 3, u, u / 2, u]
     elif stylenum == 3:
-        a = [u * 3, u, u, u]
-    elif stylenum == 4:
         a = [u * 3, u, u, u, u, u]
+    elif stylenum == 4:
+        a = [u * 3, u, u / 2, u, u / 2, u]
     else:
         raise Exception ('Only support primary style numbers < 5!')
 
