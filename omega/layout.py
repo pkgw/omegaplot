@@ -69,6 +69,7 @@ class Grid (Painter):
         for i in xrange (0, self.nw):
             for j in xrange (0, self.nh):
                 self[i,j] = NullPainter ()
+                self[i,j].setParent (self)
 
     # FIXME: when these are changed, need to indicate
     # that a reconfigure is necessary.
@@ -263,7 +264,9 @@ class VBox (Painter):
         self._elements = [None] * self.size
         
         for i in xrange (0, self.size):
-            self._elements[i] = (NullPainter (), 1.0, 0.0)
+            np = NullPainter ()
+            self._elements[i] = (np, 1.0, 0.0)
+            np.setParent (self)
 
     # FIXME: when these are changed, need to indicate
     # that a reconfigure is necessary.
@@ -294,6 +297,7 @@ class VBox (Painter):
 
     def appendChild (self, child):
         if child is None: child = NullPainter ()
+        child.setParent (self)
         
         self._elements.append ((None, 1.0, 0.0))
         self.size += 1
