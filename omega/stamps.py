@@ -132,6 +132,9 @@ class Diamond (Stamp):
         ctxt.rel_line_to (s2, -s2)
         ctxt.stroke ()
 
+# Aieee! These all assume indices into the dataholder arrays are the
+# "normal" values! This is bad and will break!
+
 class WithSizing (Stamp):
     def __init__ (self, substamp):
         self.substamp = substamp
@@ -146,6 +149,7 @@ class WithSizing (Stamp):
     def _getSampleValues (self, style, x, y):
         imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
         fmisc[0] = style.smallScale * 3
+        return imisc, fmisc, allx, ally
     
 class WithYErrorBars (Stamp):
     def __init__ (self, substamp):
@@ -161,6 +165,12 @@ class WithYErrorBars (Stamp):
         ctxt.line_to (allx[0], ally[2])
         ctxt.stroke ()
 
+    def _getSampleValues (self, style, x, y):
+        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
+        ally[1] = y - style.smallScale * 2
+        ally[2] = y + style.smallScale * 2
+        return imisc, fmisc, allx, ally
+    
 class WithXErrorBars (Stamp):
     def __init__ (self, substamp):
         self.substamp = substamp
@@ -174,3 +184,9 @@ class WithXErrorBars (Stamp):
         ctxt.move_to (allx[1], ally[0])
         ctxt.line_to (allx[2], ally[0])
         ctxt.stroke ()
+
+    def _getSampleValues (self, style, x, y):
+        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
+        allx[1] = x - style.smallScale * 2
+        allx[2] = x + style.smallScale * 2
+        return imisc, fmisc, allx, ally
