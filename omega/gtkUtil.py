@@ -210,6 +210,11 @@ class LiveDisplay (object):
 
     def _clearWin (self, unused):
         self.win = None
+
+    def closeWindow (self):
+        def f ():
+            self.win.destroy ()
+        gtkThread.send (f)
     
     def setPainter (self, painter, style=None, winTrack=True):
         # Note that we do not honor @style if the window already
