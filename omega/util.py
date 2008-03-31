@@ -52,7 +52,7 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     fp.setFloats (edges, values)
     
     rp = rect.RectPlot ()
-    rp.addFieldPainter (fp)
+    rp.add (fp)
     rp.setBounds (xmin, xmax, ymin, ymax)
     return rp
 
