@@ -374,7 +374,7 @@ def _displayPainter (ident, painter, **kwargs):
 
     return ld
 
-def close (ident):
+def close (ident=None):
     if ident is None:
         ident = _lastUsedIdent
 
