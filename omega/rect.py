@@ -830,7 +830,7 @@ class RectPlot (Painter):
 
         self.defaultKey.appendChild (item)
     
-    def add (self, fp, autokey=True, rebound=True):
+    def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True):
         assert (isinstance (fp, FieldPainter))
         
         fp.setParent (self)
@@ -849,7 +849,7 @@ class RectPlot (Painter):
                 self.addKeyItem (kp)
         
         if rebound:
-            self.rebound ()
+            self.rebound (nudgex, nudgey)
 
     def addXY (self, *args, **kwargs):
         l = len (args)
@@ -880,7 +880,7 @@ class RectPlot (Painter):
         
         self.add (dp, **kwargs)
     
-    def rebound (self):
+    def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
         that it contains."""
 
@@ -895,6 +895,8 @@ class RectPlot (Painter):
                 first = False
             else:
                 self.defaultField.expandBounds (*fp.getDataBounds ())
+
+        self.nudgeBounds (nudgex, nudgey)
     
     def addOuterPainter (self, op, side, position):
         op.setParent (self)
