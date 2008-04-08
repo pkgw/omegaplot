@@ -350,7 +350,46 @@ class DataHolder (object):
         other.setInts = self.setInts
         other.setFloats = self.setFloats
 
-_mainLiveDisplay = None
+# Management of LiveDisplays
+
+displays = {}
+_lastUsedIdent = 0
+
+def _displayPainter (ident, painter, **kwargs):
+    global _lastUsedIdent
+    
+    if ident is None:
+        ident = _lastUsedIdent
+    else:
+        _lastUsedIdent = ident
+        
+    if ident in displays:
+        ld = displays[ident]
+        ld.setPainter (painter)
+    else:
+        from util import LiveDisplay
+        
+        ld = LiveDisplay (painter, **kwargs)
+        displays[ident] = ld
+
+    return ld
+
+def close (ident):
+    if ident is None:
+        ident = _lastUsedIdent
+
+    # It would seem wrong to me to set _lastUsedIdent
+    # here if ident is not None.
+
+    if ident not in displays: return
+
+    displays[ident].closeWindow ()
+
+def closeAll ():
+    for ld in displays.itervalues ():
+        ld.closeWindow ()
+
+# Painting and useful utilities for painting
 
 class ToplevelPaintParent (object):
     _painter = None
@@ -453,33 +492,34 @@ class Painter (object):
         self.doPaint (ctxt, style)
         ctxt.restore ()
 
-    def show (self, destLD=None, **kwargs):
-        """Create a live display of this painter. By default uses one window for all plots;
-        this can be overridden via the destLD parameter."""
+    def show (self, ident=None, **kwargs):
+        """Create a live display of this painter. By default, one
+window is used for all plots. This can be overridden by
+passing a different value for the "ident" parameter. (Integers
+are suggested, but anything hashable is OK.)
 
-        global _mainLiveDisplay
-        from util import LiveDisplay
+Arguments:
 
-        if destLD is None:
-            if _mainLiveDisplay is None:
-                _mainLiveDisplay = LiveDisplay (self, **kwargs)
-            destLD = _mainLiveDisplay
+     ident - An identifier for the display in which to show this plot.
+             Defaults to None, which causes the last-used identifier
+             to be reused (ie, for the most-recently-updated display
+             to be the one to show the plot). If there is no last-used
+             identifier, 0 is used. Integer identifiers are suggested,
+             but any hashable value is acceptable.
+  **kwargs - Extra arguments that are passed to
+             omega.LiveDisplay.__init__ if a new LiveDisplay must be
+             created. Semantics depend on the implementation of
+             LiveDisplay being used (which varies depending on the user
+             interfact toolkit).
 
-        destLD.setPainter (self)
+Returns: self, for ease of chaining commands and interactive use:
+
+> p = makePlot (mydata).show ()
+        
+"""
+
+        _displayPainter (ident, self, **kwargs)
         return self
-
-    def hide (self):
-        """Hide the main live display window. Note that this particular
-        painter is not necessarily being rendered into that window."""
-        
-        hide ()
-        
-    def showNew (self, **kwargs):
-        """Show this painter in a new live display window, returning a
-        tuple of (self, LiveDisplay object)."""
-
-        from util import LiveDisplay
-        return self, LiveDisplay (self, **kwargs)
 
     def showBlocking (self, **kwargs):
         """Show this painter in a live display, blocking execution until the
@@ -523,13 +563,6 @@ class Painter (object):
         import util
         util.dumpPainter (self, **kwargs)
         return self
-
-def hide ():
-    """Close the main live display window."""
-    
-    if _mainLiveDisplay is None: return
-    
-    _mainLiveDisplay.setPainter (None)
 
 class NullPainter (Painter):
     def getMinimumSize (self, ctxt, style):
