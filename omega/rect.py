@@ -1726,3 +1726,43 @@ class AbsoluteFieldOverlay (FieldPainter):
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
         self.child.paint (ctxt, style)
+
+class XBand (FieldPainter):
+    style = 'genericBand'
+    needsPrimaryStyle = False
+    primaryStyleNum = None
+    keyText = 'Band'
+    stroke = False
+    fill = True
+    
+    def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText=None):
+        Painter.__init__ (self)
+
+        self.stroke = stroke
+        self.fill = fill
+        
+        if xmin > xmax: xmin, xmax = xmax, xmin
+        self.xmin, self.xmax = xmin, xmax
+        
+        if keyText is not None: self.keyText = keyText
+
+    def getDataBounds (self):
+        return self.xmin, self.xmax, None, None
+
+    def getKeyPainter (self):
+        # FIXME
+        return None
+    
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        mmin, mmax = self.xform.mapX (N.asarray ((self.xmin, self.xmax)))
+        w = abs (mmax - mmin)
+        x = min (mmin, mmax)
+        
+        ctxt.save ()
+        style.apply (ctxt, self.fillStyle)
+        ctxt.rectangle (x, 0, w, self.xform.height)
+        if self.stroke: ctxt.stroke ()
+        if self.fill: ctxt.fill ()
+        ctxt.restore ()
