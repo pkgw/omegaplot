@@ -1761,7 +1761,7 @@ class XBand (FieldPainter):
         x = min (mmin, mmax)
         
         ctxt.save ()
-        style.apply (ctxt, self.fillStyle)
+        style.apply (ctxt, self.style)
         ctxt.rectangle (x, 0, w, self.xform.height)
         if self.stroke: ctxt.stroke ()
         if self.fill: ctxt.fill ()
