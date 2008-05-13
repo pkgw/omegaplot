@@ -851,6 +851,8 @@ class RectPlot (Painter):
         if rebound:
             self.rebound (nudgex, nudgey)
 
+        return fp
+
     def addXY (self, *args, **kwargs):
         l = len (args)
 
@@ -878,7 +880,7 @@ class RectPlot (Painter):
         dp.setFloats (x, y)
         if lineStyle is not None: dp.lineStyle = lineStyle
         
-        self.add (dp, **kwargs)
+        return self.add (dp, **kwargs)
     
     def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
