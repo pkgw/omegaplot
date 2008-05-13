@@ -436,6 +436,8 @@ class ToplevelPaintParent (object):
         else:
             self._painterRef = None
 
+class ContextTooSmallError (StandardError): pass
+
 class Painter (object):
     mainStyle = None
     parentRef = None
@@ -533,8 +535,8 @@ Returns: self, for ease of chaining commands and interactive use:
         minw, minh = self.getMinimumSize (ctxt, style)
 
         if w < minw or h < minh:
-            raise Exception ('Context too small: got (%d, %d) ; need (%d, %d)' % \
-                                 (w, h, minw, minh))
+            raise ContextTooSmallError ('Context too small: got (%d, %d) ; need (%d, %d)' % \
+                                        (w, h, minw, minh))
 
         self.configurePainting (ctxt, style, w, h)
         style.initContext (ctxt, w, h)

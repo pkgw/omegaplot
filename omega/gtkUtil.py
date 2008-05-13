@@ -4,7 +4,7 @@ import gtkThread
 
 import sys #exc_info
 
-from base import NullPainter, Painter, ToplevelPaintParent
+from base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
 import styles
 
 class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
@@ -54,8 +54,8 @@ class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
 
         try:
             p.renderBasic (ctxt, style, w, h)
-        #except ContextTooSmallError, ctse:
-        #    print ctse
+        except ContextTooSmallError, ctse:
+            print ctse
         except:
             self.lastException = sys.exc_info ()
         
