@@ -7,6 +7,8 @@ import sys #exc_info
 from base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
 import styles
 
+_defaultStyle = styles.ColorOnBlackBitmap
+
 class OmegaArea (gtk.DrawingArea,ToplevelPaintParent):
     def __init__ (self, painter, style, autoRepaint, weak=False):
         gtk.DrawingArea.__init__ (self)
@@ -193,7 +195,7 @@ class OmegaDemoWindow (gtk.Window):
 
 def showBlocking (painter, style=None):
     if style is None: 
-            style = styles.WhiteOnBlackBitmap ()
+            style = _defaultStyle ()
             
     win = OmegaDemoWindow (painter, style)
     win.connect ('destroy', gtk.main_quit)
@@ -221,7 +223,7 @@ class LiveDisplay (object):
         # exists. Should add a setStyle () function at some point.
         
         if style is None:
-            style = styles.WhiteOnBlackBitmap ()
+            style = _defaultStyle ()
         
         def f ():
             if self.win is not None:
