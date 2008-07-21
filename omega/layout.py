@@ -204,7 +204,7 @@ class RightRotationPainter (Painter):
     
     def __init__ (self, child):
         Painter.__init__ (self)
-        self.setChild (None)
+        self.setChild (child)
 
     def setChild (self, child):
         if self.child is not None:
@@ -231,8 +231,6 @@ class RightRotationPainter (Painter):
 
     def configurePainting (self, ctxt, style, w, h):
         Painter.configurePainting (self, ctxt, style, w, h)
-
-        if not self.child: return
 
         ctxt.save ()
         
