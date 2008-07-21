@@ -81,7 +81,8 @@ def _dashedPrimary (style, ctxt, stylenum):
     ctxt.set_line_width (style.thickLine)
 
     u = style.largeScale
-    
+    stylenum = stylenum % 5
+
     if stylenum == 0:
         return
     elif stylenum == 1:
@@ -92,8 +93,6 @@ def _dashedPrimary (style, ctxt, stylenum):
         a = [u * 3, u, u, u, u, u]
     elif stylenum == 4:
         a = [u * 3, u, u / 2, u, u / 2, u]
-    else:
-        raise Exception ('Only support primary style numbers < 5!')
 
     ctxt.set_dash (a, 0.)
     
@@ -116,6 +115,8 @@ class ColorOnBlackBitmap (BitmapStyle):
     def applyPrimary (self, ctxt, stylenum):
         if stylenum is None: return
 
+        stylenum = stylenum % 6
+
         if stylenum == 0:
             c = (0.9, 0.1, 0.1)
         elif stylenum == 1:
@@ -128,8 +129,6 @@ class ColorOnBlackBitmap (BitmapStyle):
             c = (0.7, 0, 0.7)
         elif stylenum == 5:
             c = (0, 0.7, 0.7)
-        else:
-            raise Exception ('Only support primary numbers < 6!')
 
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (self.thickLine)
