@@ -35,7 +35,9 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 
 """
 
-import os, os.path 
+import sys, os
+import cairo, gtk
+from os.path import basename, splitext, join, abspath, exists
 import tempfile
 import md5
 
@@ -67,6 +69,14 @@ class RenderConfig (object):
     preamble -- The very first text written to the LaTeX file that is
       processed. Defaults to some sensible \usepackage commands.
 
+    pstoedit -- FIXME
+
+    dvips -- FIXME
+
+    multiext -- FIXME
+
+    supershutup -- FIXME
+
     midamble -- The text that is written after the user header and before
       the snippets. Sets the pagestyle to empty, a \usepackage{preview},
       and a \begin{document}.
@@ -83,7 +93,12 @@ class RenderConfig (object):
     pngflags = '-T tight -D 100 -z 9 -bg Transparent'
     shutup = '>/dev/null'
     noinput = '</dev/null'
-    
+    dvips = 'dvips'
+    dvipsflags = '-q -f -E -D 600 -y 1500'
+    pstoedit = 'pstoedit'
+    multiext = '_%03d'
+    supershutup = '2>&1'
+
     _debug = False
 
     # From original source:
@@ -122,53 +137,42 @@ class RenderConfig (object):
 
 defaultConfig = RenderConfig ()
 
-def renderSnippets (snips, texbase, pngbase, header=None, cfg=defaultConfig):
-    """Render a list of LaTeX fragments into a sequence of PNG files.
-    Arguments:
+# Functions to perform various rendering steps
 
-    snips -- An enumerable of fragments of LaTeX source. Note that equations
-      must be enclosed in $$ or \\[\\] to be processed as such.
+def _run (shellcmd, cfg):
+    if cfg._debug:
+        print >>sys.stderr, 'Running:', shellcmd
 
-    texbase -- The base string filename used for the .tex file. Note that
-      LaTeX outputs into the current directory regardless of any path
-      components in the input filename, so processing will fail if there
-      are any path components in this variable.
+    ret = os.system (shellcmd)
 
-    pngbase -- The base string used for the output .png files. If more than
-      one snippet is being processed, this argument should contain a
-      printf-style integer argument of the form %d, %01d, .. %09d. The
-      generated files will have sequential numbers formatted into their
-      names, started with 1. A suffix of '.png' is appended to this argument
-      as well. So passing in 'test%02dfile' and three snippets will create
-      files named 'test01file.png', 'test02file.png', and 'test03file.png'.
-
-    header (optional) -- An optional set of header commands to insert
-      into the preamble of the generated LaTeX file. Should include
-      \usepackage{} commands and the like. This header is output
-      before the \begin{document} statement.
-
-    cfg (optional, defaults to defaultConfig) -- A RendererConfig object
-      whose fields are used to control how this function interacts with
-      its environment.
+    assert ret == 0, ('Command returned %d: ' % ret) + shellcmd
     
-    Returns: None.
+def _recklessUnlink (name, cfg):
+    if cfg._debug: return
 
-    This runs the latex and dvipng programs using os.system (). Exceptions
-    are not handled. Intermediate files are removed and program output to
-    standard output are suppressed, unless the _debug variable of the module
-    is True.
-    """
-    
-    texfile = texbase + '.tex'
+    try: os.unlink (name)
+    except: pass
 
+def _recklessMultiUnlink (count, tmpl, cfg):
+    if cfg._debug: return
+
+    if count == 1: 
+        _recklessUnlink (tmpl)
+    else:
+        for i in xrange (0, count):
+            _recklessUnlink (tmpl % i)
+
+def _makeDvi (snips, texbase, header, cfg):
     if cfg._debug: shutflag = ''
     else: shutflag = cfg.shutup
     
-    # Write out a TeX file
+    texfile = texbase + '.tex'
+
+    # Write out the TeX file
     
     f = file (texfile, 'w')
     f.write (cfg.preamble)
-    if header: f.write (header)
+    if header is not None: f.write (header)
     f.write (cfg.midamble)
 
     first = True
@@ -184,28 +188,310 @@ def renderSnippets (snips, texbase, pngbase, header=None, cfg=defaultConfig):
     f.close ()
     del f
 
-    # Now run LaTeX
+    # Run LaTeX
 
-    os.system ('%s %s %s %s %s' % (cfg.texprogram, cfg.texflags, texfile,
-                                   shutflag, cfg.noinput))
-
-    if not cfg._debug:
-        os.remove (texfile)
-        os.remove (texbase + '.aux')
-        os.remove (texbase + '.log')
-
-    # Now pngify that shit
-
-    dvifile = texbase + '.dvi'
-    pngfile = pngbase + '.png'
-
-    os.system ('%s %s -o \'%s\' %s %s' % (cfg.pngprogram, cfg.pngflags, pngfile,
-                                          dvifile, shutflag))
+    _run ('%s %s \'%s\' %s %s' % (cfg.texprogram, cfg.texflags, texfile,
+                                  shutflag, cfg.noinput), cfg)
 
     if not cfg._debug:
-        os.remove (dvifile)
+        os.unlink (texfile)
+        os.unlink (texbase + '.aux')
+        os.unlink (texbase + '.log')
 
-class SnippetCache (object):
+    return texbase + '.dvi'
+
+def _makePngs (dvifile, pngtmpl, count, cfg):
+    if cfg._debug: shutflag = ''
+    else: shutflag = cfg.shutup
+
+    _run ('%s %s -o \'%s\' %s %s' % (cfg.pngprogram, cfg.pngflags, pngtmpl,
+                                     dvifile, shutflag), cfg)
+
+    if '%' in pngtmpl:
+        return [pngtmpl % i for i in xrange (0, count)]
+    assert count == 1
+    return [pngtmpl]
+
+
+def _makeEpss (dvifile, epsbase, count, cfg):
+    if cfg._debug: shutflag = ''
+    else: shutflag = cfg.shutup
+
+    if count > 1: iflag = '-i'
+    else: iflag = ''
+
+    _run ('%s %s %s -o \'%s.eps\' %s %s' % (cfg.dvips, cfg.dvipsflags, iflag, epsbase,
+                                            dvifile, shutflag), cfg)
+
+    if count == 1:
+        return [epsbase + '.eps']
+    else:
+        return ['%s.%03d' % (epsbase, i+1) for i in xrange (0, count)]
+
+def _makeSvgs (dvifile, epsbase, svgtmpl, count, cfg):
+    if cfg._debug: shutflag = ''
+    else: shutflag = cfg.shutup + ' ' + cfg.supershutup
+
+    epsfiles = _makeEpss (dvifile, epsbase, count, cfg)
+
+    if count == 1:
+        _run ('%s -f svg \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0], svgtmpl, shutflag), cfg)
+        svgfiles = [svgtmpl]
+    else:
+        svgfiles = []
+        for i in xrange (0, count):
+            fout = svgtmpl % i
+            _run ('%s -f svg \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i], fout, shutflag), cfg)
+            svgfiles.append (fout)
+
+    return epsfiles, svgfiles
+
+def _getBBox (epsfile):
+    f = file (epsfile, 'r')
+    first = True
+
+    x1 = None
+
+    for l in f:
+        if first:
+            assert l.startswith ('%!PS')
+            first = False
+        else:
+            if not l.startswith ('%%'): break
+
+            if l.startswith ('%%BoundingBox:'):
+                x1, y1, x2, y2 = (int (x) for x in l.split ()[1:])
+
+    assert x1 is not None, 'Couldn\'t find EPS file bounding box'
+    return x1, y2, x2 - x1, y2 - y1
+    
+def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
+    if cfg._debug: shutflag = ''
+    else: shutflag = cfg.shutup + ' ' + cfg.supershutup
+
+    epsfiles = _makeEpss (dvifile, epsbase, count, cfg)
+
+    # We want bounding boxes for Cairo rendering
+
+    if count == 1:
+        if not checkExists or not exists (sktmpl):
+            _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0], 
+                                                          sktmpl, shutflag), cfg)
+        skfiles = [sktmpl]
+        bboxes = [_getBBox (epstmpl)]
+    else:
+        skfiles = []
+        bboxes = []
+        for i in xrange (0, count):
+            fout = sktmpl % i
+            if not checkExists or not exists (fout):
+                _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i], 
+                                                              fout, shutflag), cfg)
+            skfiles.append (fout)
+            bboxes.append (_getBBox (epsfiles[i]))
+
+    return epsfiles, skfiles, bboxes
+
+# End-to-end renderers
+#
+# Return convention: single string means output
+# is a multipage format with all of the snippets
+#
+# list means output is a one-file-per-snippet format
+
+def _render_dvi (snips, outbase, header, cfg):
+    return _makeDvi (snips, outbase, header, cfg)
+
+def _render_eps (snips, outbase, header, cfg):
+    dvifile = _makeDvi (snips, outbase, header, cfg)
+
+    try:
+        return _makeEpss (dvifile, outbase, len (snips), cfg)
+    finally:
+        _recklessUnlink (dvifile, cfg)
+
+    
+def _render_png (snips, outbase, header, cfg):
+    count = len (snips)
+
+    if count > 1: pngtmpl = outbase + cfg.multiext + '.png'
+    else: pngtmpl = outbase + '.png'
+
+    dvifile = _makeDvi (snips, outbase, header, cfg)
+
+    try:
+        return _makePngs (dvifile, pngtmpl, count, cfg)
+    finally:
+        _recklessUnlink (dvifile, cfg)
+
+def _render_svg (snips, outbase, header, cfg):
+    count = len (snips)
+
+    if count > 1: svgtmpl = outbase + cfg.multiext + '.svg'
+    else: svgtmpl = outbase + '.svg'
+
+    dvifile = _makeDvi (snips, outbase, header, cfg)
+
+    try:
+        epss, svgs = _makeSvgs (dvifile, outbase, svgtmpl, count, cfg)
+    finally:
+        _recklessUnlink (dvifile, cfg)
+        for f in epss: _recklessUnlink (f, cfg)
+
+    return svgs
+
+def _render_sk (snips, outbase, header, cfg, getbbs=False, checkExists=False):
+    count = len (snips)
+
+    if count > 1: sktmpl = outbase + cfg.multiext + '.sk'
+    else: sktmpl = outbase + '.sk'
+
+    dvifile = _makeDvi (snips, outbase, header, cfg)
+
+    try:
+        epss = []
+        epss, sks, bbs = _makeSks (dvifile, outbase, sktmpl, count, checkExists, cfg)
+    finally:
+        _recklessUnlink (dvifile, cfg)
+        for f in epss: _recklessUnlink (f, cfg)
+
+    if getbbs: return sks, bbs
+    return sks
+
+_renderMap = {}
+
+def _makeRenderMap ():
+    for (name, val) in globals ().iteritems ():
+        if not name.startswith ('_render_'): continue
+        _renderMap[name[8:]] = val
+
+_makeRenderMap ()
+
+# High-level rendering functions
+
+def renderSnippet (snip, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
+    return _renderMap[fmt] ([snip], outbase, header, cfg, **kwargs)
+
+def renderSnippets (snips, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
+    return _renderMap[fmt] (snips, outbase, header, cfg, **kwargs)
+
+def _guessFmt (outfile):
+    base, ext = splitext (outfile)
+    ext = ext[1:]
+
+    assert ext in _renderMap, 'Unknown output format "%s"' % ext
+
+    return base, ext
+
+def renderToFile (snip, outfile, header=None, cfg=defaultConfig, **kwargs):
+    base, fmt = _guessFmt (outfile)
+    return renderSnippet (snip, base, fmt, header, cfg, **kwargs)
+
+# No renderToFiles since interpolating the image number into the
+# middle of the filename would be a bit weird
+
+# Utility: class to render a Skencil file in a Cairo context.
+# Only supports enough to render pstoedit'ed LaTeX documents...
+
+# SCR global functions - no ctxt
+
+def _scrg_document ():
+    #print 'document'
+    pass
+
+def _scrg_layer (name, visible, printable, locked, outlined, *rest):
+    #print 'layer', visible, printable, locked, outlined, rest
+    pass
+
+def _scrg_guess_cont ():
+    #print 'guess_cont'
+    pass
+
+# SCR local functions -- need ctxt
+
+def _scrl_fp (ctxt, color):
+    # fill pattern
+    #print 'fp', color
+    ctxt.set_source_rgb (*color)
+
+def _scr_nullfp (color): pass
+
+def _scrl_le (ctxt):
+    # line pattern empty
+    #print 'le'
+    ctxt.set_dash ([])
+
+def _scrl_b (ctxt):
+    # begin bezier
+    #print 'b'
+    ctxt.new_path ()
+
+def _scrl_bs (ctxt, x, y, cont):
+    # bezier straightline
+    #print 'bs', x, y, cont
+    ctxt.line_to (x, y)
+
+def _scrl_bc (ctxt, x1, y1, x2, y2, x, y, cont):
+    # bezier curve?
+    #print 'bc', x1, y1, x2, y2, x, y, cont
+    ctxt.curve_to (x1, y1, x2, y2, x, y)
+
+def _scrl_bC (ctxt):
+    # bezier close
+    #print 'bC'
+    ctxt.fill ()
+
+def _scr_makeDoer (func, ctxt):
+    def f (*args):
+        func (ctxt, *args)
+    return f
+
+_scrGlobals = {}
+
+def _populateScrGlobals ():
+    for (name, val) in globals ().iteritems ():
+        if not name.startswith ('_scrg_'): continue
+        rest = name[6:]
+        _scrGlobals[rest] = val
+
+_populateScrGlobals ()
+
+def _makeScrLocals (ctxt):
+    d = {}
+
+    for (name, val) in globals ().iteritems ():
+        if not name.startswith ('_scrl_'): continue
+        rest = name[6:]
+        d[rest] = _scr_makeDoer (val, ctxt)
+
+    return d
+    
+class SkencilCairoRenderer (object):
+    def __init__ (self, filename, bbx, bby, bbw, bbh):
+        self.bbx = bbx
+        self.bby = bby
+        self.bbw = bbw
+        self.bbh = bbh
+
+        source = file (filename, 'r').read ()
+        self.compiled = compile (source, filename, 'exec')
+
+    def render (self, ctxt, ignoreColor=False):
+        l = _makeScrLocals (ctxt)
+
+        if ignoreColor:
+            l['fp'] = _scr_nullfp
+
+        ctxt.save ()
+        #ctxt.translate (0, -self.bbh)
+        ctxt.scale (1, -1)
+        ctxt.translate (-self.bbx, -self.bby)
+        eval (self.compiled, _scrGlobals, l)
+        ctxt.restore ()
+
+# Now, a cache for rendering multiple snippets with Cairo ...
+
+class CairoCache (object):
     """Generates a set of snippets at once and caches the results in a
     temporary directory. This class can be used to manage a whole set of
     snippets, generating and retrieving them efficiently.
@@ -230,7 +516,7 @@ class SnippetCache (object):
 
     getSnippet -- Return the snippet text associated with a handle.
 
-    getPngFile -- Return the name of the PNG file that contains the
+    getOutfile -- Return the name of the output file that contains the
       rendered form of the snippet.
 
     close -- Delete all of the snippets and the temporary directory.
@@ -242,12 +528,12 @@ class SnippetCache (object):
     texbase -- The texbase parameter passed to renderSnippets. Should
       not be needed outside of the class implementation.
 
-    pngbase -- The pngbase parameter passed to renderSnippets. Should
+    outbase -- The outbase parameter passed to renderSnippets. Should
       not be needed outside of the class implementation.
     """
     
     texbase = 'tex'
-    pngbase = 'png%04d'
+    outbase = 'out'
     
     def __init__ (self, cdir=None, header=None, cfg=defaultConfig):
         """Create a SnippetCache object.
@@ -272,6 +558,8 @@ class SnippetCache (object):
         self.header = header
         self.cfg = cfg
         self.snips = [] # list of snippet strings
+        self.outputs = None
+        self.renderers = []
 
     def addSnippet (self, snip):
         """Tell the cache to render the specified snippet. Returns
@@ -311,44 +599,26 @@ class SnippetCache (object):
         Returns: None
         """
         
-        pwd = os.path.abspath (os.curdir)
+        pwd = abspath (os.curdir)
         
         try:
             os.chdir (self.cdir)
-            renderSnippets (self.snips, self.texbase, self.pngbase, \
-                            self.header, self.cfg)
+            sks, self.bbs = renderSnippets (self.snips, self.outbase, 'sk',
+                                            self.header, self.cfg, getbbs=True,
+                                            checkExists=True)
         finally:
             os.chdir (pwd)
 
-    def renderOne (self, handle):
-        """Render the specified snippet only. This may involve
-        less work than rerendering all of the snippets, but it will
-        be faster to render all of the snippets at once rather than
-        call this function once for each snippet. The actual rendering
-        is done in a call to renderSnippets ().
+        assert isinstance (sks, list)
 
-        Arguments:
+        self.outputs = [join (self.cdir, x) for x in sks]
 
-        handle -- The handle of the snippet to render. This should be a
-          value returned by addSnippet.
+        #print 'post-render', len (self.renderers), len (self.snips)
+        #print self.renderers
 
-        Returns: None
-        """
-        
-        pwd = os.path.abspath (os.curdir)
-
-        snips = [self.snips[handle]]
-        pngbase = self.pngbase % (handle)
-        
-        try:
-            os.chdir (self.cdir)
-            renderSnippets (snips, self.texbase, pngbase, \
-                            self.header, self.cfg)
-        finally:
-            os.chdir (pwd)
-
-    def _pngName (self, handle):
-        return os.path.join (self.cdir, self.pngbase % (handle + 1) + '.png')
+        # for all new snippets ...
+        for i in xrange (len (self.renderers), len (self.snips)):
+            self.renderers.append (SkencilCairoRenderer (self.outputs[i], *self.bbs[i]))
 
     def expire (self, handle):
         """Request that the specified snippet no longer be rendered.
@@ -366,14 +636,14 @@ class SnippetCache (object):
         """
         
         # Just delete the file for now and don't waste time regenerating the snippet
-        f = self._pngName (handle)
 
         try:
-            os.remove (f)
+            os.remove (self.outputs[handle])
         except:
             pass
 
         self.snips[handle] = 'X'
+        self.renderers[handle] = None
 
     def getSnippet (self, handle):
         """Retrieve the equation text associated with a snippet handle.
@@ -390,8 +660,8 @@ class SnippetCache (object):
         
         return self.snips[handle]
     
-    def getPngFile (self, handle, regenAll=True):
-        """Returns the absolute path of a PNG file containing the
+    def getRenderer (self, handle):
+        """Returns the absolute path of the output file containing the
         rendered form of the snippet associated with the handle. If the
         snippet has not yet been rendered, that is done so first.
 
@@ -400,32 +670,14 @@ class SnippetCache (object):
         handle -- The handle of the snippet to retrieve. This
           should be a value returned by addSnippet.
 
-        regenAll (optional, defaults True) -- If True, and the PNG file
-          of the specified snippet does not exist, regenerate all snippets,
-          not just the one requested. Otherwise, if the associated PNG file
-          does not exist, only that file is regenerated. The default behavior
-          is intended so that a bunch of snippets can be added to a cache,
-          and individual calls to getPngFile can be made with the first one
-          generating all of the snippets at once, which is more efficient
-          than generating them piecemeal.
-          
-        Returns: The absolute path name of a PNG file containing the
+        Returns: The absolute path name of the output file containing the
         rendered form of the snippet.
         """
-        f = self._pngName (handle)
 
-        if os.path.exists (f): return f
-
-        if regenAll:
+        if len (self.renderers) <= handle:
             self.renderAll ()
-        else:
-            self.renderOne (handle)
 
-        if not os.path.exists (f):
-            raise Exception ('Couldn\'t get file %s for snippet %d: \'%s\'?' % \
-                             (f, handle, self.snips[handle]))
-
-        return f
+        return self.renderers[handle]
 
     def close (self):
         """Deletes every file in the cache's temporary directory, then
@@ -435,9 +687,11 @@ class SnippetCache (object):
         Arguments: None
         Returns: None
         """
+
+        if self.cfg._debug: return
         
         for f in os.listdir (self.cdir):
-            os.remove (os.path.join (self.cdir, f))
+            os.remove (join (self.cdir, f))
         os.rmdir (self.cdir)
 
     def __del__ (self):
@@ -450,8 +704,8 @@ if __name__ == '__main__':
     import sys
 
     if len (sys.argv) != 3:
-        print 'Usage: %s \'snippet\' filename-base' % (sys.argv[0])
+        print 'Usage: %s \'snippet\' outfile' % (sys.argv[0])
         sys.exit (1)
 
-    renderSnippets ([sys.argv[1]], sys.argv[2], sys.argv[2])
+    renderToFile (sys.argv[1], sys.argv[2])
     sys.exit (0)
