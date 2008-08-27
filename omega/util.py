@@ -1,6 +1,7 @@
 import cairo
 
 from base import _kwordDefaulted
+from numpy import pi
 
 defaultLiveDisplay = None
 defaultShowBlocking = None
@@ -74,17 +75,29 @@ def PostScript (filename, pagedims, style=None):
     
     w, h = pagedims
 
+    landscape = w > h
+    if landscape:
+        w, h = (h, w)
+        
     if style is None: style = styles.BlackOnWhiteBitmap ()
     
     def f (painter):
         surf = cairo.PSSurface (filename, w, h)
         surf.dsc_begin_page_setup ()
-        #surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
-        #surf.dsc_comment ('%%PageOrientation: Landscape')
+        # surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
+
+        if landscape:
+            surf.dsc_comment ('%%PageOrientation: Landscape')
 
         ctxt = cairo.Context (surf)
 
-        painter.renderBasic (ctxt, style, w, h)
+        if not landscape:
+            painter.renderBasic (ctxt, style, w, h)
+        else:
+            ctxt.translate (w/2, h/2)
+            ctxt.rotate (-pi/2)
+            ctxt.translate (-h/2, -w/2)
+            painter.renderBasic (ctxt, style, h, w)
 
         ctxt.show_page ()
         surf.finish ()
