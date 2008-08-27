@@ -83,6 +83,7 @@ class DataHolder (object):
     allocations = None
     intdata = None
     fltdata = None
+    dlen = 0
     
     def register (self, *widths):
         """Register a consumer with this DataHolder.
@@ -122,6 +123,9 @@ class DataHolder (object):
         return (offsets, widths)
 
     def _checkLengths (self):
+        if self.intdata is None and self.fltdata is None:
+            raise Exception ('No data yet!')
+        
         if self.intdata is not None and \
            self.intdata.shape[1] != self.dlen:
             raise Exception ('Disagreeing int and float data lengths')

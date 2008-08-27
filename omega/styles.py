@@ -44,7 +44,7 @@ class BitmapStyle (object):
 
     def apply_genericStamp (self, ctxt):
         ctxt.set_line_width (self.fineLine)
-        ctxt.set_source_rgb (*self.colors.foreground)
+        #ctxt.set_source_rgb (*self.colors.foreground)
 
     def apply_genericLine (self, ctxt):
         ctxt.set_line_width (self.thickLine)
@@ -120,7 +120,7 @@ class ColorOnBlackBitmap (BitmapStyle):
         if stylenum == 0:
             c = (0.9, 0.1, 0.1)
         elif stylenum == 1:
-            c = (0.2, 0.4, 0.9)
+            c = (0.2, 0.9, 0.9)
         elif stylenum == 2:
             c = (0.1, 0.9, 0.4)
         elif stylenum == 3:
@@ -128,7 +128,7 @@ class ColorOnBlackBitmap (BitmapStyle):
         elif stylenum == 4:
             c = (0.7, 0, 0.7)
         elif stylenum == 5:
-            c = (0, 0.7, 0.7)
+            c = (0, 0.1, 0.7)
 
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (self.thickLine)

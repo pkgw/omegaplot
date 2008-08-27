@@ -97,7 +97,7 @@ class LogarithmicAxis (RectAxis):
 
 class DiscreteAxis (RectAxis):
     """A discrete logical axis for a rectangular plot. That is,
-    the abscissa values are abitrary and mapped to sequential points along
+    the abscissa values are integers and mapped to sequential points along
     the axis with even spacing."""
 
     # If true, and there are N abscissae, map values to 1 / (N + 0.5) to
@@ -107,99 +107,28 @@ class DiscreteAxis (RectAxis):
     # the right edge.
     
     padBoundaries = True
-    
-    def numAbscissae (self):
-        raise NotImplementedError ()
 
-    def allIndices (self):
-        return N.indices ((self.numAbscissae (), ))[0]
-    
-    def valuesToIndices (self, values):
-        raise NotImplementedError ()
-        
-    def indicesToValues (self, indices):
-        raise NotImplementedError ()
-        
+    def __init__ (self, min, max):
+        self.min = float (min)
+        self.max = float (max)
+
+        assert self.min < self.max
+
+    def ordinates (self):
+        return xrange (int (N.ceil (self.min)), int (N.floor (self.max)) + 1)
+
     def inbounds (self, values):
-        raise NotImplementedError ()
+        return N.logical_and (value >= self.min, value <= self.max)
     
     def transform (self, values):
-        return self.transformIndices (self.valuesToIndices (values))
-
-    def transformIndices (self, idxs):
         # Coerce floating-point evaluation in either case.
         
         if self.padBoundaries:
-            ret = (idxs + 0.5) / (self.numAbscissae () + 0.0)
+            ret = (values - self.min + 0.5) / (self.max + 1.0 - self.min)
         else:
-            ret = (idxs + 0.0) / (self.numAbscissae () - 1)
-
-        # FIXME: better way to handle this?
-        ret[N.where (idxs < 0)] = 0.0
-        
-        return ret
-
-class EnumeratedDiscreteAxis (DiscreteAxis):
-    """A discrete axis in which the abscissae values are stored in memory in
-    an ndarray."""
-    
-    def __init__ (self, abscissae):
-        asarr = N.asarray (abscissae)
-
-        self.idxs = asarr.argsort ()
-        self.sorted = asarr[self.idxs]
-
-    def numAbscissae (self):
-        return len (self.sorted)
-
-    def valuesToIndices (self, values):
-        # This works. Honest.
-        
-        ret = self.sorted.searchsorted (values)
-
-        for i in xrange (0, ret.size):
-            if values.flat[i] != self.sorted[ret.flat[i]]:
-                ret.flat[i] = -1
-            else:
-                ret.flat[i] = self.idxs[ret.flat[i]]
+            ret = (values - self.min + 0.0) / (self.max - self.min)
 
         return ret
-    
-
-    def indicesToValues (self, indices):
-        return self.sorted[self.idxs[indices]]
-    
-    def inbounds (self, values): 
-        return self.valuesToIndices (values) >= 0
-    
-class DiscreteIntegerAxis (DiscreteAxis):
-    """A discrete axis in which the abscissae values are integers, specified
-    by a minimum, maximum, and step."""
-    
-    def __init__ (self, min, max, step=1):
-        DiscreteAxis.__init__ (self, 'F') # proper to call it a float and not an int?
-        self.min = int (min)
-        self.max = int (max)
-        step = int (step)
-        
-        if min < max and step < 0:
-            self.step = -step
-        elif min > max and step > 0:
-            self.step = -step
-        else:
-            self.step = step
-
-    def numAbscissae (self):
-        return (self.max - self.min) // self.step + 1
-
-    def valuesToIndices (self, values):
-        return (values - self.min) // self.step
-
-    def indicesToValues (self, indices):
-        return indices * self.step + self.min
-
-    def inbounds (self, values): 
-        return N.logical_and (value >= self.min, value <= self.max)
 
 # Axis Painters
 
@@ -603,9 +532,9 @@ LogarithmicAxis.defaultPainter = LogarithmicAxisPainter
 
 class DiscreteAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a tick mark and label
-    for each item in the list of abscissae of the DiscreteAxis. Specialized
-    subclasses of this class should be used for common discrete scenarios
-    (months, days of week, etc.)"""
+    for each item of a DiscreteAxis. Overriding the formatLabel property
+    gives an easy way to use a DiscreteAxis for many common discrete cases:
+    days of the week, members, etc."""
     
     def __init__ (self, axis, formatLabel=None):
         BlankAxisPainter.__init__ (self)
@@ -627,25 +556,20 @@ class DiscreteAxisPainter (BlankAxisPainter):
     def genericFormat (self, v): return str(v)
     
     def spaceExterior (self, helper, ctxt, style):
-        n = self.axis.numAbscissae ()
-        skip = max (n / 10, 1) # this is more than a little sketchy
-        useidxs = range (0, n, skip)
-        
         stampers = []
-        values = self.axis.indicesToValues (useidxs)
 
-        for i in xrange (0, len (useidxs)):
-            s = self.formatLabel (values[i])
-            stampers.append ((TextStamper (s), useidxs[i]))
+        for i in self.axis.ordinates ():
+            s = self.formatLabel (i)
+            stampers.append (TextStamper (s))
 
         outside, along = 0, 0
 
         for i in range (0, len (stampers)):
-            (ts, idx) = stampers[i]
+            ts = stampers[i]
             w, h = ts.getSize (ctxt, style)
             outside = max (outside, helper.spaceRectOut (w, h))
             along = max (along, helper.spaceRectAlong (w, h))
-            stampers[i] = (ts, idx, w, h)
+            stampers[i] = (ts, w, h)
 
         self.stampers = stampers
         
@@ -656,23 +580,14 @@ class DiscreteAxisPainter (BlankAxisPainter):
 
         style.apply (ctxt, self.tickStyle)
 
-        n = self.axis.numAbscissae ()
-        idxs = self.axis.allIndices ()
-        vals = self.axis.transformIndices (idxs)
+        vals = self.axis.transform (N.asarray (self.axis.ordinates ()))
 
-        if self.ticksBetween:
-            for i in xrange (1, n):
-                pos = (vals[i-1] + vals[i]) / 2
-                helper.paintTickIn (ctxt, pos, self.tickScale * style.largeScale)
-        else:
-            for i in xrange (0, n):
-                helper.paintTickIn (ctxt, vals[i], self.tickScale * style.largeScale)
-
+        for v in vals:
+            helper.paintTickIn (ctxt, v, self.tickScale * style.largeScale)
             
         tc = style.getColor (self.textColor)
         
-        for (ts, idx, w, h) in self.stampers:
-            val = vals[idx]
+        for ((ts, w, h), val) in zip (self.stampers, vals):
             helper.moveToAlong (ctxt, val)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
             helper.relMoveRectOut (ctxt, w, h)
@@ -691,8 +606,8 @@ class RectField (object):
             yaxis = xaxisOrField.yaxis
             return
             
-        if not xaxisOrField: xaxisOrField = LinearAxis ()
-        if not yaxis: yaxis = LinearAxis ()
+        if xaxisOrField is None: xaxisOrField = LinearAxis ()
+        if yaxis is None: yaxis = LinearAxis ()
 
         self.xaxis = xaxisOrField
         self.yaxis = yaxis
@@ -831,6 +746,8 @@ class RectPlot (Painter):
         self.defaultKey.appendChild (item)
     
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True):
+        # FIXME: don't rebound if the FP doesn't have any data.
+        
         assert (isinstance (fp, FieldPainter))
         
         fp.setParent (self)
@@ -1079,6 +996,10 @@ class RectPlot (Painter):
         if self.mainLabels[side]:
             self.removeChild (self.mainLabels[side])
 
+        if val is None:
+            # Label is cleared, we're done.
+            return
+        
         # (To the tune of the DragNet fanfare:)
         # Hack, hack hack hack... hack, hack hack hack haaack!
         # If the text is going on a side axis, encapsulate it
@@ -1384,6 +1305,9 @@ class GenericKeyPainter (Painter):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
 
+        ctxt.save ()
+        self._applyOverallStyle (style, ctxt)
+        
         if self._drawLine ():
             ctxt.save ()
             self._applyLineStyle (style, ctxt)
@@ -1394,6 +1318,8 @@ class GenericKeyPainter (Painter):
 
         if self._drawStamp ():
             self._getStamp ().paintSample (ctxt, style, dw / 2, h / 2)
+
+        ctxt.restore ()
 
         tx = w - self.tw
         ty = (h - self.th) / 2
@@ -1411,8 +1337,10 @@ class XYKeyPainter (GenericKeyPainter):
     def _drawStamp (self):
         return self.owner.pointStamp is not None
     
-    def _applyLineStyle (self, style, ctxt):
+    def _applyOverallStyle (self, style, ctxt):
         style.applyPrimary (ctxt, self.owner.primaryStyleNum)
+
+    def _applyLineStyle (self, style, ctxt):
         style.apply (ctxt, self.owner.lineStyle)
 
     def _getStamp (self):
@@ -1466,6 +1394,7 @@ class XYDataPainter (FieldPainter):
 
         ctxt.save ()
         style.applyPrimary (ctxt, self.primaryStyleNum)
+        ctxt.save ()
         style.apply (ctxt, self.lineStyle)
 
         x, y = allx[0,:], ally[0,:]
@@ -1481,12 +1410,16 @@ class XYDataPainter (FieldPainter):
                     ctxt.move_to (x[i], y[i])
 
             ctxt.stroke ()
+
+        # After this, still have the primary style applied
         ctxt.restore ()
 
         if self.pointStamp is not None:
             for i in xrange (0, x.size):
                 self.pointStamp.paint (ctxt, style, imisc[:,i], fmisc[:,i],
                                        allx[:,i], ally[:,i])
+
+        ctxt.restore ()
 
 class LineOnlyKeyPainter (GenericKeyPainter):
     def _getText (self):
