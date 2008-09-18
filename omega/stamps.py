@@ -45,6 +45,7 @@ class Dot (Stamp):
     size = _defaultStampSize # diameter of dot in style.smallScale
     
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        ctxt.new_sub_path () # no leading line segment to arc beginning
         ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.fill ()
 
@@ -52,6 +53,7 @@ class Circle (Stamp):
     size = _defaultStampSize # diameter of circle in style.smallScale
     
     def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+        ctxt.new_sub_path () # no leading line segment to arc beginning
         ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
         ctxt.stroke ()
 
