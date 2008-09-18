@@ -311,6 +311,8 @@ class LinearAxisPainter (BlankAxisPainter):
         newmin = N.floor (self.axis.min / step) * step
         newmax = N.ceil (self.axis.max / step) * step
         
+        #print 'NB:', span, N.log10 (span), mip, step, newmin, newmax
+
         self.axis.min, self.axis.max = newmin, newmax
     
     def formatLabel (self, val):
@@ -326,6 +328,13 @@ class LinearAxisPainter (BlankAxisPainter):
         
         mip = N.floor (N.log10 (span)) # major interval power
 
+        #print 'GTL:', span, N.log10 (span), mip
+        
+        if N.log10 (span) - mip < 0.3:
+            # If we wouldn't have that many tickmarks, decrease MIP
+            # to make the labels denser.
+            mip -= 1
+            
         inc = 10. ** mip / self.minorTicks # incr. between minor ticks
         coeff = int (N.ceil (self.axis.min / inc)) # coeff. of first tick
         val = coeff * inc # location of first tick
