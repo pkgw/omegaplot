@@ -808,6 +808,41 @@ class RectPlot (Painter):
         
         return self.add (dp, **kwargs)
     
+    def addXYErr (self, *args, **kwargs):
+        from stamps import X, WithYErrorBars
+        
+        l = len (args)
+
+        lines = _kwordDefaulted (kwargs, 'lines', bool, True)
+        lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
+        pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
+
+        x, y, dy, label = None, None, None, None
+        
+        if l == 4:
+            x, y, dy = map (N.asarray, args[0:3])
+            label = args[3]
+        elif l == 3:
+            x, y, dy = map (N.asarray, args)
+        elif l == 2:
+            y, dy = map (N.asarray, args)
+            x = N.linspace (0, len (y) - 1, len (y))
+        else:
+            raise Exception ("Don't know how to handle magic addXYErr() args '%s'" % args)
+
+        if label is None:
+            label = 'Data'
+
+        if pointStamp is None:
+            pointStamp = X ()
+        pointStamp = WithYErrorBars (pointStamp)
+        
+        dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
+        dp.setFloats (x, y, y + dy, y - dy)
+        if lineStyle is not None: dp.lineStyle = lineStyle
+        
+        return self.add (dp, **kwargs)
+    
     def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
         that it contains."""

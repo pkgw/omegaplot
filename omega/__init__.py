@@ -15,4 +15,4 @@ import layout, rect, stamps, styles, util
 
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from util import quickXY, quickHist
+from util import quickXY, quickXYErr, quickHist

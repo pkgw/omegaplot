@@ -39,6 +39,17 @@ def quickXY (*args, **kwargs):
     rp.setBounds (xmin, xmax, ymin, ymax)
     return rp
 
+def quickXYErr (*args, **kwargs):
+    xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
+    xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
+    ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
+    ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
+    
+    rp = rect.RectPlot ()
+    rp.addXYErr (*args, **kwargs)
+    rp.setBounds (xmin, xmax, ymin, ymax)
+    return rp
+
 def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     from numpy import histogram
 
