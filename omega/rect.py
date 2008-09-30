@@ -1327,6 +1327,9 @@ class GenericKeyPainter (Painter):
     def _drawStamp (self):
         raise NotImplementedError ()
     
+    def _applyOverallStyle (self, style, ctxt):
+        raise NotImplementedError ()
+
     def _applyLineStyle (self, style, ctxt):
         raise NotImplementedError ()
 
@@ -1475,8 +1478,10 @@ class LineOnlyKeyPainter (GenericKeyPainter):
     def _drawStamp (self):
         return False
     
-    def _applyLineStyle (self, style, ctxt):
+    def _applyOverallStyle (self, style, ctxt):
         style.applyPrimary (ctxt, self.owner.primaryStyleNum)
+
+    def _applyLineStyle (self, style, ctxt):
         style.apply (ctxt, self.owner.lineStyle)
 
 class DiscreteSteppedPainter (FieldPainter):
