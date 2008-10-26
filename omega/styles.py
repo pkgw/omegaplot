@@ -11,10 +11,13 @@ class BitmapStyle (object):
     def __init__ (self, colorscheme):
         self.colors = colorscheme
 
+    def setOptions (self, ctxt):
+        ctxt.set_font_size (12)
+
     def initContext (self, ctxt, width, height):
         ctxt.set_source_rgb (*self.colors.background)
         ctxt.paint ()
-
+        
     def apply (self, ctxt, style):
         if not style: return
 
@@ -64,6 +67,13 @@ class BitmapStyle (object):
     def applyPrimary (self, ctxt, stylenum):
         raise NotImplementedError ()
 
+class VectorStyle (BitmapStyle):
+    def __init__ (self, colorscheme):
+        BitmapStyle.__init__ (self, colorscheme)
+        self.fineLine = 1
+        self.thickLine = 2
+
+
 class BlackOnWhiteColors (object):
     background = (1, 1, 1)
     foreground = (0, 0, 0)
@@ -95,6 +105,27 @@ def _dashedPrimary (style, ctxt, stylenum):
         a = [u * 3, u, u / 2, u, u / 2, u]
 
     ctxt.set_dash (a, 0.)
+
+def _colorPrimary (style, ctxt, stylenum):
+    if stylenum is None: return
+
+    stylenum = stylenum % 6
+
+    if stylenum == 0:
+        c = (0.9, 0.1, 0.1)
+    elif stylenum == 1:
+        c = (0.2, 0.9, 0.9)
+    elif stylenum == 2:
+        c = (0.1, 0.9, 0.4)
+    elif stylenum == 3:
+        c = (0.7, 0.7, 0)
+    elif stylenum == 4:
+        c = (0.7, 0, 0.7)
+    elif stylenum == 5:
+        c = (0, 0.1, 0.7)
+
+    ctxt.set_source_rgb (*c)
+    ctxt.set_line_width (style.thickLine)
     
 class BlackOnWhiteBitmap (BitmapStyle):
     def __init__ (self):
@@ -112,23 +143,22 @@ class ColorOnBlackBitmap (BitmapStyle):
     def __init__ (self):
         BitmapStyle.__init__ (self, WhiteOnBlackColors ())
 
-    def applyPrimary (self, ctxt, stylenum):
-        if stylenum is None: return
+    applyPrimary = _colorPrimary
 
-        stylenum = stylenum % 6
+class BlackOnWhiteVector (VectorStyle):
+    def __init__ (self):
+        VectorStyle.__init__ (self, BlackOnWhiteColors ())
 
-        if stylenum == 0:
-            c = (0.9, 0.1, 0.1)
-        elif stylenum == 1:
-            c = (0.2, 0.9, 0.9)
-        elif stylenum == 2:
-            c = (0.1, 0.9, 0.4)
-        elif stylenum == 3:
-            c = (0.7, 0.7, 0)
-        elif stylenum == 4:
-            c = (0.7, 0, 0.7)
-        elif stylenum == 5:
-            c = (0, 0.1, 0.7)
+    applyPrimary = _dashedPrimary
+        
+class WhiteOnBlackVector (VectorStyle):
+    def __init__ (self):
+        VectorStyle.__init__ (self, WhiteOnBlackColors ())
 
-        ctxt.set_source_rgb (*c)
-        ctxt.set_line_width (self.thickLine)
+    applyPrimary = _dashedPrimary
+
+class ColorOnBlackVector (VectorStyle):
+    def __init__ (self):
+        VectorStyle.__init__ (self, WhiteOnBlackColors ())
+
+    applyPrimary = _colorPrimary

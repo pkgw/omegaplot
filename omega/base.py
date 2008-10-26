@@ -536,6 +536,7 @@ Returns: self, for ease of chaining commands and interactive use:
         return self
     
     def renderBasic (self, ctxt, style, w, h):
+        style.setOptions (ctxt)
         minw, minh = self.getMinimumSize (ctxt, style)
 
         if w < minw or h < minh:
