@@ -73,7 +73,7 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
 import styles
 
 LetterDims = (11.0 * 72, 8.5 * 72)
-BigImageSize = (1024, 768)
+BigImageSize = (800, 600)
 
 def PostScript (filename, pagedims, style=None):
     """Return a render function that will render a painter to a
@@ -90,7 +90,7 @@ def PostScript (filename, pagedims, style=None):
     if landscape:
         w, h = (h, w)
         
-    if style is None: style = styles.BlackOnWhiteBitmap ()
+    if style is None: style = styles.BlackOnWhiteVector ()
     
     def f (painter):
         surf = cairo.PSSurface (filename, w, h)
@@ -126,7 +126,7 @@ def PDF (filename, pagedims, style=None):
 
     w, h = pagedims
 
-    if style is None: style = styles.BlackOnWhiteBitmap ()
+    if style is None: style = styles.BlackOnWhiteVector ()
     
     def f (painter):
         surf = cairo.PDFSurface (filename, w, h)
@@ -171,7 +171,7 @@ def SVG (filename, imgsize, style=None):
 
     w, h = imgsize
 
-    if style is None: style = styles.BlackOnWhiteBitmap ()
+    if style is None: style = styles.BlackOnWhiteVector ()
     
     def f (painter):
         surf = cairo.SVGSurface (filename, w, h)
