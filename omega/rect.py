@@ -286,8 +286,8 @@ class LinearAxisPainter (BlankAxisPainter):
 
     labelSeparation = 2 # in smallScale
     numFormat = '%g' # can be a function mapping float -> str
-    majorTickScale = 2 # in largeScale
-    minorTickScale = 2 # in smallScale
+    majorTickScale = 2.5 # in largeScale
+    minorTickScale = 2.5 # in smallScale
     minorTicks = 5
     tickStyle = 'bgLinework' # style ref.
     textColor = 'foreground'
