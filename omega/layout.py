@@ -293,11 +293,11 @@ class VBox (Painter):
         
         self._elements[idx] = (value, prevwt, prevmin)
 
-    def appendChild (self, child):
+    def appendChild (self, child, weight=1.0):
         if child is None: child = NullPainter ()
         child.setParent (self)
         
-        self._elements.append ((None, 1.0, 0.0))
+        self._elements.append ((None, weight, 0.0))
         self.size += 1
         self[self.size - 1] = child
     
@@ -321,17 +321,26 @@ class VBox (Painter):
         minh += (self.size - 1) * self.padSize * style.smallScale
 
         dw = 0
-
+        maxSPW = 0 # max size per weight
+        totwt = 0
+        
         for i in xrange (0, self.size):
             (ptr, wt, oldminh) = self._elements[i]
             childw, childh = ptr.getMinimumSize (ctxt, style)
             self._elements[i] = (ptr, wt, childh)
             
             dw = max (childw, dw)
-            minh += childh
+
+            if wt == 0:
+                minh += childh
+            else:
+                maxSPW = max (maxSPW, 1. * childh / wt)
+            
+            totwt += wt
             #print i, childh, minh
 
         minw += dw
+        minh += maxSPW * totwt
         
         return minw, minh
 
@@ -350,7 +359,10 @@ class VBox (Painter):
         totwt = 0.0
         
         for i in xrange (0, self.size): 
-            totwt += self._elements[i][1]
+            wt = self._elements[i][1]
+            totwt += wt
+
+            if wt == 0: hspace -= self._elements[i][2]
             
         ctxt.save ()
         ctxt.translate (hBorderReal, vBorderReal)
@@ -358,19 +370,175 @@ class VBox (Painter):
         for i in xrange (0, self.size):
             ptr, wt, minh = self._elements[i]
 
-            if totwt > 0:
-                childh = hspace * wt / totwt
+            # print 'vb1', i, self.size, totwt, wt, minh, hspace
+            
+            if wt == 0:
+                childh = minh
             else:
-                childh = 0
+                if totwt > 0:
+                    childh = hspace * wt / totwt
+                else:
+                    childh = 0
             
-            if childh < minh: childh = minh
-            
+                if childh < minh: childh = minh
+                # print 'vb2a', childh
+                assert childh <= hspace, 'Not enough room in vbox!'
+
+            # print 'vb2', childw, childh
             ptr.configurePainting (ctxt, style, childw, childh)
             
             ctxt.translate (0, childh + padReal)
 
-            hspace -= childh + padReal
-            totwt -= wt
+            if wt != 0:
+                hspace -= childh
+                totwt -= wt
+
+        ctxt.restore ()
+
+    def doPaint (self, ctxt, style):
+        for i in xrange (0, self.size):
+            self._elements[i][0].paint (ctxt, style)
+
+class HBox (Painter):
+    def __init__ (self, size):
+        Painter.__init__ (self)
+        self.size = int (size)
+
+        self._elements = [None] * self.size
+        
+        for i in xrange (0, self.size):
+            np = NullPainter ()
+            self._elements[i] = (np, 1.0, 0.0)
+            np.setParent (self)
+
+    # FIXME: when these are changed, need to indicate
+    # that a reconfigure is necessary.
+    hBorderSize = 2 # size of horz. border in style.smallScale
+    vBorderSize = 2 # as above for vertical border
+    padSize = 1 # as above for interior horizontal padding
+    
+    def __getitem__ (self, idx):
+        return self._elements[idx][0]
+
+    def __setitem__ (self, idx, value):
+        prevptr, prevwt, prevmin = self._elements[idx]
+        
+        if prevptr is value: return
+
+        # This will recurse to our own _lostChild
+        if prevptr is not None: prevptr.setParent (None)
+
+        # Do this before modifying self._elements, so that
+        # if value is already in _elements and is being
+        # moved to an earlier position, _lostChild doesn't
+        # remove the wrong entry.
+        
+        if value is None: value = NullPainter ()
+        value.setParent (self)
+        
+        self._elements[idx] = (value, prevwt, prevmin)
+
+    def appendChild (self, child, weight=1.0):
+        if child is None: child = NullPainter ()
+        child.setParent (self)
+        
+        self._elements.append ((None, weight, 0.0))
+        self.size += 1
+        self[self.size - 1] = child
+    
+    def _lostChild (self, child):
+        for i in xrange (0, self.size):
+            (ptr, wt, minh) = self._elements[i]
+
+            if ptr is child:
+                newptr = NullPainter ()
+                self._elements[i] = (newptr, wt, 0.0)
+                newptr.setParent (self)
+
+    def setWeight (self, index, wt):
+        (ptr, oldwt, minh) = self._elements[index]
+        self._elements[index] = (ptr, wt, minh)
+    
+    def getMinimumSize (self, ctxt, style):
+        minw = 2 * self.hBorderSize * style.smallScale
+        minh = 2 * self.vBorderSize * style.smallScale
+
+        minw += (self.size - 1) * self.padSize * style.smallScale
+
+        dh = 0
+        maxSPW = 0 # max size per weight
+        totwt = 0
+        
+        for i in xrange (0, self.size):
+            (ptr, wt, oldminh) = self._elements[i]
+            childw, childh = ptr.getMinimumSize (ctxt, style)
+            self._elements[i] = (ptr, wt, childw)
+            
+            dh = max (childh, dh)
+
+            if wt == 0:
+                minw += childw
+            else:
+                maxSPW = max (maxSPW, 1. * childw / wt)
+
+            totwt += wt
+            #print i, childh, minh
+
+        minh += dh
+        minw += maxSPW * totwt
+        
+        return minw, minh
+
+    def configurePainting (self, ctxt, style, w, h):
+        Painter.configurePainting (self, ctxt, style, w, h)
+
+        hBorderReal = self.hBorderSize * style.smallScale
+        vBorderReal = self.vBorderSize * style.smallScale
+        padReal = self.padSize * style.smallScale
+        
+        childh = h - 2 * vBorderReal
+
+        hspace = w - 2 * hBorderReal
+        hspace -= (self.size - 1) * padReal
+
+        totwt = 0.0
+
+        for i in xrange (0, self.size):
+            wt = self._elements[i][1]
+            totwt += wt
+
+            if wt == 0:
+                hspace -= self._elements[i][2]
+            
+        ctxt.save ()
+        ctxt.translate (hBorderReal, vBorderReal)
+        
+        for i in xrange (0, self.size):
+            ptr, wt, minw = self._elements[i]
+
+            # print 'hbcp1', i, self.size, totwt, wt, minw, hspace
+            
+            if wt == 0:
+                childw = minw
+            else:
+                if totwt > 0:
+                    childw = hspace * wt / totwt
+                else:
+                    childw = 0
+            
+                if childw < minw: childw = minw
+                # print 'hbcp2a', childw, childh
+                assert childw <= hspace, 'Not enough room in hbox!'
+
+            # print 'hbcp2', childw, childh
+            
+            ptr.configurePainting (ctxt, style, childw, childh)
+            
+            ctxt.translate (childw + padReal, 0)
+
+            if wt != 0:
+                hspace -= childw
+                totwt -= wt
 
         ctxt.restore ()
 
