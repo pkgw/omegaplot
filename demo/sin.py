@@ -24,7 +24,8 @@ y = N.sin (x)
 #else:
 #    p.save (sys.argv[1])
 
-pg = omega.quickPager (sys.argv[1:], nw=2, nh=2)
+pg = omega.quickPager (sys.argv[1:], mustPage=True, 
+                       nw=2, nh=2)
 
 for i in xrange (0, 6):
     p = omega.quickXY (x, y * (i + 1), kt)

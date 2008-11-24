@@ -419,7 +419,7 @@ def getFilePagerInfo (filename, type=None, dims=None, margins=None, style=None):
 
 
 def makePager (filename, type=None, dims=None, margins=None, 
-               style=None, nw=1, nh=1, nper=0, **kwargs):
+               style=None, mustPage=False, nw=1, nh=1, nper=0, **kwargs):
     """Create a Pager object for rendering painters.
 
     The rendering method is chosen based on either the filename extension
@@ -446,6 +446,18 @@ def makePager (filename, type=None, dims=None, margins=None,
     tname, klass, dims, margins, style = tup
     pager = klass (filename, dims, margins, style, **kwargs)
 
+    if mustPage and not pager.canPage ():
+        # We must return something that can actually page, but what we
+        # got can't. Go to Plan B: layer in multifile and reusable
+        # shims. This means that the output filenames are not what
+        # was asked for, but that's part of the contract of 
+        # mustPage=True
+        from os.path import splitext
+        base, ext = splitext (filename)
+        tmpl = base + '%03d' + ext
+        pager = MultiFilePager (tmpl, klass, dims, margins, style)
+        pager = ReusingPager (pager)
+    
     if doGrid:
         pager = GridPager (pager, nw, nh, nper)
 
