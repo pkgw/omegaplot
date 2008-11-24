@@ -867,7 +867,7 @@ class RectPlot (Painter):
 
     def _outerPainterIndex (self, op):
         for i in xrange (0, len(self.opainters)):
-            if self.opainters[i][0] is self: return i
+            if self.opainters[i][0] is op: return i
 
         raise ValueError ('%s not in list of outer painters' % (op))
 
@@ -1037,8 +1037,8 @@ class RectPlot (Painter):
             self.rpainter.nudgeBounds ()
     
     def setSideLabel (self, side, val):
-        if self.mainLabels[side]:
-            self.removeChild (self.mainLabels[side])
+        if self.mainLabels[side] is not None:
+            self._lostChild (self.mainLabels[side])
 
         if val is None:
             # Label is cleared, we're done.

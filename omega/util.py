@@ -1,28 +1,4 @@
-import cairo
-
 from base import _kwordDefaulted
-from numpy import pi
-
-defaultLiveDisplay = None
-defaultShowBlocking = None
-
-def _loadLiveBackend ():
-    # Once we have multiple backends, we should try them
-    # sequentially, etc.
-    
-    import omega, gtkThread, gtkUtil
-    omega.gtkThread = gtkThread
-    omega.gtkUtil = gtkUtil
-
-def LiveDisplay (painter, style=None, **kwargs):
-    if defaultLiveDisplay is None: _loadLiveBackend ()
-
-    return defaultLiveDisplay (painter, style, **kwargs)
-
-def showBlocking (painter, style=None, **kwargs):
-    if defaultShowBlocking is None: _loadLiveBackend ()
-
-    defaultShowBlocking (painter, style, **kwargs)
     
 # Quick display of plots
 
@@ -68,191 +44,85 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     rp.setBounds (xmin, xmax, ymin, ymax)
     return rp
 
-# Utilities for dumping to various useful output devices.
 
-import styles
+# A function to easily make a demo plot to make testing of 
+# rendering features quick. The purpose of these is not
+# to demonstrate fancy plots, but just to give something
+# quick to render.
 
-LetterDims = (11.0 * 72, 8.5 * 72)
-BigImageSize = (800, 600)
+_demoNumber = 0
 
-def PostScript (filename, pagedims, style=None):
-    """Return a render function that will render a painter to a
-    PostScript file with the specified filename and page dimensions
-    (in points), with an optionally specified style (which defaults to
-    BlackOnWhiteBitmap). This function should be passed to
-    Painter.render () to actually create the file.
+def _demo ():
+    global _demoNumber
+    import numpy as N
 
-    A suggested default for pagedims is omega.util.LetterDims."""
-    
-    w, h = pagedims
+    if _demoNumber == 0:
+        x = N.linspace (0, 10, 100)
+        p = quickXY (x, N.sin (x), 'sin(x)')
+        p.addXY (x, N.cos (x), 'cos(x)')
+        p.setLabels ('Radians', 'Trigginess')
+    elif _demoNumber == 1:
+        x = N.linspace (-5, 5, 100)
+        p = quickXY (x, x**2, 'squared')
+        p.addXY (x, x**3, 'cubed')
+        p.setLabels ('X', 'Y')
+    elif _demoNumber == 2:
+        x = N.linspace (0.01, 10, 100)
+        p = quickXY (x, N.log10 (x), 'base 10')
+        p.addXY (x, N.log (x), 'natural')
+        p.setLabels ('X', 'Log[X]')
 
-    landscape = w > h
-    if landscape:
-        w, h = (h, w)
-        
-    if style is None: style = styles.BlackOnWhiteVector ()
-    
-    def f (painter):
-        surf = cairo.PSSurface (filename, w, h)
-        surf.dsc_begin_page_setup ()
-        # surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
+    _demoNumber = (_demoNumber + 1) % 3
+    return p
 
-        if landscape:
-            surf.dsc_comment ('%%PageOrientation: Landscape')
 
-        ctxt = cairo.Context (surf)
+# Easy construction of pagers -- not that getting the pager
+# you want is difficult, but I find that I write a lot of programs
+# that I want to page either to the screen or to a file. My usual
+# semantics are that argv has a filename if a file is to be used
+# or is empty if the screen is to be used
 
-        if not landscape:
-            painter.renderBasic (ctxt, style, w, h)
-        else:
-            ctxt.translate (w/2, h/2)
-            ctxt.rotate (-pi/2)
-            ctxt.translate (-h/2, -w/2)
-            painter.renderBasic (ctxt, style, h, w)
+def quickPager (args, **kwargs):
+    import render
 
-        ctxt.show_page ()
-        surf.finish ()
-
-    return f
-
-def PDF (filename, pagedims, style=None):
-    """Return a render function that will render a painter to
-    a PDF file with the specified filename and page
-    dimensions (in points), with an optionally specified style (which defaults
-    to BlackOnWhiteBitmap). This function should be passed to
-    Painter.render () to actually create the file.
-
-    A suggested default for pagedims is omega.util.LetterDims."""
-
-    w, h = pagedims
-
-    if style is None: style = styles.BlackOnWhiteVector ()
-    
-    def f (painter):
-        surf = cairo.PDFSurface (filename, w, h)
-        ctxt = cairo.Context (surf)
-        painter.renderBasic (ctxt, style, w, h)
-        ctxt.show_page ()
-        surf.finish ()
-
-    return f
-
-def PNG (filename, imgsize, style=None):
-    """Return a render function that will render a painter to a PNG
-    file with the specified filename and image dimensions (in pixels),
-    with an optionally specified style (which defaults to
-    BlackOnWhiteBitmap). This function should be passed to
-    Painter.render () to actually create the file.
-
-    A suggested default for imgsize is omega.util.BigImageSize."""
-
-    w, h = imgsize
-
-    if style is None: style = styles.BlackOnWhiteBitmap ()
-    
-    def f (painter):
-        surf = cairo.ImageSurface (cairo.FORMAT_ARGB32, w, h)
-        ctxt = cairo.Context (surf)
-        painter.renderBasic (ctxt, style, w, h)
-        ctxt.show_page ()
-        surf.write_to_png (filename)
-        surf.finish ()
-        
-    return f
-
-def SVG (filename, imgsize, style=None):
-    """Return a render function that will render a painter to an SVG
-    file with the specified filename and image dimensions (in points),
-    with an optionally specified style (which defaults to
-    BlackOnWhiteBitmap). This function should be passed to
-    Painter.render () to actually create the file.
-
-    A suggested default for imgsize is omega.util.LetterDims."""
-
-    w, h = imgsize
-
-    if style is None: style = styles.BlackOnWhiteVector ()
-    
-    def f (painter):
-        surf = cairo.SVGSurface (filename, w, h)
-        ctxt = cairo.Context (surf)
-        painter.renderBasic (ctxt, style, w, h)
-        ctxt.show_page ()
-        surf.finish ()
-        
-    return f
-
-def savePainter (painter, filename, type=None, dims=None, **kwargs):
-    """Save the specified painter to a file.
-
-    The rendering method is chosen based on either the filename extension
-    or the optional 'type' argument. Valid values of the latter are:
-    ps, pdf, or png. These correspond to the recognized filename extensions.
-
-    If the 'dims' argument is supplied, the default page size or image
-    dimensions are overridded. Note that the units of this argument
-    depend on the file type. For types 'ps' and 'pdf', 'dims' is measured in
-    points; for 'png', it is measured in pixels. The default for the former
-    file types is omega.util.LetterDims while for the latter is is
-    omega.util.BigImageSize.
-
-    Any extra keyword arguments are passed to the appropriate render-function
-    constructor function.
-    """
-    
-    if type == 'ps' or filename[-3:] == '.ps':
-        if dims is None: dims = LetterDims
-        f = PostScript (filename, dims, **kwargs)
-    elif type == 'pdf' or filename[-4:] == '.pdf':
-        if dims is None: dims = LetterDims
-        f = PDF (filename, dims, **kwargs)
-    elif type == 'svg' or filename[-4:] == '.svg':
-        if dims is None: dims = LetterDims
-        f = SVG (filename, dims, **kwargs)
-    elif type == 'png' or filename[-4:] == '.png':
-        if dims is None: dims = BigImageSize
-        f = PNG (filename, dims, **kwargs)
+    if len (args) == 0:
+        pg = render.makeDisplayPager (**kwargs)
+    elif len (args) == 1:
+        pg = render.makePager (args[0], **kwargs)
     else:
-        raise Exception ('Cannot guess file type and no hint given')
+        raise ValueError ('Unexpected args to quickPager: %s' % (args, ))
 
-    painter.render (f)
+    return pg
 
-_dumpSerial = 0
-dumpName = 'omegaDump%02d.ps'
+
+# Dumping plots -- saving them to disk conveniently.
+
+_dumpPager = None
+dumpTemplate = 'omegaDump%02d.ps'
+
+
+def _makeDumpPager (**kwargs):
+    from render import getFilePagerInfo, MultiFilePager, ReusingPager
+
+    tup = getFilePagerInfo (dumpTemplate)
+    if tup is None:
+        raise Exception ('Unhandled dump filetype ' + dumpTemplate)
+
+    tname, klass, dims, margins, style = tup
+    p = MultiFilePager (dumpTemplate, klass, dims, margins, style)
+    return ReusingPager (p)
+
 
 def dumpPainter (painter, **kwargs):
-    global _dumpSerial, dumpName
+    global _dumpPager
+    
+    if _dumpPager is None:
+        _dumpPager = _makeDumpPager (**kwargs)
 
-    _dumpSerial += 1
-    fn = dumpName % (_dumpSerial)
+    painter.sendTo (_dumpPager)
+    print 'Dumped to \"%s\".' % _dumpPager.spager.lastFile
 
-    savePainter (painter, fn, **kwargs)
 
-def resetDumpSerial ():
-    global _dumpSerial
-    _dumpSerial = 0
-
-#import sources, base, bag, styles, stamps
-#from rect import XYDataPainter, RectPlot, FieldPainter
-
-class Template (object):
-    def add (self, x, y):
-        raise NotImplementedException ()
-
-    def show (self, **kwargs):
-        self.painter.show (**kwargs)
-
-    def showNew (self, **kwargs):
-        self.painter.showNew (**kwargs)
-
-    def renderBasic (self, ctxt, style, w, h):
-        self.painter.renderBasic (self, ctxt, style, w, h)
-
-    def render (self, func):
-        self.painter.render (func)
-
-    def save (self, filename, **kwargs):
-        self.painter.save (filename, **kwargs)
-
-    def dump (self, **kwargs):
-        self.painter.dump (**kwargs)
+def resetDumping ():
+    global _dumpPager
+    _dumpPager = None

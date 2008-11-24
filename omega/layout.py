@@ -91,7 +91,7 @@ class Grid (Painter):
         if idx[0] >= self.nw:
             raise IndexError ('Grid index width out of bounds')
         if idx[1] >= self.nh:
-            raise IndexError ('Grid index width out of bounds')
+            raise IndexError ('Grid index height out of bounds')
         
         return idx[0] * self.nh + idx[1]
 
@@ -103,6 +103,13 @@ class Grid (Painter):
         prev = self._elements[midx]
         
         if prev is value: return
+
+        # HACK: check that 'value' isn't already in us, somewhere.
+        # That can cause MultiPager to fall down in a common use-case.
+        # This is probably not the best fix for that problem.
+
+        if value is not None and value in self._elements:
+            raise ValueError ('Moving child within a grid disallowed. Remove it first.')
 
         # This will recurse to our own _lostChild
         if prev is not None: prev.setParent (None)

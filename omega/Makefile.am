@@ -2,11 +2,12 @@ mypydir = $(pythondir)/omega
 mypy_PYTHON = \
    __init__.py \
    base.py \
-   gtkThread.py \
-   gtkUtil.py \
+   gtkInteg.py \
+   ipyInteg.py \
    latex.py \
    layout.py \
    rect.py \
+   render.py \
    stamps.py \
    styles.py \
    util.py

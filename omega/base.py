@@ -354,44 +354,6 @@ class DataHolder (object):
         other.setInts = self.setInts
         other.setFloats = self.setFloats
 
-# Management of LiveDisplays
-
-displays = {}
-_lastUsedIdent = 0
-
-def _displayPainter (ident, painter, **kwargs):
-    global _lastUsedIdent
-    
-    if ident is None:
-        ident = _lastUsedIdent
-    else:
-        _lastUsedIdent = ident
-        
-    if ident in displays:
-        ld = displays[ident]
-        ld.setPainter (painter)
-    else:
-        from util import LiveDisplay
-        
-        ld = LiveDisplay (painter, **kwargs)
-        displays[ident] = ld
-
-    return ld
-
-def close (ident=None):
-    if ident is None:
-        ident = _lastUsedIdent
-
-    # It would seem wrong to me to set _lastUsedIdent
-    # here if ident is not None.
-
-    if ident not in displays: return
-
-    displays[ident].closeWindow ()
-
-def closeAll ():
-    for ld in displays.itervalues ():
-        ld.closeWindow ()
 
 # Painting and useful utilities for painting
 
@@ -498,43 +460,6 @@ class Painter (object):
         self.doPaint (ctxt, style)
         ctxt.restore ()
 
-    def show (self, ident=None, **kwargs):
-        """Create a live display of this painter. By default, one
-window is used for all plots. This can be overridden by
-passing a different value for the "ident" parameter. (Integers
-are suggested, but anything hashable is OK.)
-
-Arguments:
-
-     ident - An identifier for the display in which to show this plot.
-             Defaults to None, which causes the last-used identifier
-             to be reused (ie, for the most-recently-updated display
-             to be the one to show the plot). If there is no last-used
-             identifier, 0 is used. Integer identifiers are suggested,
-             but any hashable value is acceptable.
-  **kwargs - Extra arguments that are passed to
-             omega.LiveDisplay.__init__ if a new LiveDisplay must be
-             created. Semantics depend on the implementation of
-             LiveDisplay being used (which varies depending on the user
-             interfact toolkit).
-
-Returns: self, for ease of chaining commands and interactive use:
-
-> p = makePlot (mydata).show ()
-        
-"""
-
-        _displayPainter (ident, self, **kwargs)
-        return self
-
-    def showBlocking (self, **kwargs):
-        """Show this painter in a live display, blocking execution until the
-        use closes the display window."""
-
-        from util import showBlocking
-        showBlocking (self, **kwargs)
-        return self
-    
     def renderBasic (self, ctxt, style, w, h):
         style.setOptions (ctxt)
         minw, minh = self.getMinimumSize (ctxt, style)
@@ -558,24 +483,40 @@ Returns: self, for ease of chaining commands and interactive use:
         
         tpp = ToplevelPaintParent (False)
         self.setParent (tpp)
-        func (self)
+        func (self.renderBasic)
         self.setParent (None)
     
-    def save (self, filename, **kwargs):
-        import util
-        util.savePainter (self, filename, **kwargs)
+
+    def sendTo (self, pager):
+        pager.send (self)
         return self
+
+
+    def show (self, ident=None, **kwargs):
+        from render import showPainter
+        showPainter (self, ident, **kwargs)
+        return self
+
+    
+    def save (self, filename, **kwargs):
+        from render import savePainter
+        savePainter (self, filename, **kwargs)
+        return self
+
 
     def dump (self, **kwargs):
-        import util
-        util.dumpPainter (self, **kwargs)
+        from util import dumpPainter
+        dumpPainter (self, **kwargs)
         return self
 
+    
 class NullPainter (Painter):
     def getMinimumSize (self, ctxt, style):
         return 0, 0
 
+
     def doPaint (self, ctxt, style): pass
+
 
 class DebugPainter (Painter):
     lineStyle = 'genericLine'
