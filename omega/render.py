@@ -28,7 +28,8 @@ class Pager (object):
 
 
 class DisplayPager (Pager):
-    # This has to be able to be reused
+    # This has to be able to page and to be reused
+    def canPage (self): return True
     def isReusable (self): return True
 
 
@@ -499,7 +500,10 @@ def _loadDisplayBackend ():
     omega.gtkInteg = gtkInteg
 
 
-def makeDisplayPager (nw=1, nh=1, nper=0, **kwargs):
+def makeDisplayPager (nw=1, nh=1, nper=0, mustPage=True, **kwargs):
+    # We ignore mustPage, since that's always true for
+    # the display pager.
+    
     if _displayPagerClass is None:
         _loadDisplayBackend ()
 

@@ -216,9 +216,6 @@ class NoLoopDisplayPager (render.DisplayPager):
         self.parent = parent
 
 
-    def canPage (self): return True
-
-
     def send (self, painter):
         if self.win is None:
             self.win = self._makeWin ()
@@ -277,9 +274,6 @@ class YesLoopDisplayPager (render.DisplayPager):
     def __init__ (self, parent=None):
         self.win = None
         self.parent = parent
-
-
-    def isReusable (self): return True
 
 
     def send (self, painter):
