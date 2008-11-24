@@ -14,6 +14,12 @@ _defaultStyle = styles.ColorOnBlackBitmap
 
 import ipyInteg
 
+interactiveAutoRepaint = True
+
+def slowMode ():
+    global interactiveAutoRepaint
+    interactiveAutoRepaint = False
+
 # A GTK widget that renders a Painter
 
 class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
@@ -152,7 +158,7 @@ class PagerWindow (gtk.Window):
     __gsignals__ = { 'key-press-event' : 'override' }
 
     
-    def __init__ (self, blocking, parent=None):
+    def __init__ (self, blocking, autoRepaint, parent=None):
         gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
         
         self.set_title ('OmegaPlot Pager')
@@ -171,13 +177,8 @@ class PagerWindow (gtk.Window):
         self.vb = vb = gtk.VBox ()
         self.add (vb)
 
-        # If we're not blocking, e.g. there's a mainloop running
-        # in the background behind whatever work we're doing,
-        # have the widget auto-repaint to catch any changes to
-        # the underlying Painter.
-        
         self.op = op = OmegaPainter (None, _defaultStyle (), 
-                                     not blocking, False)
+                                     autoRepaint, False)
         self.vb.pack_start (op, True, True, 4)
 
         if not blocking:
@@ -232,7 +233,7 @@ class NoLoopDisplayPager (render.DisplayPager):
 
 
     def _makeWin (self):
-        win = PagerWindow (True, self.parent)
+        win = PagerWindow (True, False, self.parent)
         win.connect ('destroy', self._winDestroyed)
         win.btn.connect ('clicked', self._nextClicked)
         return win
@@ -289,7 +290,7 @@ class YesLoopDisplayPager (render.DisplayPager):
 
 
     def _makeWin (self):
-        win = PagerWindow (False, self.parent)
+        win = PagerWindow (False, interactiveAutoRepaint, self.parent)
         win.connect ('destroy', self._winDestroyed)
         return win
 
