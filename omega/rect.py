@@ -809,7 +809,7 @@ class RectPlot (Painter):
         return self.add (dp, **kwargs)
     
     def addXYErr (self, *args, **kwargs):
-        from stamps import X, WithYErrorBars
+        from stamps import Circle, WithYErrorBars
         
         l = len (args)
 
@@ -834,7 +834,7 @@ class RectPlot (Painter):
             label = 'Data'
 
         if pointStamp is None:
-            pointStamp = X ()
+            pointStamp = Circle ()
         pointStamp = WithYErrorBars (pointStamp)
         
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
@@ -1327,10 +1327,10 @@ class GenericKeyPainter (Painter):
     def _drawStamp (self):
         raise NotImplementedError ()
     
-    def _applyOverallStyle (self, style, ctxt):
+    def _applyLineStyle (self, style, ctxt):
         raise NotImplementedError ()
 
-    def _applyLineStyle (self, style, ctxt):
+    def _applyStampStyle (self, style, ctxt):
         raise NotImplementedError ()
 
     def _getStamp (self):
@@ -1352,9 +1352,6 @@ class GenericKeyPainter (Painter):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
 
-        ctxt.save ()
-        self._applyOverallStyle (style, ctxt)
-        
         if self._drawLine ():
             ctxt.save ()
             self._applyLineStyle (style, ctxt)
@@ -1364,9 +1361,10 @@ class GenericKeyPainter (Painter):
             ctxt.restore ()
 
         if self._drawStamp ():
-            self._getStamp ().paintSample (ctxt, style, dw / 2, h / 2)
-
-        ctxt.restore ()
+            ctxt.save ()
+            self._applyStampStyle (style, ctxt)
+            self._getStamp ().paintAt (ctxt, style, dw / 2, h / 2)
+            ctxt.restore ()
 
         tx = w - self.tw
         ty = (h - self.th) / 2
@@ -1378,23 +1376,31 @@ class XYKeyPainter (GenericKeyPainter):
     def _getText (self):
         return self.owner.keyText
 
+
     def _drawLine (self):
         return self.owner.lines
+
 
     def _drawStamp (self):
         return self.owner.pointStamp is not None
     
-    def _applyOverallStyle (self, style, ctxt):
-        style.applyPrimary (ctxt, self.owner.primaryStyleNum)
 
     def _applyLineStyle (self, style, ctxt):
+        style.applyDataLine (ctxt, self.owner.primaryStyleNum)
         style.apply (ctxt, self.owner.lineStyle)
+
+
+    def _applyStampStyle (self, style, ctxt):
+        style.applyDataStamp (ctxt, self.owner.primaryStyleNum)
+        style.apply (ctxt, self.owner.stampStyle)
+
 
     def _getStamp (self):
         return self.owner.pointStamp
 
 class XYDataPainter (FieldPainter):
     lineStyle = None
+    stampStyle = None
     needsPrimaryStyle = True
     primaryStyleNum = None
     lines = True
@@ -1410,14 +1416,14 @@ class XYDataPainter (FieldPainter):
         self.cinfo = self.data.register (0, 0, 1, 1)
         
         if lines is False and pointStamp is None:
-            import stamps
-            pointStamp = stamps.X ()
+            from stamps import Circle
+            pointStamp = Circle ()
         
         self.lines = lines
         self.pointStamp = pointStamp
 
         if pointStamp is not None:
-            self.stampCInfo = self.data.register (*pointStamp.axisInfo)
+            self.pointStamp.setData (self.data)
 
         if keyText is not None: self.keyText = keyText
 
@@ -1440,8 +1446,7 @@ class XYDataPainter (FieldPainter):
         if allx.shape[1] < 1: return
 
         ctxt.save ()
-        style.applyPrimary (ctxt, self.primaryStyleNum)
-        ctxt.save ()
+        style.applyDataLine (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         x, y = allx[0,:], ally[0,:]
@@ -1458,13 +1463,14 @@ class XYDataPainter (FieldPainter):
 
             ctxt.stroke ()
 
-        # After this, still have the primary style applied
         ctxt.restore ()
 
+        ctxt.save ()
+        style.applyDataStamp (ctxt, self.primaryStyleNum)
+        style.apply (ctxt, self.stampStyle)
+        
         if self.pointStamp is not None:
-            for i in xrange (0, x.size):
-                self.pointStamp.paint (ctxt, style, imisc[:,i], fmisc[:,i],
-                                       allx[:,i], ally[:,i])
+            self.pointStamp.paintMany (ctxt, style, self.xform)
 
         ctxt.restore ()
 
@@ -1472,17 +1478,24 @@ class LineOnlyKeyPainter (GenericKeyPainter):
     def _getText (self):
         return self.owner.keyText
 
+
     def _drawLine (self):
         return True
+
 
     def _drawStamp (self):
         return False
     
-    def _applyOverallStyle (self, style, ctxt):
-        style.applyPrimary (ctxt, self.owner.primaryStyleNum)
 
     def _applyLineStyle (self, style, ctxt):
+        style.applyDataLine (ctxt, self.owner.primaryStyleNum)
         style.apply (ctxt, self.owner.lineStyle)
+
+
+    def _applyStampStyle (self, style, ctxt):
+        style.applyDataStamp (ctxt, self.owner.primaryStyleNum)
+        style.apply (ctxt, self.owner.stampStyle)
+
 
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = None
@@ -1528,7 +1541,7 @@ class DiscreteSteppedPainter (FieldPainter):
         xpos = axis.transformIndices (axis.allIndices ()) * self.width
         ys = self.xform.mapY (ally[0])
         
-        style.applyPrimary (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         for i in xrange (0, ys.size):
@@ -1617,7 +1630,7 @@ class ContinuousSteppedPainter (FieldPainter):
         
         if xs.size < 1: return
 
-        style.applyPrimary (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
 
         prevx, prevy = xs[0], ys[0]

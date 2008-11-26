@@ -18,7 +18,7 @@ data = N.asarray ((25, 23, 35, 51, 67, 71,
 
 p = omega.RectPlot ()
 
-ps = omega.stamps.WithYErrorBars (omega.stamps.Dot ())
+ps = omega.stamps.WithYErrorBars (omega.stamps.Circle ())
 dp = omega.XYDataPainter (lines=False, pointStamp=ps, keyText='Fake Boston Data')
 p.add (dp, rebound=False)
 
@@ -31,7 +31,6 @@ p.lpainter.numFormat = '%.0f'
 p.bpainter.formatLabel = lambda n: months[n]
 p.setLabels (None, 'Temperature (F)')
 
-if len (sys.argv) == 1:
-    p.showBlocking ()
-else:
-    p.save (sys.argv[1])
+pg = omega.quickPager (sys.argv[1:])
+p.sendTo (pg)
+pg.done ()

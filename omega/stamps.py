@@ -1,194 +1,356 @@
 """Classes that draw small icons at a given point.
 Mainly useful for marking specific data points."""
 
-# Do this so that we don't need to manually specify
-# an __all__.
+# Import names with underscores so that we don't need
+# to manually specify an __all__.
 
 import cairo as _cairo
 import math as _math
 import numpy as _N
+from base import Stamp
 
 _defaultStampSize = 5
 
-def _makeSampleArray (ct):
-    if ct == 0: return None
-    return _N.ndarray (ct)
-    
-class Stamp (object):
-    axisInfo = (0, 0, 0, 0)
-    mainStyle = 'genericStamp'
+class RStamp (Stamp):
+    # A R(ect)Stamp is a stamp usually associated
+    # with a RectDataHolder and rendered onto a RectPlot.
+    # The paint/paintAt functions paint a data-free
+    # "sample" stamp only. The paintMany function
+    # paints the stamp multiple times according to the data
+    # contained in the RectDataHolder.
 
-    def paint (self, ctxt, style, imisc, fmisc, allx, ally):
-        ctxt.save ()
-        style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style, imisc, fmisc, allx, ally)
-        ctxt.restore ()
+    data = None
 
-    def paintSample (self, ctxt, style, x, y):
-        imisc, fmisc, allx, ally = self._getSampleValues (style, x, y)
-        ctxt.save ()
-        style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style, imisc, fmisc, allx, ally)
-        ctxt.restore ()
+
+    def setData (self, data):
+        self.data = data
+        # when overriding: possibly register data columns
+        # and stash cinfo
+
+
+    def paintAt (self, ctxt, style, x, y):
+        # This paints a data-free "sample" version of
+        # the stamp.
+        data = self._getSampleValues (style, x, y)
+        data = [_N.asarray ((q, )) for q in data]
+
+        self._paintData (ctxt, style, _N.asarray ((x, )), 
+                         _N.asarray ((y, )), data)
+
+
+    def paintMany (self, ctxt, style, xform):
+        imisc, fmisc, allx, ally = self.data.getAllMapped (xform)
+        x = allx[0]
+        y = ally[0]
+
+        data = self._getDataValues (style, xform)
+        data = _N.broadcast_arrays (*data)
+
+        self._paintData (ctxt, style, x, y, data)
+
+
+    def _paintData (self, ctxt, style, x, y, data):
+        raise NotImplementedError ()
+
 
     def _getSampleValues (self, style, x, y):
-        imisc = _makeSampleArray (self.axisInfo[0])
-        fmisc = _makeSampleArray (self.axisInfo[1])
-        allx = _makeSampleArray (self.axisInfo[2] + 1)
-        allx[0] = x
-        ally = _makeSampleArray (self.axisInfo[3] + 1)
-        ally[0] = y
-        
-        return imisc, fmisc, allx, ally
+        # When implementing, return a tuple of scalars
+        # that can be used by _paintData in array form.
+        # If subclassing, chain to the parent and
+        # combine your tuples and the parent's tuples
+        raise NotImplementedError ()
 
-class Dot (Stamp):
-    size = _defaultStampSize # diameter of dot in style.smallScale
-    
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
+
+    def _getDataValues (self, style, xform):
+        # Implement similalry to _getSampleValues. 
+        # It's expected that data values will
+        # come from self.data.getMapped (cinfo, xform)
+        # for some cinfo
+        raise NotImplementedError ()
+
+
+class PrimaryRStamp (RStamp):
+    # A primary RStamp is one that actually draws a plot
+    # symbol. It has builtin properties "size" and "rot"
+    # that can be used to control how the symbol is plotted.
+    # Both can be either specified to be a constant or 
+    # be stored in the dataholder.
+
+    def __init__ (self, size=None, rot=0):
+        if size is None: size = _defaultStampSize
+
+        self.size = size
+        self.rot = rot
+
+
+    def setData (self, data):
+        RStamp.setData (self, data)
+
+        if self.size < 0:
+            self.sizeCInfo = data.register (0, 1, 0, 0)
+        else:
+            self.sizeCInfo = None
+
+        if self.rot < 0:
+            self.rotCInfo = data.register (0, 1, 0, 0)
+        else:
+            self.rotCInfo = None
+
+
+    def _getSampleValues (self, style, x, y):
+        if self.sizeCInfo is None:
+            s = self.size
+        else:
+            s = _defaultStampSize
+
+        if self.rotCInfo is None:
+            r = self.rot
+        else:
+            r = 0
+
+        return (s, r)
+
+
+    def _getDataValues (self, style, xform):
+        if self.sizeCInfo is None:
+            s = self.size
+        else:
+            imisc, fmisc, x, y = self.data.get (self.sizeCInfo)
+            s = -self.size * fmisc[0]
+
+        if self.rotCInfo is None:
+            r = self.rot
+        else:
+            imisc, fmisc, x, y = self.data.get (self.rotCInfo)
+            r = -self.rot * fmisc[0]
+
+        return (s, r)
+
+
+    def _paintData (self, ctxt, style, x, y, mydata):
+        sizes, rots = mydata
+
+        for i in xrange (0, x.size):
+            ctxt.save ()
+            ctxt.translate (x[i], y[i])
+            ctxt.rotate (rots[i])
+            self._paintOne (ctxt, style, sizes[i])
+            ctxt.restore ()
+
+
+    def _paintOne (self, ctxt, style, size):
+        raise NotImplementedError ()
+
+
+# Some concrete examples
+
+class Circle (PrimaryRStamp):
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        self.fill = fill
+
+
+    def _paintOne (self, ctxt, style, size):
+        if self.fill: go = ctxt.fill
+        else: go = ctxt.stroke
+
         ctxt.new_sub_path () # no leading line segment to arc beginning
-        ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
-        ctxt.fill ()
+        ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * _math.pi)
+        go ()
 
-class Circle (Stamp):
-    size = _defaultStampSize # diameter of circle in style.smallScale
-    
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        ctxt.new_sub_path () # no leading line segment to arc beginning
-        ctxt.arc (allx[0], ally[0], self.size * style.smallScale / 2, 0, 2 * _math.pi)
-        ctxt.stroke ()
 
-class UpTriangle (Stamp):
-    size = _defaultStampSize # size of triangle in style.smallScale
+class UpTriangle (PrimaryRStamp):
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        self.fill = fill
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s = self.size * style.smallScale
+
+    def _paintOne (self, ctxt, style, size):
+        if self.fill: go = ctxt.fill
+        else: go = ctxt.stroke
+
+        s = size * style.smallScale
         
-        ctxt.move_to (allx[0], ally[0] - s * 0.666666)
+        ctxt.move_to (0, -0.666666 * s)
         ctxt.rel_line_to (s/2, s)
         ctxt.rel_line_to (-s, 0)
         ctxt.rel_line_to (s/2, -s)
-        ctxt.stroke ()
+        go ()
     
-class DownTriangle (Stamp):
-    size = _defaultStampSize # size of triangle in style.smallScale
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s = self.size * style.smallScale
+class DownTriangle (PrimaryRStamp):
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        self.fill = fill
+
+
+    def _paintOne (self, ctxt, style, size):
+        if self.fill: go = ctxt.fill
+        else: go = ctxt.stroke
+
+        s = size * style.smallScale
         
-        ctxt.move_to (allx[0], ally[0] + s * 0.666666)
+        ctxt.move_to (0, s * 0.666666)
         ctxt.rel_line_to (-s/2, -s)
         ctxt.rel_line_to (s, 0)
         ctxt.rel_line_to (-s/2, s)
-        ctxt.stroke ()
+        go ()
     
-class X (Stamp):
-    size = _defaultStampSize # size of the X in style.smallScale; corrected by
-    # sqrt(2) so that X and Plus lay down the same amount of "ink"
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s = self.size * style.smallScale / _math.sqrt (2)
-        x, y = allx[0], ally[0]
-        
-        ctxt.move_to (x - s/2, y - s/2)
-        ctxt.rel_line_to (s, s)
-        ctxt.stroke ()
-        ctxt.move_to (x - s/2, y + s/2)
-        ctxt.rel_line_to (s, -s)
-        ctxt.stroke ()
-    
-class Plus (Stamp):
-    size = _defaultStampSize # size of the + in style.smallScale
+class Diamond (PrimaryRStamp):
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        self.fill = fill
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s = self.size * style.smallScale
-        x, y = allx[0], ally[0]
-        
-        ctxt.move_to (x - s/2, y)
-        ctxt.rel_line_to (s, 0)
-        ctxt.stroke ()
-        ctxt.move_to (x, y - s/2)
-        ctxt.rel_line_to (0, s)
-        ctxt.stroke ()
-    
-class Box (Stamp):
-    size = _defaultStampSize # size of the box in style.smallScale; this is
-    # reduced by sqrt(2) so that the area of the Box and
-    # Diamond stamps are the same for the same values of size.
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s = self.size * style.smallScale / _math.sqrt (2)
-        
-        ctxt.rectangle (allx[0] - s/2, ally[0] - s/2, s, s)
-        ctxt.stroke ()
-    
-class Diamond (Stamp):
-    size = _defaultStampSize # size of the diamond in style.smallScale
+    def _paintOne (self, ctxt, style, size):
+        if self.fill: go = ctxt.fill
+        else: go = ctxt.stroke
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        s2 = self.size * style.smallScale / 2
+        s2 = size * style.smallScale / 2
 
-        ctxt.move_to (allx[0], ally[0] - s2)
+        ctxt.move_to (0, -s2)
         ctxt.rel_line_to (s2, s2)
         ctxt.rel_line_to (-s2, s2)
         ctxt.rel_line_to (-s2, -s2)
         ctxt.rel_line_to (s2, -s2)
-        ctxt.stroke ()
+        go ()
 
-# Aieee! These all assume indices into the dataholder arrays are the
-# "normal" values! This is bad and will break!
 
-class WithSizing (Stamp):
-    def __init__ (self, substamp):
-        self.substamp = substamp
+class Box (PrimaryRStamp):
+    # size measures the box in style.smallScale; this is
+    # reduced by sqrt(2) so that the area of the Box and
+    # Diamond stamps are the same for the same values of size.
+
+
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        self.fill = fill
+
+
+    def _paintOne (self, ctxt, style, size):
+        s = size * style.smallScale / _math.sqrt (2)
         
-        self.axisInfo = list (substamp.axisInfo)
-        self.axisInfo[1] += 1
+        ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        self.substamp.size = fmisc[0]
-        self.substamp.doPaint (ctxt, style, imisc, fmisc[1:], allx, ally)
-
-    def _getSampleValues (self, style, x, y):
-        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
-        fmisc[0] = style.smallScale * 3
-        return imisc, fmisc, allx, ally
+        if self.fill: ctxt.fill ()
+        else: ctxt.stroke ()
     
-class WithYErrorBars (Stamp):
+
+class X (PrimaryRStamp):
+    # size gives the length the X in style.smallScale; corrected by
+    # sqrt(2) so that X and Plus lay down the same amount of "ink"
+
+    def _paintOne (self, ctxt, style, size):
+        s = size * style.smallScale / _math.sqrt (2)
+        
+        ctxt.move_to (-0.5 * s, -0.5 * s)
+        ctxt.rel_line_to (s, s)
+        ctxt.stroke ()
+        ctxt.move_to (-0.5 * s, 0.5 * s)
+        ctxt.rel_line_to (s, -s)
+        ctxt.stroke ()
+    
+
+class Plus (PrimaryRStamp):
+    # size gives the side length of the plus in style.smallScale
+
+    def _paintOne (self, ctxt, style, size):
+        s = size * style.smallScale
+        
+        ctxt.move_to (-0.5 * s, 0)
+        ctxt.rel_line_to (s, 0)
+        ctxt.stroke ()
+        ctxt.move_to (0, -0.5 * s)
+        ctxt.rel_line_to (0, s)
+        ctxt.stroke ()
+    
+
+# Here are some utility stamps that are *not*
+# primary stamps. They build on top of other stamps
+# to provide useful effects. Namely, error bars.
+
+class WithYErrorBars (RStamp):
     def __init__ (self, substamp):
         self.substamp = substamp
 
-        self.axisInfo = list (substamp.axisInfo)
-        self.axisInfo[3] += 2
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        self.substamp.doPaint (ctxt, style, imisc, fmisc, allx, ally)
+    def setData (self, data):
+        # Have the substamp register whatever it
+        # needs.
 
-        ctxt.move_to (allx[0], ally[1])
-        ctxt.line_to (allx[0], ally[2])
-        ctxt.stroke ()
+        self.substamp.setData (data)
 
-    def _getSampleValues (self, style, x, y):
-        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
-        ally[1] = y - style.smallScale * 2
-        ally[2] = y + style.smallScale * 2
-        return imisc, fmisc, allx, ally
+        # And register our own data needs.
+
+        RStamp.setData (self, data)
+        self.cinfo = data.register (0, 0, 0, 2)
+
+
+    def _paintData (self, ctxt, style, x, y, mydata):
+        y1, y2 = mydata[0:2]
+        subdata = mydata[2:]
+
+        self.substamp._paintData (ctxt, style, x, y, subdata)
+
+        for i in xrange (0, x.size):
+            ctxt.move_to (x[i], y1[i])
+            ctxt.line_to (x[i], y2[i])
+            ctxt.stroke ()
+
     
-class WithXErrorBars (Stamp):
+    def _getSampleValues (self, style, x, y):
+        subd = self.substamp._getSampleValues (style, x, y)
+
+        dy = 4 * style.smallScale
+        return (y - dy, y + dy) + subd
+
+
+    def _getDataValues (self, style, xform):
+        subd = self.substamp._getDataValues (style, xform)
+
+        imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
+        return (y[0], y[1]) + subd
+
+        
+class WithXErrorBars (RStamp):
     def __init__ (self, substamp):
         self.substamp = substamp
 
-        self.axisInfo = list (substamp.axisInfo)
-        self.axisInfo[2] += 2
 
-    def doPaint (self, ctxt, style, imisc, fmisc, allx, ally):
-        self.substamp.doPaint (ctxt, style, imisc, fmisc, allx, ally)
+    def setData (self, data):
+        # Have the substamp register whatever it
+        # needs.
 
-        ctxt.move_to (allx[1], ally[0])
-        ctxt.line_to (allx[2], ally[0])
-        ctxt.stroke ()
+        self.substamp.setData (data)
 
+        # And register our own data needs.
+
+        RStamp.setData (self, data)
+        self.cinfo = data.register (0, 0, 2, 0)
+
+
+    def _paintData (self, ctxt, style, x, y, mydata):
+        x1, x2 = mydata[0:2]
+        subdata = mydata[2:]
+
+        self.substamp._paintData (ctxt, style, x, y, subdata)
+
+        for i in xrange (0, x.size):
+            ctxt.move_to (x1[i], y[i])
+            ctxt.line_to (x2[i], y[i])
+            ctxt.stroke ()
+
+    
     def _getSampleValues (self, style, x, y):
-        imisc, fmisc, allx, ally = Stamp._getSampleValues (self, style, x, y)
-        allx[1] = x - style.smallScale * 2
-        allx[2] = x + style.smallScale * 2
-        return imisc, fmisc, allx, ally
+        subd = self.substamp._getSampleValues (style, x, y)
+
+        dx = 4 * style.smallScale
+        return (x - dx, x + dx) + subd
+
+
+    def _getDataValues (self, style, xform):
+        subd = self.substamp._getDataValues (style, xform)
+
+        imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
+        return (x[0], x[1]) + subd

@@ -461,7 +461,13 @@ class Painter (object):
         ctxt.restore ()
 
     def renderBasic (self, ctxt, style, w, h):
-        style.setOptions (ctxt)
+        # Must init the context before calling getMinimumSize
+        # in case we're using the Cairo text backend -- we need
+        # the font size to be set correctly. Hacky; should go away
+        # with better support for multiple text backends.
+
+        style.initContext (ctxt, w, h)
+
         minw, minh = self.getMinimumSize (ctxt, style)
 
         if w < minw or h < minh:
@@ -469,7 +475,6 @@ class Painter (object):
                                         (w, h, minw, minh))
 
         self.configurePainting (ctxt, style, w, h)
-        style.initContext (ctxt, w, h)
         self.paint (ctxt, style)
 
     def render (self, func):
@@ -519,7 +524,7 @@ class NullPainter (Painter):
 
 
 class DebugPainter (Painter):
-    lineStyle = 'genericLine'
+    lineStyle = 'strongLine'
     
     def getMinimumSize (self, ctxt, style):
         return 0, 0
@@ -533,6 +538,19 @@ class DebugPainter (Painter):
         ctxt.move_to (0, self.height)
         ctxt.line_to (self.width, 0)
         ctxt.stroke ()
+
+# Stamps -- things that draw some shape but are
+# not full-fledged space-allocating painters.
+# Stamps do not have access to a style; they use
+# whatever values the current context has.
+
+class Stamp (object):
+    def paintAt (self, ctxt, x, y):
+        raise NotImplementedError ()
+
+    def paintHere (self, ctxt):
+        x, y = ctxt.get_current_point ()
+        self.paintAt (ctxt, x, y)
 
 # Text handling routines. Possible backends are Cairo text
 # support (fast) or LaTeX (inefficient but capable of rendering

@@ -30,7 +30,6 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
         self.omegaStyle = style
         ToplevelPaintParent.setPainter (self, painter)
 
-        self.lastException = None
         self.paintId = -1
         self.autoRepaint = autoRepaint
 
@@ -60,13 +59,6 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
     # The rendering magic
     
     def _expose (self, widget, event):
-        if self.lastException is not None:
-            # oops we blew up
-            from traceback import print_exception
-            print 'Unprocessed exception from last painting:'
-            print_exception (*self.lastException)
-            return False
-
         ctxt = widget.window.cairo_create()
         style = self.omegaStyle
 
@@ -92,8 +84,6 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
             p.renderBasic (ctxt, style, w, h)
         except ContextTooSmallError, ctse:
             print ctse
-        except:
-            self.lastException = sys.exc_info ()
         
         return False
 
@@ -122,15 +112,6 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
 
 
     def _repaint (self):
-        if self.lastException:
-            # oops we blew up
-            from traceback import print_exception
-            print_exception (*self.lastException)
-            print 'Painting failed. Disabling automatic repainting.'
-            self.lastException = None
-            self.paintId = -1
-            return False
-
         self.queue_draw ()
         return True
 
@@ -224,7 +205,13 @@ class NoLoopDisplayPager (render.DisplayPager):
         self.win.setPainter (painter)
         self.win.show_all ()
         self._inModalLoop = True
-        gtk.main ()
+
+        try:
+            gtk.main ()
+        except:
+            self._inModalLoop = False
+            raise
+
         assert self._inModalLoop == False, 'Weird mainloop interactions??'
 
 

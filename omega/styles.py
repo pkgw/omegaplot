@@ -1,164 +1,310 @@
-class BitmapStyle (object):
-    """This style is meant for bitmap surfaces, where one unit
-    represents one pixel, and hence holding things to integral
-    units is important."""
-    
-    smallScale = 2
-    largeScale = 5
-    fineLine = 1
-    thickLine = 2
-    
-    def __init__ (self, colorscheme):
-        self.colors = colorscheme
+"""style - Graphical styling classes."""
 
-    def setOptions (self, ctxt):
-        ctxt.set_font_size (12)
+class Style (object):
+    def __init__ (self, sizes, colors, data, roles):
+        self.sizes = sizes
+        self.colors = colors
+        self.data = data
+        self.roles = roles
 
-    def initContext (self, ctxt, width, height):
-        ctxt.set_source_rgb (*self.colors.background)
-        ctxt.paint ()
-        
-    def apply (self, ctxt, style):
-        if not style: return
+        self.normC = sizes.normC
+        self.normL = sizes.normL
 
-        if hasattr (style, 'apply'):
-            style.apply (ctxt)
+
+    def apply (self, ctxt, styleItem):
+        if styleItem is None:
             return
 
-        if callable (style):
-            style (ctxt, self)
+        if hasattr (styleItem, 'apply'):
+            styleItem.apply (ctxt)
             return
 
-        if isinstance (style, basestring):
-            fn = 'apply_' + style
+        if callable (styleItem):
+            styleItem (ctxt, self)
+            return
 
-            if hasattr (self, fn):
-                getattr (self, fn)(ctxt)
+        if isinstance (styleItem, basestring):
+            fn = 'apply_' + styleItem
+
+            if hasattr (self.roles, fn):
+                getattr (self.roles, fn)(ctxt, style)
                 return
 
-        raise Exception ('Dont know what to do with style item %s' % style)
+        raise Exception ('Don\'t know what to do with '
+                         'style item %s' % styleItem)
 
-    def apply_bgLinework (self, ctxt):
-        ctxt.set_line_width (self.fineLine)
-        ctxt.set_source_rgb (*self.colors.faint) # do rgba?
-
-    def apply_bgFill (self, ctxt):
-        ctxt.set_source_rgb (*self.colors.background)
-
-    def apply_genericStamp (self, ctxt):
-        ctxt.set_line_width (self.fineLine)
-        #ctxt.set_source_rgb (*self.colors.foreground)
-
-    def apply_genericLine (self, ctxt):
-        ctxt.set_line_width (self.thickLine)
-        ctxt.set_source_rgb (*self.colors.foreground)
-
-    def apply_genericBand (self, ctxt):
-        ctxt.set_source_rgba (self.colors.foreground[0],
-                              self.colors.foreground[1],
-                              self.colors.foreground[2],
-                              0.2)
 
     def getColor (self, color):
         if isinstance (color, tuple): return color
         
         return getattr (self.colors, color)
 
-    def applyPrimary (self, ctxt, stylenum):
+
+    def initContext (self, ctxt, width, height):
+        # Clear the context
+        ctxt.set_source_rgb (*self.colors.background)
+        ctxt.paint ()
+
+        # Font size
+        ctxt.set_font_size (self.sizes.normalFontSize)
+
+
+    def applyDataLine (self, ctxt, stylenum):
+        self.data.applyLine (self, ctxt, stylenum)
+
+
+    def applyDataStamp (self, ctxt, stylenum):
+        self.data.applyStamp (self, ctxt, stylenum)
+
+
+    # Shortcut accessors for useful properties
+
+    @property
+    def smallScale (self): return self.sizes.smallScale
+
+
+    @property
+    def largeScale (self): return self.sizes.largeScale
+
+
+# Sizes of graphical elements and coordinate transforms
+
+class Sizes (object):
+    smallScale = None
+    largeScale = None
+    fineLine = None
+    thickLine = None
+    normalFontSize = None
+
+
+    def normC (self, coord):
+        """Normalizes a coordinate for this sizing scheme.
+        Used to round off measurements to integral pixels
+        when rendering to a bitmap."""
         raise NotImplementedError ()
 
-class VectorStyle (BitmapStyle):
-    def __init__ (self, colorscheme):
-        BitmapStyle.__init__ (self, colorscheme)
-        self.fineLine = 1
-        self.thickLine = 2
+    def normL (self, coord):
+        """Normalizes a length for this sizing scheme.
+        Used to round off measurements to integral pixels
+        when rendering to a bitmap."""
+        raise NotImplementedError ()
 
 
-class BlackOnWhiteColors (object):
+class BitmapSizes (Sizes):
+    smallScale = 2
+    largeScale = 5
+    fineLine = 1
+    thickLine = 2
+    normalFontSize = 12
+
+
+    normC = round
+    normL = round
+
+
+class VectorSizes (Sizes):
+    smallScale = 2
+    largeScale = 5
+    fineLine = 1
+    thickLine = 2
+    normalFontSize = 12
+
+
+    normC = lambda x: x
+    normL = normC
+
+
+# Color scheme for graphical elements
+
+class Colors (object):
+    background = None
+    foreground = None
+    faint = None
+
+
+    def getDataColor (self, stylenum):
+        raise NotImplementedError ()
+    
+
+class BlackOnWhiteColors (Colors):
     background = (1, 1, 1)
     foreground = (0, 0, 0)
     faint = (0.3, 0.3, 0.3)
 
-class WhiteOnBlackColors (object):
+
+    def getDataColor (self, stylenum):
+        stylenum = stylenum % 6
+
+        if stylenum == 0:
+            c = (0.9, 0.1, 0.1)
+        elif stylenum == 1:
+            c = (0.2, 0.9, 0.9)
+        elif stylenum == 2:
+            c = (0.1, 0.9, 0.4)
+        elif stylenum == 3:
+            c = (0.7, 0.7, 0)
+        elif stylenum == 4:
+            c = (0.7, 0, 0.7)
+        elif stylenum == 5:
+            c = (0, 0.1, 0.7)
+
+        return c
+
+
+class WhiteOnBlackColors (Colors):
     background = (0, 0, 0)
     foreground = (1, 1, 1)
     faint = (0.7, 0.7, 0.7)
 
-def _dashedPrimary (style, ctxt, stylenum):
-    if stylenum is None: return
+
+    def getDataColor (self, stylenum):
+        stylenum = stylenum % 6
+
+        if stylenum == 0:
+            c = (0.9, 0.1, 0.1)
+        elif stylenum == 1:
+            c = (0.2, 0.9, 0.9)
+        elif stylenum == 2:
+            c = (0.1, 0.9, 0.4)
+        elif stylenum == 3:
+            c = (0.7, 0.7, 0)
+        elif stylenum == 4:
+            c = (0.7, 0, 0.7)
+        elif stylenum == 5:
+            c = (0, 0.1, 0.7)
+
+        return c
+
+
+# Themes for different kinds of data in a shared plot
+
+class DataTheme (object):
+    def applyLine (self, style, ctxt, n):
+        raise NotImplementedError ()
+
+
+    def applyStamp (self, style, ctxt, n):
+        raise NotImplementedError ()
+
+
+class MonochromeDataTheme (DataTheme):
+    """This theme disambiguates data from different
+    sources by dashing lines in different ways and
+    using different plot symbols."""
+
+    def applyLine (self, style, ctxt, stylenum):
+        if stylenum is None: return
         
-    ctxt.set_source_rgb (*style.colors.foreground)
-    ctxt.set_line_width (style.thickLine)
+        ctxt.set_source_rgb (*style.colors.foreground)
+        ctxt.set_line_width (style.sizes.thickLine)
 
-    u = style.largeScale
-    stylenum = stylenum % 5
+        u = style.largeScale
+        stylenum = stylenum % 5
 
-    if stylenum == 0:
-        return
-    elif stylenum == 1:
-        a = [u * 2, u * 2]
-    elif stylenum == 2:
-        a = [u * 3, u, u / 2, u]
-    elif stylenum == 3:
-        a = [u * 3, u, u, u, u, u]
-    elif stylenum == 4:
-        a = [u * 3, u, u / 2, u, u / 2, u]
+        if stylenum == 0:
+            return
+        elif stylenum == 1:
+            a = [u * 2, u * 2]
+        elif stylenum == 2:
+            a = [u * 3, u, u / 2, u]
+        elif stylenum == 3:
+            a = [u * 3, u, u, u, u, u]
+        elif stylenum == 4:
+            a = [u * 3, u, u / 2, u, u / 2, u]
 
-    ctxt.set_dash (a, 0.)
+        ctxt.set_dash (a, 0.)
 
-def _colorPrimary (style, ctxt, stylenum):
-    if stylenum is None: return
+    def applyStamp (self, style, ctxt, stylenum):
+        if stylenum is None: return
 
-    stylenum = stylenum % 6
-
-    if stylenum == 0:
-        c = (0.9, 0.1, 0.1)
-    elif stylenum == 1:
-        c = (0.2, 0.9, 0.9)
-    elif stylenum == 2:
-        c = (0.1, 0.9, 0.4)
-    elif stylenum == 3:
-        c = (0.7, 0.7, 0)
-    elif stylenum == 4:
-        c = (0.7, 0, 0.7)
-    elif stylenum == 5:
-        c = (0, 0.1, 0.7)
-
-    ctxt.set_source_rgb (*c)
-    ctxt.set_line_width (style.thickLine)
-    
-class BlackOnWhiteBitmap (BitmapStyle):
-    def __init__ (self):
-        BitmapStyle.__init__ (self, BlackOnWhiteColors ())
-
-    applyPrimary = _dashedPrimary
+        # No variation based on stylenum here.
+        ctxt.set_source_rgb (*style.colors.foreground)
+        ctxt.set_line_width (style.sizes.thickLine)
         
-class WhiteOnBlackBitmap (BitmapStyle):
-    def __init__ (self):
-        BitmapStyle.__init__ (self, WhiteOnBlackColors ())
 
-    applyPrimary = _dashedPrimary
+class ColorDataTheme (DataTheme):
+    """This theme disambiguates data from different
+    sources by drawing lines in different colors. When using
+    this theme, you should keep in mind that 1) many 
+    people are colorblind in various ways and 2) many
+    people print out color figures on black-and-white 
+    printers."""
 
-class ColorOnBlackBitmap (BitmapStyle):
-    def __init__ (self):
-        BitmapStyle.__init__ (self, WhiteOnBlackColors ())
 
-    applyPrimary = _colorPrimary
+    def applyLine (self, style, ctxt, stylenum):
+        if stylenum is None: return
 
-class BlackOnWhiteVector (VectorStyle):
-    def __init__ (self):
-        VectorStyle.__init__ (self, BlackOnWhiteColors ())
+        c = style.colors.getDataColor (stylenum)
+        ctxt.set_source_rgb (*c)
+        ctxt.set_line_width (style.sizes.thickLine)
 
-    applyPrimary = _dashedPrimary
-        
-class WhiteOnBlackVector (VectorStyle):
-    def __init__ (self):
-        VectorStyle.__init__ (self, WhiteOnBlackColors ())
 
-    applyPrimary = _dashedPrimary
+    def applyStamp (self, style, ctxt, stylenum):
+        if stylenum is None: return
 
-class ColorOnBlackVector (VectorStyle):
-    def __init__ (self):
-        VectorStyle.__init__ (self, WhiteOnBlackColors ())
+        c = style.colors.getDataColor (stylenum)
+        ctxt.set_source_rgb (*c)
+        ctxt.set_line_width (style.sizes.thickLine)
 
-    applyPrimary = _colorPrimary
+
+# Higher-level styling for various graphical elements based 
+# on their roles. This builds upon the lower-level sizes and 
+# colors that the style defines.
+
+class Roles (object):
+    pass
+
+
+class DefaultRoles (Roles):
+    def apply_bgLinework (self, ctxt, style):
+        ctxt.set_line_width (style.sizes.fineLine)
+        ctxt.set_source_rgb (*style.colors.faint)
+
+
+    def apply_strongLine (self, ctxt, style):
+        ctxt.set_line_width (style.sizes.thickLine)
+        ctxt.set_source_rgb (*style.colors.foreground)
+
+
+    def apply_genericBand (self, ctxt, style):
+        # FIXME: PostScript doesn't support opacity,
+        # so it would be best to avoid any use of the
+        # alpha channel by default in any of our styles.
+
+        ctxt.set_source_rgba (style.colors.foreground[0],
+                              style.colors.foreground[1],
+                              style.colors.foreground[2],
+                              0.2)
+
+# Now put them all together
+
+def BlackOnWhiteBitmap ():
+    return Style (BitmapSizes (), BlackOnWhiteColors (),
+                  MonochromeDataTheme (), DefaultRoles ())
+
+
+def WhiteOnBlackBitmap ():
+    return Style (BitmapSizes (), WhiteOnBlackColors (),
+                  MonochromeDataTheme (), DefaultRoles ())
+
+
+def ColorOnBlackBitmap ():
+    return Style (BitmapSizes (), WhiteOnBlackColors (),
+                  ColorDataTheme (), DefaultRoles ())
+
+
+def BlackOnWhiteVector ():
+    return Style (VectorSizes (), BlackOnWhiteColors (),
+                  MonochromeDataTheme (), DefaultRoles ())
+
+
+def WhiteOnBlackVector ():
+    return Style (VectorSizes (), WhiteOnBlackColors (),
+                  MonochromeDataTheme (), DefaultRoles ())
+
+
+def ColorOnBlackVector ():
+    return Style (VectorSizes (), WhiteOnBlackColors (),
+                  ColorDataTheme (), DefaultRoles ())
+
+
