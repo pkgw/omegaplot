@@ -2,6 +2,7 @@ noinst_DATA = \
  apiref.txt \
  common.inc \
  index.txt \
+ intro.txt \
  omega.txt \
  omega_util.txt
 

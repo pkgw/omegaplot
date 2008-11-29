@@ -6,28 +6,9 @@
 OmegaPlot Tutorial and Reference
 ================================
 
-|omega| is a framework for creating plots using the `Python
-<http://www.python.org/>`_ programming language. It aspires to the
-following key goals:
-
-* Producing attractive, accessible, publication-quality output. 
-* Presenting a clean, usable API to users.
-
-The rendering backend of OmegaPlot is the `Cairo
-<http://www.cairographics.org/>`_ graphics library, via the
-`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot 
-stores and accesses data using the `NumPy <http://numpy.scipy.org/>`_
-package.
-
-Features currently supported by OmegaPlot include:
-
-* Interactive plotting with rendering via the `GTK+
-  <http://www.gtk.org/>`_ toolkit. Special integration with the 
-  `IPython <http://ipython.scipy.org/>`_ interactive shell is included.
-* Paginated output to PostScript, PDF, SVG, and PNG files. Generally, any output
-  target supported by Cairo can easily be used by OmegaPlot.
-* Sophisticated rectangular (X, Y) plots.
-* Arbitrary layout of multiple plots in grids, stacks, and so on.
+Welcome to the |omega| tutorial and reference documentation.
+If you're just learning about |omega|, how about getting started
+with the :ref:`introduction <intro>`? 
 
 This documentation describes OmegaPlot version |version|, implementing
 version |release| of the API. It was generated on |today|. 
@@ -39,6 +20,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   intro.txt
    apiref.txt
 
 Indices and tables
