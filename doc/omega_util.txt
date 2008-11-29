@@ -3,7 +3,25 @@
 
 .. automodule:: omega.util
 
-   .. autofunction:: quickXY(x[, y, desc, ...]) -> plot object
+   Quick Plot Creation
+   ===================
+
+   .. autofunction:: quickXY(y_or_x[, opt_y, label, ...]) -> plot object
+
+   .. autofunction:: quickXYErr (x, y, u[, label, ...]) -> plot object
+
+   .. autofunction:: quickHist (data[, bins, range, normed, ...]) -> plot object
+
+   .. autofunction:: quickPager (args, [...]) -> pager object
+
+   Quick Plot Saving
+   =================
+
+   .. autofunction:: dumpPainter (painter, [**kwargs]) -> None
+
+   .. autofunction:: resetDumping () -> None
+
+   .. data:: dumpTemplate
 
 .. ~synopsis~ Miscellaneous utility functions.
    This should go under the automodule when I install a 
