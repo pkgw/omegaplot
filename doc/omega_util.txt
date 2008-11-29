@@ -1,0 +1,7 @@
+:mod:`omega.util` --- Miscellaneous utilities
+================================================
+
+.. automodule:: omega.util
+
+.. autofunction:: quickXY(x[, y, desc, ...]) -> plot object
+

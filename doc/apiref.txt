@@ -1,0 +1,15 @@
+.. _apiref:
+.. sectionauthor:: Peter Williams <peter@newton.cx>
+
+API Reference Manual
+====================
+
+This section contains reference documentation of the 
+OmegaPlot Python API. It is automatically generated from
+the docstrings of the OmegaPlot source code
+
+.. toctree::
+   :maxdepth: 2
+
+   omega.txt
+   omega_util.txt

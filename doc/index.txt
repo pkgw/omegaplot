@@ -1,0 +1,48 @@
+.. _index:
+.. sectionauthor:: Peter Williams <peter@newton.cx>
+
+OmegaPlot Tutorial and Reference
+================================
+
+*OmegaPlot* is a framework for creating plots using the `Python
+<http://www.python.org/>`_ programming language. It aspires to the
+following key goals:
+
+* Producing attractive, accessible, publication-quality output. 
+* Presenting a clean, usable API to users.
+
+The rendering backend of OmegaPlot is the `Cairo
+<http://www.cairographics.org/>`_ graphics library, via the
+`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot 
+stores and accesses data using the `NumPy <http://numpy.scipy.org/>`_
+package.
+
+Features currently supported by OmegaPlot include:
+
+* Interactive plotting with rendering via the `GTK+
+  <http://www.gtk.org/>`_ toolkit. Special integration with the 
+  `IPython <http://ipython.scipy.org/>`_ interactive shell is included.
+* Paginated output to PostScript, PDF, SVG, and PNG files. Generally, any output
+  target supported by Cairo can easily be used by OmegaPlot.
+* Sophisticated rectangular (X, Y) plots.
+* Arbitrary layout of multiple plots in grids, stacks, and so on.
+
+This documentation describes OmegaPlot version |version|, implementing
+version |release| of the API. It was generated on |today|. 
+The documentation is created using `Sphinx <http://sphinx.pocoo.org/>`_.
+
+Contents
+========
+
+.. toctree::
+   :maxdepth: 2
+
+   apiref.txt
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

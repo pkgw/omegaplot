@@ -1,0 +1,4 @@
+:mod:`omega` --- Commonly-used plotting features
+================================================
+
+.. automodule:: omega
