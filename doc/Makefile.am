@@ -8,7 +8,7 @@ SCANNEDPY = \
  $(top_srcdir)/omega/__init__.py \
  $(top_srcdir)/omega/util.py
 
-BUILD = $(SPHINXBUILD) -d doctrees -c .
+BUILD = PYTHONPATH=$(top_srcdir):$$PYTHONPATH $(SPHINXBUILD) -d doctrees -c .
 
 HTML_STAMP = html.sphstamp
 
