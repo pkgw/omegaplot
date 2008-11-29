@@ -14,11 +14,11 @@ AM_CHECK_PYMOD(gtk,,,
 )
 
 dnl Configuration checks for latexsnippet -- need to make
-dnl sure that we have latex, dvipng, and the preview package
+dnl sure that we have latex, dvips, pstoedit, and the preview package
 dnl installed.
 
-AC_PATH_PROG(LATEX, latex, true, false)
-if $LATEX ; then
+AC_PATH_PROG(LATEX, latex, notfound)
+if test x"$LATEX" != xnotfound ; then
    :
 else
    AC_MSG_ERROR([The program 'latex' wasn't found on your system! It
@@ -27,13 +27,23 @@ variable LATEX to the full path to the program if it is not in your
 default system \$PATH.])
 fi
 
-AC_PATH_PROG(DVIPNG, dvipng, true, false)
-if $DVIPNG ; then
+AC_PATH_PROG(DVIPS, dvips, notfound)
+if test x"$DVIPS" != xnotfound ; then
    :
 else
-   AC_MSG_ERROR([The program 'dvipng' wasn't found on your system! It
+   AC_MSG_ERROR([The program 'dvips' wasn't found on your system! It
 is necessary for the creation of text labels. Set the environment
-variable DVIPNG to the full path to the program if it is not in your
+variable DVIPS to the full path to the program if it is not in your
+default system \$PATH.])
+fi
+
+AC_PATH_PROG(PSTOEDIT, pstoedit, notfound)
+if test x"$PSTOEDIT" != xnotfound ; then
+   :
+else
+   AC_MSG_ERROR([The program 'pstoedit' wasn't found on your system! It
+is necessary for the creation of text labels. Set the environment
+variable PSTOEDIT to the full path to the program if it is not in your
 default system \$PATH.])
 fi
 
