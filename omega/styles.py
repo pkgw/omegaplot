@@ -27,7 +27,7 @@ class Style (object):
             fn = 'apply_' + styleItem
 
             if hasattr (self.roles, fn):
-                getattr (self.roles, fn)(ctxt, style)
+                getattr (self.roles, fn)(ctxt, self)
                 return
 
         raise Exception ('Don\'t know what to do with '
