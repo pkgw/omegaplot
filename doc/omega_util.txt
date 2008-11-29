@@ -3,5 +3,8 @@
 
 .. automodule:: omega.util
 
-.. autofunction:: quickXY(x[, y, desc, ...]) -> plot object
+   .. autofunction:: quickXY(x[, y, desc, ...]) -> plot object
 
+.. ~synopsis~ Miscellaneous utility functions.
+   This should go under the automodule when I install a 
+   newer version of Sphinx.

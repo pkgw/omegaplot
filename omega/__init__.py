@@ -1,11 +1,13 @@
-"""OmegaPlot, the last plotting package you'll ever need.
+r"""
+.. This docstring is read and processed by Sphinx to create the full
+   OmegaPlot documentation. It should be readable as-is but the 
+   processed documentation is much nicer.
 
-OmegaPlot is a flexible plotting package based on the
-Cairo graphics system.
+.. sectionauthor:: Peter Williams <peter@newton.cx>
 
-Names exported in the top-level namespace are:
-
-...
+This is API reference documentation for the :mod:`omega` module. For a
+general introduction to OmegaPlot, please see the 
+:ref:`full documentation <index>`.
 """
 
 from base import *

@@ -1,3 +1,12 @@
+r"""
+.. moduleauthor:: Peter Williams <peter@newton.cx>
+.. sectionauthor:: Peter Williams <peter@newton.cx>
+
+Various functions that don't fit in other modules particularly
+well. This is not to imply that these functions aren't important -- 
+:func:`quickXY`, for instance, is quite useful.
+"""
+
 from base import _kwordDefaulted
     
 # Quick display of plots
@@ -5,6 +14,30 @@ from base import _kwordDefaulted
 import rect
 
 def quickXY (*args, **kwargs):
+    r"""Create a :class:`omega.rect.RectPlot` displaying some data.
+
+:type x: array-like
+:param x: Some stuff.
+:type y: array-like
+:param y: Other stuff
+:type desc: string
+:param desc: The text used in the key of the newly-created plot
+:type xmin: float
+:param xmin: The lower X bound of the plot. If unspecified, 
+             the lower X bound is chosen automatically
+:type xmax: float
+:param xmax: blah
+:type ymin: float
+:param ymin: blah
+:type ymax: float
+:param ymax: blah3.
+
+:rtype: :class:`omega.rect.RectPlot`
+:return: Blah.
+
+>>> omega.quickXY (x, sin(x), 'Sin').show ()
+"""
+
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
     ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
