@@ -1,12 +1,13 @@
-#!/bin/sh
-# Run this to generate all the initial makefiles, etc.
-# "Ripped off from GNOME macros version"
-# According to the Mono version, which this is ripped off
-# from :-) -- Peter
+#! /bin/sh
+#
+# Run this to create the configure script and Makefile.in
+# files.
+#
+# Many packages have their autogen.sh also run the configure
+# script; I don't like this behavior and avoid it here.
 
 DIE=0
 PKG=omegaplot
-CONFIGURE_IN=configure.ac
 ACLOCAL_FLAGS="-I . $ACLOCAL_FLAGS"
 
 srcdir=`dirname $0`
@@ -20,50 +21,21 @@ test -z "$srcdir" && srcdir=.
   DIE=1
 }
 
-if [ -z "$LIBTOOL" ]; then
-  LIBTOOL=`which glibtool 2>/dev/null` 
-  if [ ! -x "$LIBTOOL" ]; then
-    LIBTOOL=`which libtool`
-  fi
-fi
-
-(grep "^AM_PROG_LIBTOOL" $srcdir/$CONFIGURE_IN >/dev/null) && {
-  ($LIBTOOL --version) < /dev/null > /dev/null 2>&1 || {
-    echo
-    echo "**Error**: You must have \`libtool' installed to compile $PKG."
-    echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2d.tar.gz"
-    echo "(or a newer version if it is available)"
-    DIE=1
-  }
-}
-
-grep "^AM_GNU_GETTEXT" $srcdir/$CONFIGURE_IN >/dev/null && {
-  grep "sed.*POTFILES" $srcdir/$CONFIGURE_IN >/dev/null || \
-  (gettext --version) < /dev/null > /dev/null 2>&1 || {
-    echo
-    echo "**Error**: You must have \`gettext' installed to compile $PKG."
-    echo "Get ftp://alpha.gnu.org/gnu/gettext-0.10.35.tar.gz"
-    echo "(or a newer version if it is available)"
-    DIE=1
-  }
-}
-
 (automake --version) < /dev/null > /dev/null 2>&1 || {
   echo
   echo "**Error**: You must have \`automake' installed to compile $PKG."
-  echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.3.tar.gz"
+  echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.10.tar.gz"
   echo "(or a newer version if it is available)"
   DIE=1
   NO_AUTOMAKE=yes
 }
-
 
 # if no automake, don't bother testing for aclocal
 test -n "$NO_AUTOMAKE" || (aclocal --version) < /dev/null > /dev/null 2>&1 || {
   echo
   echo "**Error**: Missing \`aclocal'.  The version of \`automake'"
   echo "installed doesn't appear recent enough."
-  echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.3.tar.gz"
+  echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.10.tar.gz"
   echo "(or a newer version if it is available)"
   DIE=1
 }
@@ -72,61 +44,20 @@ if test "$DIE" -eq 1; then
   exit 1
 fi
 
-if test -z "$*"; then
-  echo "**Warning**: I am going to run \`configure' with no arguments."
-  echo "If you wish to pass any to it, please specify them on the"
-  echo \`$0\'" command line."
-  echo
-fi
-
-case $CC in
-xlc )
-  am_opt=--include-deps;;
-esac
-
-
-if grep "^AM_PROG_LIBTOOL" $CONFIGURE_IN >/dev/null; then
-  if test -z "$NO_LIBTOOLIZE" ; then 
-    echo "Running libtoolize..."
-    ${LIBTOOL}ize --force --copy
-  fi
-fi
+cd $srcdir
 
 echo "Running aclocal $ACLOCAL_FLAGS ..."
-aclocal $ACLOCAL_FLAGS || {
-  echo
-  echo "**Error**: aclocal failed. This may mean that you have not"
-  echo "installed all of the packages you need, or you may need to"
-  echo "set ACLOCAL_FLAGS to include \"-I \$prefix/share/aclocal\""
-  echo "for the prefix where you installed the packages whose"
-  echo "macros were not found"
-  exit 1
-}
+aclocal $ACLOCAL_FLAGS || 
+  { echo "**Error**: aclocal failed."; exit 1; }
 
-if grep "^AM_CONFIG_HEADER" $CONFIGURE_IN >/dev/null; then
-  echo "Running autoheader..."
-  autoheader || { echo "**Error**: autoheader failed."; exit 1; }
-fi
-
-echo "Running automake --gnu $am_opt ..."
+echo "Running automake --add-missing --gnu $am_opt ..."
 automake --add-missing --gnu $am_opt ||
   { echo "**Error**: automake failed."; exit 1; }
+
 echo "Running autoconf ..."
-autoconf || { echo "**Error**: autoconf failed."; exit 1; }
+autoconf || 
+  { echo "**Error**: autoconf failed."; exit 1; }
 
-if test -d $srcdir/libgc; then
-  echo Running libgc/autogen.sh ...
-  (cd $srcdir/libgc ; NOCONFIGURE=1 ./autogen.sh "$@")
-  echo Done running libgc/autogen.sh ...
-fi
-
-
-conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
-
-if test x$NOCONFIGURE = x; then
-  echo Running $srcdir/configure $conf_flags "$@" ...
-  $srcdir/configure $conf_flags "$@" \
-  && echo Now type \`make\' to compile $PKG_NAME || exit 1
-else
-  echo Skipping configure process.
-fi
+echo "Now run \`$srcdir/configure' to configure your build and create"
+echo "Makefiles."
+exit 0
