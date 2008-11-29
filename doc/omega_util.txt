@@ -1,10 +1,12 @@
+.. include:: common.inc
+
 :mod:`omega.util` --- Miscellaneous utilities
 ================================================
 
 .. automodule:: omega.util
 
    Quick Plot Creation
-   ===================
+   -------------------
 
    .. autofunction:: quickXY(y_or_x[, opt_y, label, ...]) -> plot object
 
@@ -15,7 +17,7 @@
    .. autofunction:: quickPager (args, [...]) -> pager object
 
    Quick Plot Saving
-   =================
+   -----------------
 
    .. autofunction:: dumpPainter (painter, [**kwargs]) -> None
 

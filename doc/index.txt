@@ -1,10 +1,12 @@
+.. include:: common.inc
+
 .. _index:
 .. sectionauthor:: Peter Williams <peter@newton.cx>
 
 OmegaPlot Tutorial and Reference
 ================================
 
-*OmegaPlot* is a framework for creating plots using the `Python
+|omega| is a framework for creating plots using the `Python
 <http://www.python.org/>`_ programming language. It aspires to the
 following key goals:
 

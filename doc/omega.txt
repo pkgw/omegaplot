@@ -1,3 +1,5 @@
+.. include:: common.inc
+
 :mod:`omega` --- Commonly-used plotting features
 ================================================
 

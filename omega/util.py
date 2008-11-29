@@ -18,16 +18,16 @@ def quickXY (*args, **kwargs):
 
 :type y_or_x: 1D array-like
 :param y_or_x: If *opt_y* is specified, the X coordinate data. Otherwise, the
-           Y coordinate data. In the latter case, the X coordinates
-           are defaulted to 0, 1, 2, *etc.* Must be one-dimensional.
-           This is converted to an array via :func:`numpy.asarray`,
-           so any sequence is acceptable, not just a 
-           :class:`numpy.ndarray`.
+               Y coordinate data. In the latter case, the X coordinates
+               are defaulted to 0, 1, 2, *etc.* Must be one-dimensional.
+               This is converted to an array via :func:`numpy.asarray`,
+               so any sequence is acceptable, not just a 
+               :class:`numpy.ndarray`.
 :type opt_y: 1D array-like
 :param opt_y: The Y coordinate data. Defaults to :const:`None`, which 
-           indicates that *y_or_x* actually specifies the Y coordinate
-           data. Must be one-dimensional and the same size as *y_or_x*.
-           Same processing semantics as *y_or_x*.
+              indicates that *y_or_x* actually specifies the Y coordinate
+              data. Must be one-dimensional and the same size as *y_or_x*.
+              Same processing semantics as *y_or_x*.
 :type label: string
 :param label: The text used in the key of the newly-created plot. Defaults
               to 'Data'.
