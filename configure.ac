@@ -1,17 +1,45 @@
-AC_INIT(README)
-AC_CANONICAL_SYSTEM
-dnl AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(omegaplot,0.1)
+dnl General initialization
+
+AC_INIT([OmegaPlot], [0.1], [peter@newton.cx])
+AC_CONFIG_SRCDIR([omega/rect.py])
+AM_INIT_AUTOMAKE([dist-bzip2])
+
 AM_MAINTAINER_MODE
 
-AC_SUBST(ACLOCAL_AMFLAGS, "-I .")
-AM_PATH_PYTHON(2.3.5)
-AM_CHECK_PYMOD(cairo,,,
-  AC_MSG_ERROR(A cairo Python module is required)
-)
-AM_CHECK_PYMOD(gtk,,,
-  AC_MSG_ERROR(A gtk Python module is required)
-)
+AC_SUBST([OMEGA_SHORTVERSION],[0.1])
+
+dnl Python and dependent modules
+
+AM_PATH_PYTHON([2.3.5])
+
+AM_CHECK_PYMOD(cairo,,,[
+  AC_MSG_ERROR([The 'cairo' Python module is required])
+])
+
+AM_CHECK_PYMOD(gtk,,,[
+  AC_MSG_ERROR([The 'gtk' Python module is required])
+])
+
+AM_CHECK_PYMOD(numpy,,,[
+  AC_MSG_ERROR([The 'numpy' Python module is required])
+])
+
+dnl Checks for building documentation
+
+AC_PATH_PROG(SPHINXBUILD, sphinx-build, notfound)
+if test x"$SPHINXBUILD" != xnotfound ; then
+   BUILD_DOCS=true
+else
+   AC_MSG_WARN([The program 'sphinx-build' wasn't found on your
+system! Documentation will not be built.])
+   BUILD_DOCS=false
+fi
+
+AM_CONDITIONAL([BUILD_DOCS], $BUILD_DOCS)
+
+if $BUILD_DOCS ; then
+   AC_CONFIG_FILES([doc/conf.py])
+fi
 
 dnl Configuration checks for latexsnippet -- need to make
 dnl sure that we have latex, dvips, pstoedit, and the preview package
@@ -70,9 +98,12 @@ fi
 
 dnl All done.
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 latexsnippet/Makefile
 omega/Makefile
 demo/Makefile
+doc/Makefile
 ])
+
+AC_OUTPUT
