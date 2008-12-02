@@ -1,0 +1,141 @@
+.. include:: common.inc
+.. highlight:: python
+
+.. _intro:
+.. sectionauthor:: Peter Williams <peter@newton.cx>
+
+An Introduction to |omega|
+==========================
+
+|omega| is a framework for creating plots using the `Python
+<http://www.python.org/>`_ programming language. It aspires to the
+following key goals:
+
+* Producing attractive, accessible, publication-quality output. 
+* Presenting a clean, usable API to users.
+
+The rendering backend of OmegaPlot is the `Cairo
+<http://www.cairographics.org/>`_ graphics library, via the
+`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot 
+stores and accesses data using the `NumPy <http://numpy.scipy.org/>`_
+package.
+
+Features currently supported by OmegaPlot include:
+
+* Interactive plotting with rendering via the `GTK+
+  <http://www.gtk.org/>`_ toolkit. Special integration with the 
+  `IPython <http://ipython.scipy.org/>`_ interactive shell is included.
+* Paginated output to PostScript, PDF, SVG, and PNG files. Generally,
+  any output target supported by Cairo can easily be used by OmegaPlot.
+* Sophisticated rectangular (X, Y) plots.
+* Arbitrary layout of multiple plots in grids, stacks, and so on.
+* Optional vector-based text and equation rendering via LaTeX, for
+  plots that require fancy equatons with publication-quality 
+  typesetting.
+
+
+Seriously? **Another** Plotting Package?
+----------------------------------------
+
+It's a valid question. The author's answer refers to the two
+key goals of |omega|:
+
+* Many of the plotting packages that he has seen produce 
+  fairly unattractive output. This judgment is, of course,
+  highly subjective. The author's preferences run towards
+  a clean, quiet, Tufte-influenced [#tufte]_ aesthetic. Many 
+  packages seem to use overly thick lines, grids, and other 
+  so-called "chartjunk" that clutter up graphics and make them 
+  unappealing.
+* Essentially *all* of the plotting packages that the author
+  has looked at have unattractive programming interfaces.
+  Not only is this judgment also subjective, it's also not a 
+  big deal to many people. But this programmer thinks that APIs
+  matter more than is commonly appreciated and that his 
+  design is, frankly, better than the others that he has seen.
+
+There's also the matter that these days, writing a plotting package is
+(thankfully) not a huge task. The excellent `Cairo`_ library makes
+rendering a fairly small issue, and the `NumPy`_ package makes it easy
+to work with data in `Python`_. The author also has fairly simple
+plotting needs at this time, so he can afford to implement features as
+he needs them and not find himself spending *too* much time on a side
+project. Of course, here he is writing documentation, so things have
+probably gotten out of hand. Don't tell his adviser.
+
+For the sake of completeness, here are some of the other 
+`Python`_ plotting packages. Apologies for any omissions.
+
+* matplotlib 
+* more ...
+
+The Design
+----------
+
+We hate to get all buzzwordy, but |omega| is designed from a
+fundamentally object-oriented standpoint. Instead of drawing various
+graphical elements on a plot sequentially, |omega| works by creating a
+heirarchy of elements and rendering them as necessary --- that is, it
+employs a "scene graph" model. This doesn't buy you much if you just
+want to create and draw a single X-Y plot. But the power of this
+design is that it allows you to easily stitch together plots in
+arbitrary ways. For instance, you can create and show a bog-standard
+:class:`~omega.rect.RectPlot` object, then insert that object into
+a :class:`~omega.layout.Grid` layout with other graphical
+elements. You can than choose how to render that object appropriately
+--- into a PDF file, to the screen --- interactively.
+
+I think this design demonstrates its utility in the way that it enables
+plotting to be integrated into `Python`_ libraries in a clean way,
+rather than bolted on when you realize that you need to make a
+figure. A common pattern is to write code for a class that represents
+some data item that can self-visualize::
+
+  import numpy as N, omega
+
+  class Sample (object):
+     def __init__ (self, complex_data):
+        self.d = N.asarray (complex_data, dtype=N.complex)
+
+     def plot (self):
+        """Render the complex data as a plot of amplitudes atop
+	a plot of phases."""
+
+        g = omega.Grid (1, 2)
+	g[0] = omega.quickXY (N.abs (self.d), label='Amplitude')
+	g[1] = omega.quickXY (N.atan2 (self.d.imag, self.d.real),
+	                      label='Phase')
+        return g
+
+  def standardPlot (file='standard.pdf'):
+     """Create the plot that I send to my adviser every week
+     demonstrating the progress I've made."""
+
+     pg = omega.makePager (file, nw=2, nh=4)
+     for s in allSamples ():
+        s.plot ().sendTo (pg)
+     pg.done ()
+
+  >>> sample.plot ().show () # Examine this particular sample
+  >>> sample.plot ().save ('forlater.ps')  
+  >>> # science happens here
+
+About the Name
+--------------
+
+This package is called |omega| because it's the *last* plotting
+package you'll ever need. Get it? 
+
+I'm not actually that full of myself, but I think "omega" is a catchy name
+that's relatively short and doesn't seem to have already been taken
+in the `Python`_ world. 
+
+.. [#tufte] That is, Edward Tufte, author of "The Visual Display
+   of Quantitative Information" and several other books. Tufte
+   has his flaws and bugbears --- for instance, he appears to
+   completely ignore questions of accessibility --- but his
+   general approach to graphic design is, in this programmer's
+   opinion, a good one. It is also a vastly underrepresented 
+   one, but that's another issue.
+.. FIXME book reference above.
+
