@@ -9,7 +9,7 @@ AM_MAINTAINER_MODE
 dnl Both of these are used in doc/conf.py.in
 
 AC_SUBST([OMEGA_SHORTVERSION],[0.1])
-AC_SUBST([OMEGA_COPYRIGHT],[2008, Peter Williams])
+AC_SUBST([OMEGA_COPYRIGHT],["2008, Peter Williams"])
 
 dnl Python and dependent modules
 
