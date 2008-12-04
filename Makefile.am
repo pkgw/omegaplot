@@ -1,4 +1,5 @@
-ACLOCAL_AMFLAGS = -I . --install
+# ACLOCAL_AMFLAGS = -I . --install
+ACLOCAL_AMFLAGS = -I .
 
 DIST_SUBDIRS = latexsnippet omega demo doc
 
