@@ -11,6 +11,9 @@ from base import Stamp
 
 _defaultStampSize = 5
 
+import stride_tricks
+_N.broadcast_arrays = stride_tricks.broadcast_arrays
+
 class RStamp (Stamp):
     # A R(ect)Stamp is a stamp usually associated
     # with a RectDataHolder and rendered onto a RectPlot.
@@ -47,7 +50,7 @@ class RStamp (Stamp):
         y = ally[0]
 
         data = self._getDataValues (style, xform)
-        data = _N.broadcast_arrays (*data)
+        data = _N.broadcast_arrays (x, *data)[1:]
 
         self._paintData (ctxt, style, x, y, data)
 

@@ -76,7 +76,10 @@ class LogarithmicAxis (RectAxis):
         return 10 ** self.logmin
     
     def setMin (self, value):
-        self.logmin = N.log10 (value)
+        if value > 0:
+            self.logmin = N.log10 (value)
+        else:
+            self.logmin = -8
 
     min = property (getMin, setMin)
     
@@ -84,16 +87,26 @@ class LogarithmicAxis (RectAxis):
         return 10 ** self.logmax
     
     def setMax (self, value):
-        self.logmax = N.log10 (value)
+        if value > 0:
+            self.logmax = N.log10 (value)
+        else:
+            self.logmax = -8
 
     max = property (getMax, setMax)
     
     def transform (self, values):
-        return (N.log10 (values) - self.logmin) / (self.logmax - self.logmin)
+        valid = values > 0
+        vc = N.where (valid, values, 1)
+
+        ret = (N.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
+        return N.where (valid, ret, -10)
 
     def inbounds (self, values):
-        lv = N.log10 (values)
-        return N.logical_and (lv >= self.logmin, lv <= self.logmax)
+        valid = values > 0
+        vc = N.where (valid, values, 1)
+        lv = N.log10 (vc)
+        
+        return N.logical_and (valid, N.logical_and (lv >= self.logmin, lv <= self.logmax))
 
 class DiscreteAxis (RectAxis):
     """A discrete logical axis for a rectangular plot. That is,
