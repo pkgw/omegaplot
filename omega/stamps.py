@@ -23,6 +23,9 @@ class RStamp (Stamp):
 
 
     def setData (self, data):
+        if self.data is not None:
+            raise Exception ('Cannot reuse RStamp instance.')
+        
         self.data = data
         # when overriding: possibly register data columns
         # and stash cinfo
