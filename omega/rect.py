@@ -661,17 +661,13 @@ class RectField (object):
 
         def _mapX_weakClamp (self, val):
             raw = self.field.xaxis.transform (val)
-
-            raw = N.maximum (raw, -1.0)
-            raw = N.minimum (raw, 2.0)
+            N.clip (raw, -1.0, 2.0)
 
             return raw * self.width
         
         def _mapY_weakClamp (self, val):
             raw = 1. - self.field.yaxis.transform (val)
-
-            raw = N.maximum (raw, -1.0)
-            raw = N.minimum (raw, 2.0)
+            N.clip (raw, -1.0, 2.0)
 
             return raw * self.height
 
