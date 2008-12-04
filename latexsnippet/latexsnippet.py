@@ -491,6 +491,8 @@ class SkencilCairoRenderer (object):
 
 # Now, a cache for rendering multiple snippets with Cairo ...
 
+_expiredString = 'dontevertrytorenderthis'
+
 class CairoCache (object):
     """Generates a set of snippets at once and caches the results in a
     temporary directory. This class can be used to manage a whole set of
@@ -558,6 +560,7 @@ class CairoCache (object):
         self.header = header
         self.cfg = cfg
         self.snips = [] # list of snippet strings
+        self.refcounts = []
         self.outputs = None
         self.renderers = []
 
@@ -584,11 +587,14 @@ class CairoCache (object):
         snip = str (snip).strip ()
 
         try:
-            return self.snips.index (snip)
+            idx = self.snips.index (snip)
+            self.refcounts[idx] += 1
+            return idx
         except ValueError:
             pass
         
         self.snips.append (snip)
+        self.refcounts.append (1)
         return len (self.snips) - 1
 
     def renderAll (self):
@@ -634,16 +640,23 @@ class CairoCache (object):
 
         Returns: None
         """
+
+        self.refcounts[handle] -= 1
+
+        if self.refcounts[handle] > 0:
+            return
         
-        # Just delete the file for now and don't waste time regenerating the snippet
+        if handle >= len (self.outputs):
+            # Was the snippet ever actually rendered?
+            # Just delete the file for now and don't waste time regenerating the snippet
+            try:
+                os.remove (self.outputs[handle])
+            except:
+                pass
+            
+            self.renderers[handle] = None
 
-        try:
-            os.remove (self.outputs[handle])
-        except:
-            pass
-
-        self.snips[handle] = 'X'
-        self.renderers[handle] = None
+        self.snips[handle] = _expiredString
 
     def getSnippet (self, handle):
         """Retrieve the equation text associated with a snippet handle.
@@ -677,6 +690,13 @@ class CairoCache (object):
         if len (self.renderers) <= handle:
             self.renderAll ()
 
+        if self.renderers[handle] is None:
+            print 'oh no!'
+            print 'h', handle
+            print 's', self.snips[handle]
+            print 'o', self.outputs[handle]
+            raise Exception ()
+        
         return self.renderers[handle]
 
     def close (self):

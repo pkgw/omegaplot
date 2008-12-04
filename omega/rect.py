@@ -483,9 +483,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     def getLabelInfos (self, ctxt, style):
         # Create the TextStamper objects all at once, so that if we
-        # are using the LaTeX backend, we can generate their PNG
-        # images all in one go. (That will happen upon the first
-        # invocation of getSize.)
+        # are using the LaTeX backend, we can generate them images all
+        # in one go. (That will happen upon the first invocation of
+        # getMinimumSize.)
         
         labels = []
         
