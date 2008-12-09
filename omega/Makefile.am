@@ -10,5 +10,5 @@ mypy_PYTHON = \
    render.py \
    stamps.py \
    styles.py \
-   util.py \
-   stride_tricks.py
+   util.py
+
