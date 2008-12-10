@@ -299,18 +299,20 @@ class Plus (PrimaryRStamp):
 # the use of different symbols for different datasets in a plot
 
 class DataThemedStamp (PrimaryRStamp):
-    stylenum = None
-
-
-    def setStyleNum (self, sn):
-        self.stylenum = int (sn)
+    def __init__ (self, snholder, size=None, rot=0):
+        super (DataThemedStamp, self).__init__ (size, rot)
+        self.setHolder (snholder)
+        
+    def setHolder (self, snholder):
+        self.snholder = snholder
 
 
     def _paintOne (self, ctxt, style, size):
-        if self.stylenum is None:
-            raise Exception ('Need to call setStyleNum before painting DataThemedStamp!')
-        
-        style.data.getSymbolFunc (self.stylenum) (ctxt, style, size)
+        if self.snholder is None:
+            raise Exception ('Need to call setHolder before painting DataThemedStamp!')
+
+        sn = self.snholder.primaryStyleNum
+        style.data.getSymbolFunc (sn) (ctxt, style, size)
 
 
 # Here are some utility stamps that are *not*

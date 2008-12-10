@@ -822,7 +822,7 @@ class RectPlot (Painter):
         fp = self.add (dp, **kwargs)
 
         if isinstance (pointStamp, _DTS):
-            pointStamp.setStyleNum (dp.primaryStyleNum)
+            pointStamp.setHolder (dp)
 
         return fp
     
@@ -852,7 +852,7 @@ class RectPlot (Painter):
             label = 'Data'
 
         if pointStamp is None:
-            pointStamp = _DTS ()
+            pointStamp = _DTS (None)
         pointStamp = WithYErrorBars (pointStamp)
         
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
@@ -862,7 +862,7 @@ class RectPlot (Painter):
         fp = self.add (dp, **kwargs)
 
         if isinstance (pointStamp, _DTS):
-            pointStamp.setStyleNum (dp.primaryStyleNum)
+            pointStamp.setHolder (dp)
 
         return fp
         
@@ -1440,8 +1440,7 @@ class XYDataPainter (FieldPainter):
         self.cinfo = self.data.register (0, 0, 1, 1)
         
         if lines is False and pointStamp is None:
-            from stamps import Circle
-            pointStamp = Circle ()
+            pointStamp = _DTS (self)
         
         self.lines = lines
         self.pointStamp = pointStamp
