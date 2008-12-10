@@ -150,6 +150,83 @@ class PrimaryRStamp (RStamp):
 
 # Some concrete examples
 
+# These functions actually paint a symbol
+
+def symCircle (ctxt, style, size, fill):
+    if fill: go = ctxt.fill
+    else: go = ctxt.stroke
+
+    ctxt.new_sub_path () # prevents leading line segment to arc beginning
+    ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * _math.pi)
+    go ()
+
+def symUpTriangle (ctxt, style, size, fill):
+    if fill: go = ctxt.fill
+    else: go = ctxt.stroke
+
+    s = size * style.smallScale
+        
+    ctxt.move_to (0, -0.666666 * s)
+    ctxt.rel_line_to (s/2, s)
+    ctxt.rel_line_to (-s, 0)
+    ctxt.rel_line_to (s/2, -s)
+    go ()
+
+def symDownTriangle (ctxt, style, size, fill):
+    if fill: go = ctxt.fill
+    else: go = ctxt.stroke
+
+    s = size * style.smallScale
+        
+    ctxt.move_to (0, s * 0.666666)
+    ctxt.rel_line_to (-s/2, -s)
+    ctxt.rel_line_to (s, 0)
+    ctxt.rel_line_to (-s/2, s)
+    go ()
+
+def symDiamond (ctxt, style, size, fill):
+    if fill: go = ctxt.fill
+    else: go = ctxt.stroke
+
+    s2 = size * style.smallScale / 2
+        
+    ctxt.move_to (0, -s2)
+    ctxt.rel_line_to (s2, s2)
+    ctxt.rel_line_to (-s2, s2)
+    ctxt.rel_line_to (-s2, -s2)
+    ctxt.rel_line_to (s2, -s2)
+    go ()
+
+def symBox (ctxt, style, size, fill):
+    s = size * style.smallScale / _math.sqrt (2)
+        
+    ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
+
+    if fill: ctxt.fill ()
+    else: ctxt.stroke ()
+
+def symX (ctxt, style, size):
+    s = size * style.smallScale / _math.sqrt (2)
+        
+    ctxt.move_to (-0.5 * s, -0.5 * s)
+    ctxt.rel_line_to (s, s)
+    ctxt.stroke ()
+    ctxt.move_to (-0.5 * s, 0.5 * s)
+    ctxt.rel_line_to (s, -s)
+    ctxt.stroke ()
+        
+def symPlus (ctxt, style, size):
+    s = size * style.smallScale
+        
+    ctxt.move_to (-0.5 * s, 0)
+    ctxt.rel_line_to (s, 0)
+    ctxt.stroke ()
+    ctxt.move_to (0, -0.5 * s)
+    ctxt.rel_line_to (0, s)
+    ctxt.stroke ()
+
+# Stamps drawing these symbols
+
 class Circle (PrimaryRStamp):
     def __init__ (self, fill=True, **kwargs):
         PrimaryRStamp.__init__ (self, **kwargs)
@@ -157,12 +234,7 @@ class Circle (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        if self.fill: go = ctxt.fill
-        else: go = ctxt.stroke
-
-        ctxt.new_sub_path () # no leading line segment to arc beginning
-        ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * _math.pi)
-        go ()
+        symCircle (ctxt, style, size, self.fill)
 
 
 class UpTriangle (PrimaryRStamp):
@@ -172,17 +244,7 @@ class UpTriangle (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        if self.fill: go = ctxt.fill
-        else: go = ctxt.stroke
-
-        s = size * style.smallScale
-        
-        ctxt.move_to (0, -0.666666 * s)
-        ctxt.rel_line_to (s/2, s)
-        ctxt.rel_line_to (-s, 0)
-        ctxt.rel_line_to (s/2, -s)
-        go ()
-    
+        symUpTriangle (ctxt, style, size, self.fill)
 
 class DownTriangle (PrimaryRStamp):
     def __init__ (self, fill=True, **kwargs):
@@ -191,16 +253,7 @@ class DownTriangle (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        if self.fill: go = ctxt.fill
-        else: go = ctxt.stroke
-
-        s = size * style.smallScale
-        
-        ctxt.move_to (0, s * 0.666666)
-        ctxt.rel_line_to (-s/2, -s)
-        ctxt.rel_line_to (s, 0)
-        ctxt.rel_line_to (-s/2, s)
-        go ()
+        symDownTriangle (ctxt, style, size, self.fill)
     
 
 class Diamond (PrimaryRStamp):
@@ -210,17 +263,7 @@ class Diamond (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        if self.fill: go = ctxt.fill
-        else: go = ctxt.stroke
-
-        s2 = size * style.smallScale / 2
-
-        ctxt.move_to (0, -s2)
-        ctxt.rel_line_to (s2, s2)
-        ctxt.rel_line_to (-s2, s2)
-        ctxt.rel_line_to (-s2, -s2)
-        ctxt.rel_line_to (s2, -s2)
-        go ()
+        symDiamond (ctxt, style, size)
 
 
 class Box (PrimaryRStamp):
@@ -235,12 +278,7 @@ class Box (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        s = size * style.smallScale / _math.sqrt (2)
-        
-        ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
-
-        if self.fill: ctxt.fill ()
-        else: ctxt.stroke ()
+        symBox (ctxt, style, size)
     
 
 class X (PrimaryRStamp):
@@ -248,28 +286,14 @@ class X (PrimaryRStamp):
     # sqrt(2) so that X and Plus lay down the same amount of "ink"
 
     def _paintOne (self, ctxt, style, size):
-        s = size * style.smallScale / _math.sqrt (2)
-        
-        ctxt.move_to (-0.5 * s, -0.5 * s)
-        ctxt.rel_line_to (s, s)
-        ctxt.stroke ()
-        ctxt.move_to (-0.5 * s, 0.5 * s)
-        ctxt.rel_line_to (s, -s)
-        ctxt.stroke ()
+        symX (ctxt, style, size)
     
 
 class Plus (PrimaryRStamp):
     # size gives the side length of the plus in style.smallScale
 
     def _paintOne (self, ctxt, style, size):
-        s = size * style.smallScale
-        
-        ctxt.move_to (-0.5 * s, 0)
-        ctxt.rel_line_to (s, 0)
-        ctxt.stroke ()
-        ctxt.move_to (0, -0.5 * s)
-        ctxt.rel_line_to (0, s)
-        ctxt.stroke ()
+        symPlus (ctxt, style, size)
     
 
 # Here are some utility stamps that are *not*
