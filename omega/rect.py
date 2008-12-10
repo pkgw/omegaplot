@@ -707,6 +707,10 @@ class RectField (object):
         if ymax is not None:
             self.yaxis.max = max (self.yaxis.max, float (ymax))
 
+
+from stamps import DataThemedStamp as _DTS
+
+
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
     good!"""
@@ -815,10 +819,15 @@ class RectPlot (Painter):
         dp.setFloats (x, y)
         if lineStyle is not None: dp.lineStyle = lineStyle
         
-        return self.add (dp, **kwargs)
+        fp = self.add (dp, **kwargs)
+
+        if isinstance (pointStamp, _DTS):
+            pointStamp.setStyleNum (dp.primaryStyleNum)
+
+        return fp
     
     def addXYErr (self, *args, **kwargs):
-        from stamps import Circle, WithYErrorBars
+        from stamps import WithYErrorBars
         
         l = len (args)
 
@@ -843,14 +852,20 @@ class RectPlot (Painter):
             label = 'Data'
 
         if pointStamp is None:
-            pointStamp = Circle ()
+            pointStamp = _DTS ()
         pointStamp = WithYErrorBars (pointStamp)
         
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y, y + dy, y - dy)
         if lineStyle is not None: dp.lineStyle = lineStyle
         
-        return self.add (dp, **kwargs)
+        fp = self.add (dp, **kwargs)
+
+        if isinstance (pointStamp, _DTS):
+            pointStamp.setStyleNum (dp.primaryStyleNum)
+
+        return fp
+        
     
     def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
