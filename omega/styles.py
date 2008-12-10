@@ -178,6 +178,9 @@ class WhiteOnBlackColors (Colors):
 
 # Themes for different kinds of data in a shared plot
 
+import stamps
+
+
 class DataTheme (object):
     def applyLine (self, style, ctxt, n):
         raise NotImplementedError ()
@@ -185,6 +188,16 @@ class DataTheme (object):
 
     def applyStamp (self, style, ctxt, n):
         raise NotImplementedError ()
+
+
+    def getSymbolFunc (self, n):
+        raise NotImplementedError ()
+        
+
+
+def _wf (func, fill):
+    # "with fill"
+    return lambda c, sty, sz: func (c, sty, sz, fill)
 
 
 class MonochromeDataTheme (DataTheme):
@@ -214,6 +227,7 @@ class MonochromeDataTheme (DataTheme):
 
         ctxt.set_dash (a, 0.)
 
+
     def applyStamp (self, style, ctxt, stylenum):
         if stylenum is None: return
 
@@ -222,6 +236,26 @@ class MonochromeDataTheme (DataTheme):
         ctxt.set_line_width (style.sizes.thickLine)
         
 
+    _symFuncs = [_wf (stamps.symCircle, True),
+                 _wf (stamps.symUpTriangle, True),
+                 _wf (stamps.symBox, True),
+                 _wf (stamps.symDiamond, True),
+                 _wf (stamps.symDownTriangle, True),
+                 stamps.symX,
+                 stamps.symPlus,
+                 _wf (stamps.symCircle, False),
+                 _wf (stamps.symUpTriangle, False),
+                 _wf (stamps.symBox, False),
+                 _wf (stamps.symDiamond, False),
+                 _wf (stamps.symDownTriangle, False),
+
+    
+    def getSymbolFunc (self, stylenum):
+        stylenum = stylenum % len (self._symFuncs)
+        
+        return self._symFuncs[stylenum]
+    
+        
 class ColorDataTheme (DataTheme):
     """This theme disambiguates data from different
     sources by drawing lines in different colors. When using
@@ -245,6 +279,13 @@ class ColorDataTheme (DataTheme):
         c = style.colors.getDataColor (stylenum)
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (style.sizes.thickLine)
+
+
+    _defaultSym = stamps.symCircle
+
+
+    def getSymbolFunc (self, stylenum):
+        return self._defaultSym
 
 
 # Higher-level styling for various graphical elements based 
