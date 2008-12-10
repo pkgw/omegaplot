@@ -148,8 +148,6 @@ class PrimaryRStamp (RStamp):
         raise NotImplementedError ()
 
 
-# Some concrete examples
-
 # These functions actually paint a symbol
 
 def symCircle (ctxt, style, size, fill):
@@ -295,6 +293,25 @@ class Plus (PrimaryRStamp):
     def _paintOne (self, ctxt, style, size):
         symPlus (ctxt, style, size)
     
+
+# This special PrimaryRStamp plots a symbol that's a function of
+# a style number used for data themes. This allows us to abstract
+# the use of different symbols for different datasets in a plot
+
+class DataThemedStamp (PrimaryRStamp):
+    stylenum = None
+
+
+    def setStyleNum (self, sn):
+        self.stylenum = int (sn)
+
+
+    def _paintOne (self, ctxt, style, size):
+        if self.stylenum is None:
+            raise Exception ('Need to call setStyleNum before painting DataThemedStamp!')
+        
+        style.data.getSymbolFunc (self.stylenum) (ctxt, style, size)
+
 
 # Here are some utility stamps that are *not*
 # primary stamps. They build on top of other stamps
