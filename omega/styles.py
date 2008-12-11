@@ -334,6 +334,11 @@ def ColorOnBlackBitmap ():
                   ColorDataTheme (), DefaultRoles ())
 
 
+def ColorOnWhiteBitmap ():
+    return Style (BitmapSizes (), BlackOnWhiteColors (),
+                  ColorDataTheme (), DefaultRoles ())
+
+
 def BlackOnWhiteVector ():
     return Style (VectorSizes (), BlackOnWhiteColors (),
                   MonochromeDataTheme (), DefaultRoles ())
@@ -346,6 +351,11 @@ def WhiteOnBlackVector ():
 
 def ColorOnBlackVector ():
     return Style (VectorSizes (), WhiteOnBlackColors (),
+                  ColorDataTheme (), DefaultRoles ())
+
+
+def ColorOnWhiteVector ():
+    return Style (VectorSizes (), BlackOnWhiteColors (),
                   ColorDataTheme (), DefaultRoles ())
 
 
