@@ -819,12 +819,11 @@ class RectPlot (Painter):
         dp.setFloats (x, y)
         if lineStyle is not None: dp.lineStyle = lineStyle
         
-        fp = self.add (dp, **kwargs)
-
         if isinstance (pointStamp, _DTS):
             pointStamp.setHolder (dp)
 
-        return fp
+        return self.add (dp, **kwargs)
+
     
     def addXYErr (self, *args, **kwargs):
         from stamps import WithYErrorBars
@@ -853,18 +852,17 @@ class RectPlot (Painter):
 
         if pointStamp is None:
             pointStamp = _DTS (None)
-        pointStamp = WithYErrorBars (pointStamp)
+        errStamp = WithYErrorBars (pointStamp)
         
-        dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
+        dp = XYDataPainter (lines=lines, pointStamp=errStamp, keyText=label)
         dp.setFloats (x, y, y + dy, y - dy)
         if lineStyle is not None: dp.lineStyle = lineStyle
         
-        fp = self.add (dp, **kwargs)
-
         if isinstance (pointStamp, _DTS):
             pointStamp.setHolder (dp)
 
-        return fp
+        return self.add (dp, **kwargs)
+
         
     
     def rebound (self, nudgex=True, nudgey=True):

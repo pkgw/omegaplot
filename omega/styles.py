@@ -247,7 +247,7 @@ class MonochromeDataTheme (DataTheme):
                  _wf (stamps.symUpTriangle, False),
                  _wf (stamps.symBox, False),
                  _wf (stamps.symDiamond, False),
-                 _wf (stamps.symDownTriangle, False),
+                 _wf (stamps.symDownTriangle, False)]
 
     
     def getSymbolFunc (self, stylenum):
@@ -256,6 +256,9 @@ class MonochromeDataTheme (DataTheme):
         return self._symFuncs[stylenum]
     
         
+_defaultColorSym = _wf (stamps.symCircle, True)
+
+
 class ColorDataTheme (DataTheme):
     """This theme disambiguates data from different
     sources by drawing lines in different colors. When using
@@ -281,11 +284,8 @@ class ColorDataTheme (DataTheme):
         ctxt.set_line_width (style.sizes.thickLine)
 
 
-    _defaultSym = stamps.symCircle
-
-
     def getSymbolFunc (self, stylenum):
-        return self._defaultSym
+        return _defaultColorSym
 
 
 # Higher-level styling for various graphical elements based 
