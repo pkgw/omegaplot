@@ -261,7 +261,7 @@ class Diamond (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        symDiamond (ctxt, style, size)
+        symDiamond (ctxt, style, size, self.fill)
 
 
 class Box (PrimaryRStamp):
@@ -276,7 +276,7 @@ class Box (PrimaryRStamp):
 
 
     def _paintOne (self, ctxt, style, size):
-        symBox (ctxt, style, size)
+        symBox (ctxt, style, size, self.fill)
     
 
 class X (PrimaryRStamp):
