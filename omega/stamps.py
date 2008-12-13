@@ -11,8 +11,8 @@ from base import Stamp
 
 _defaultStampSize = 5
 
-import stride_tricks
-_N.broadcast_arrays = stride_tricks.broadcast_arrays
+# import stride_tricks
+# _N.broadcast_arrays = stride_tricks.broadcast_arrays
 
 class RStamp (Stamp):
     # A R(ect)Stamp is a stamp usually associated
