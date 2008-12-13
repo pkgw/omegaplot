@@ -38,10 +38,10 @@ class RStamp (Stamp):
         # This paints a data-free "sample" version of
         # the stamp.
         data = self._getSampleValues (style, x, y)
-        data = [_N.asarray ((q, )) for q in data]
+        data = [_N.atleast_1d (q) for q in data]
 
-        self._paintData (ctxt, style, _N.asarray ((x, )), 
-                         _N.asarray ((y, )), data)
+        self._paintData (ctxt, style, _N.atleast_1d (x), 
+                         _N.atleast_1d (y), data)
 
 
     def paintMany (self, ctxt, style, xform):
