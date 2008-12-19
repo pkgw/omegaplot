@@ -357,8 +357,8 @@ class LinearAxisPainter (BlankAxisPainter):
         # and round to 0. Do it in units of the axis bounds so that a
         # plot from -1e-6 to 1e-6 will still work OK.
 
-        if (self.axis.max < 0. and self.axis.min > 0.) or \
-           (self.axis.min < 0. and self.axis.max > 0.):
+        if (self.axis.max <= 0. and self.axis.min >= 0.) or \
+           (self.axis.min <= 0. and self.axis.max >= 0.):
             scale = max (abs (self.axis.max), abs (self.axis.min))
             zeroclamp = scale * 1e-6
         else:
