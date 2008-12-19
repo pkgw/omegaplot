@@ -767,7 +767,8 @@ class RectPlot (Painter):
 
         self.defaultKey.appendChild (item)
     
-    def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True):
+    def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
+             stylenum=None):
         # FIXME: don't rebound if the FP doesn't have any data.
         
         assert (isinstance (fp, FieldPainter))
@@ -779,8 +780,11 @@ class RectPlot (Painter):
             fp.field = self.defaultField
 
         if fp.needsPrimaryStyle:
-            fp.primaryStyleNum = self._nextPrimaryStyleNum
-            self._nextPrimaryStyleNum += 1
+            if stylenum is not None:
+                fp.primaryStyleNum = int (stylenum)
+            else:
+                fp.primaryStyleNum = self._nextPrimaryStyleNum
+                self._nextPrimaryStyleNum += 1
         
         if autokey:
             kp = fp.getKeyPainter ()
