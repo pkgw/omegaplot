@@ -803,7 +803,7 @@ class RectPlot (Painter):
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
 
-        x, y, label = None, None, None
+        x, y, label = None, None, 'Data'
         
         if l == 3:
             x, y = map (N.asarray, args[0:2])
@@ -815,9 +815,6 @@ class RectPlot (Painter):
             x = N.linspace (0, len (y) - 1, len (y))
         else:
             raise Exception ("Don't know how to handle magic addXY() args '%s'" % args)
-
-        if label is None:
-            label = 'Data'
 
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y)
@@ -838,7 +835,7 @@ class RectPlot (Painter):
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
 
-        x, y, dy, label = None, None, None, None
+        x, y, dy, label = None, None, None, 'Data'
         
         if l == 4:
             x, y, dy = map (N.asarray, args[0:3])
@@ -851,13 +848,10 @@ class RectPlot (Painter):
         else:
             raise Exception ("Don't know how to handle magic addXYErr() args '%s'" % args)
 
-        if label is None:
-            label = 'Data'
-
         if pointStamp is None:
             pointStamp = _DTS (None)
         errStamp = WithYErrorBars (pointStamp)
-        
+
         dp = XYDataPainter (lines=lines, pointStamp=errStamp, keyText=label)
         dp.setFloats (x, y, y + dy, y - dy)
         if lineStyle is not None: dp.lineStyle = lineStyle
@@ -1431,9 +1425,8 @@ class XYDataPainter (FieldPainter):
     primaryStyleNum = None
     lines = True
     pointStamp = None
-    keyText = 'Data'
     
-    def __init__ (self, lines=True, pointStamp=None, keyText=None):
+    def __init__ (self, lines=True, pointStamp=None, keyText='Data'):
         Painter.__init__ (self)
         
         self.data = RectDataHolder (DataHolder.AxisTypeFloat,
@@ -1448,9 +1441,9 @@ class XYDataPainter (FieldPainter):
         self.pointStamp = pointStamp
 
         if pointStamp is not None:
-            self.pointStamp.setData (self.data)
+            pointStamp.setData (self.data)
 
-        if keyText is not None: self.keyText = keyText
+        self.keyText = keyText
 
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
@@ -1461,6 +1454,8 @@ class XYDataPainter (FieldPainter):
         return xs.min (), xs.max (), ys.min (), ys.max ()
 
     def getKeyPainter (self):
+        if self.keyText is None: return None
+        
         return XYKeyPainter (self)
     
     def doPaint (self, ctxt, style):
@@ -1527,9 +1522,8 @@ class DiscreteSteppedPainter (FieldPainter):
     needsPrimaryStyle = True
     primaryStyleNum = None
     connectors = True
-    keyText = 'Data'
     
-    def __init__ (self, lineStyle=None, connectors=True, keyText=None):
+    def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle
@@ -1540,7 +1534,7 @@ class DiscreteSteppedPainter (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
 
-        if keyText is not None: self.keyText = keyText
+        self.keyText = keyText
 
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
@@ -1548,6 +1542,8 @@ class DiscreteSteppedPainter (FieldPainter):
         return xs.min (), xs.max (), ys.min (), ys.max ()
         
     def getKeyPainter (self):
+        if self.keyText is None: return None
+        
         return LineOnlyKeyPainter (self)
     
     def doPaint (self, ctxt, style):
@@ -1611,9 +1607,8 @@ class ContinuousSteppedPainter (FieldPainter):
     needsPrimaryStyle = True
     primaryStyleNum = None
     connectors = True
-    keyText = 'Data'
     
-    def __init__ (self, lineStyle=None, connectors=True, keyText=None):
+    def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
         Painter.__init__ (self)
 
         self.lineStyle = lineStyle
@@ -1624,7 +1619,7 @@ class ContinuousSteppedPainter (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
 
-        if keyText is not None: self.keyText = keyText
+        self.keyText = keyText
 
     def _calcMaxX (self, d):
         # FIXME: assuming data are sorted in X. We check in doPaint ()
@@ -1643,6 +1638,8 @@ class ContinuousSteppedPainter (FieldPainter):
         return xs.min (), self._calcMaxX (xs[0]), ys.min (), ys.max ()
         
     def getKeyPainter (self):
+        if self.keyText is None: return None
+        
         return LineOnlyKeyPainter (self)
     
     def doPaint (self, ctxt, style):
@@ -1753,11 +1750,10 @@ class XBand (FieldPainter):
     style = 'genericBand'
     needsPrimaryStyle = False
     primaryStyleNum = None
-    keyText = 'Band'
     stroke = False
     fill = True
     
-    def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText=None):
+    def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText='Band'):
         Painter.__init__ (self)
 
         self.stroke = stroke
@@ -1766,7 +1762,7 @@ class XBand (FieldPainter):
         if xmin > xmax: xmin, xmax = xmax, xmin
         self.xmin, self.xmax = xmin, xmax
         
-        if keyText is not None: self.keyText = keyText
+        self.keyText = keyText
 
     def getDataBounds (self):
         return self.xmin, self.xmax, None, None
