@@ -256,9 +256,6 @@ class MonochromeDataTheme (DataTheme):
         return self._symFuncs[stylenum]
     
         
-_defaultColorSym = _wf (stamps.symCircle, True)
-
-
 class ColorDataTheme (DataTheme):
     """This theme disambiguates data from different
     sources by drawing lines in different colors. When using
@@ -285,7 +282,9 @@ class ColorDataTheme (DataTheme):
 
 
     def getSymbolFunc (self, stylenum):
-        return _defaultColorSym
+        # FIXME hardcoded hack
+        symnum = (stylenum // 6) % len (MonochromeDataTheme._symFuncs)
+        return MonochromeDataTheme._symFuncs[symnum]
 
 
 # Higher-level styling for various graphical elements based 
