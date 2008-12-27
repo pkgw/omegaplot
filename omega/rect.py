@@ -1110,7 +1110,7 @@ class RectPlot (Painter):
 
         return (rt, rr, rb, rl)
 
-    def _calcOuterExtents (self, ctxt, style):
+    def _calcOuterExtents (self, ctxt, style, minfw, minfh):
         trueoe = [0] * 4
         allocoe = [0] * 4
         any = [False] * 4
@@ -1138,23 +1138,26 @@ class RectPlot (Painter):
                     w, h = h, w
 
             # End second part of hack.
+
+            weff = max (w - minfw, 0)
+            heff = max (h - minfh, 0)
             
             if side == T:
                 trueoe[T] = max (trueoe[T], h)
-                allocoe[L] = max (allocoe[L], w * (1 - pos))
-                allocoe[R] = max (allocoe[R], w * pos)
+                allocoe[L] = max (allocoe[L], weff * (1 - pos))
+                allocoe[R] = max (allocoe[R], weff * pos)
             elif side == B:
                 trueoe[B] = max (trueoe[B], h)
-                allocoe[L] = max (allocoe[L], w * (1 - pos))
-                allocoe[R] = max (allocoe[R], w * pos)
+                allocoe[L] = max (allocoe[L], weff * (1 - pos))
+                allocoe[R] = max (allocoe[R], weff * pos)
             elif side == L:
                 trueoe[L] = max (trueoe[L], w)
-                allocoe[B] = max (allocoe[B], h * (1 - pos))
-                allocoe[T] = max (allocoe[T], h * pos)
+                allocoe[B] = max (allocoe[B], heff * (1 - pos))
+                allocoe[T] = max (allocoe[T], heff * pos)
             elif side == R:
                 trueoe[R] = max (trueoe[R], w)
-                allocoe[B] = max (allocoe[B], h * (1 - pos))
-                allocoe[T] = max (allocoe[T], h * pos)
+                allocoe[B] = max (allocoe[B], heff * (1 - pos))
+                allocoe[T] = max (allocoe[T], heff * pos)
 
         opad = self.outerPadding * style.smallScale
 
@@ -1188,27 +1191,44 @@ class RectPlot (Painter):
         
         return [exteriors[i] + max (s[i][0], prots[i]) for i in range (0, 4)]
 
+
     def getMinimumSize (self, ctxt, style):
-        # First, we figure out how much space our axes need. Then, we
-        # add to that the amount of space that our outer painters need.
-        # Then, we incorporate what the fieldpainters need.
+        # Get minimum size of plot field based on field painters.
 
-        s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
-        self.ext_axis = self._calcExteriors ([0] * 4, s)
-        
-        oe_true, oe_alloc = self._calcOuterExtents (ctxt, style)
-
-        combined = [self.ext_axis[i] + oe_alloc[i] \
-                    for i in range (0, 4)]
-
-        self.ext_total = [self.ext_axis[i] + oe_true[i] \
-                          for i in range (0, 4)]
-
-        # Field painters
         fw, fh = 0, 0
         for fp in self.fpainters:
             w, h = fp.getMinimumSize (ctxt, style)
             fw, fh = max (fw, w), max (fh, h)
+
+        #print 'new fwh', fw, fh
+        
+        # Minimum sizes outside of field based on requirements from
+        # axis painters.
+
+        s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
+        #print 'new s', s
+        self.ext_axis = self._calcExteriors ([0] * 4, s)
+        #print 'new ext_axis', self.ext_axis
+
+        # Even further outside of field requirements based on outer
+        # painters, taking into account the minimum field size.
+        
+        oe_true, oe_alloc = self._calcOuterExtents (ctxt, style, fw, fh)
+        #print 'new oe_true', oe_true
+        #print 'new oe_alloc', oe_alloc
+
+        # Add it all up.
+        
+        combined = [self.ext_axis[i] + oe_alloc[i]
+                    for i in range (0, 4)]
+        #print 'new combined', combined
+
+        self.ext_total = [self.ext_axis[i] + oe_true[i]
+                          for i in range (0, 4)]
+        #print 'new ext_total', self.ext_total
+
+        #print 'new retval', combined[1] + combined[3] + fw, \
+        #      combined[0] + combined[2] + fh
 
         return combined[1] + combined[3] + fw, \
                combined[0] + combined[2] + fh
