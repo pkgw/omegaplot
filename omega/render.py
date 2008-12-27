@@ -43,9 +43,9 @@ BigImageMargins = (4, 4, 4, 4)
 
 
 class PSPager (Pager):
-    def __init__ (self, filename, pagedims_in_points, margins, style):
+    def __init__ (self, filename, pagedims_in_points, margins, style, smartOrient=True):
         w, h = pagedims_in_points
-        landscape = w > h
+        landscape = w > h and smartOrient
 
         if landscape:
             surf = cairo.PSSurface (filename, h, w)
