@@ -1388,6 +1388,15 @@ class GenericKeyPainter (Painter):
 
         return w, h
 
+    
+    def H_getTextWidth (self):
+        return self.tw
+
+
+    def H_forceTextWidth (self, tw):
+        self.tw = tw
+
+
     def doPaint (self, ctxt, style):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
