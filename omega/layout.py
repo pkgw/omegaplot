@@ -330,7 +330,10 @@ class VBox (Painter):
         dw = 0
         maxSPW = 0 # max size per weight
         totwt = 0
-        
+        H_maxtw = 0
+
+        from rect import GenericKeyPainter # HACK XXX FIXME H_
+
         for i in xrange (0, self.size):
             (ptr, wt, oldminh) = self._elements[i]
             childw, childh = ptr.getMinimumSize (ctxt, style)
@@ -345,6 +348,19 @@ class VBox (Painter):
             
             totwt += wt
             #print i, childh, minh
+
+            # HACK FIXME XXX H_ to make key boxes look nice
+
+            if isinstance (ptr, GenericKeyPainter):
+                H_maxtw = max (H_maxtw, ptr.H_getTextWidth ())
+
+        # HACK FIXME XXX H_
+
+        if H_maxtw > 0:
+            for i in xrange (0, self.size):
+                (ptr, wt, oldminh) = self._elements[i]
+                if isinstance (ptr, GenericKeyPainter):
+                    ptr.H_forceTextWidth (H_maxtw)
 
         minw += dw
         minh += maxSPW * totwt
