@@ -103,10 +103,10 @@ class BitmapSizes (Sizes):
 
 
 class VectorSizes (Sizes):
-    smallScale = 2
-    largeScale = 5
-    fineLine = 1
-    thickLine = 2
+    smallScale = 1.5
+    largeScale = 4.5
+    fineLine = 0.5
+    thickLine = 1
     normalFontSize = 12
 
 
@@ -138,15 +138,15 @@ class BlackOnWhiteColors (Colors):
         if stylenum == 0:
             c = (0.9, 0.1, 0.1)
         elif stylenum == 1:
-            c = (0.2, 0.9, 0.9)
+            c = (0, 0.1, 0.7)
         elif stylenum == 2:
             c = (0.1, 0.9, 0.4)
         elif stylenum == 3:
-            c = (0.7, 0.7, 0)
+            c = (0.2, 0.9, 0.9)
         elif stylenum == 4:
             c = (0.7, 0, 0.7)
         elif stylenum == 5:
-            c = (0, 0.1, 0.7)
+            c = (0.8, 0.6, 0)
 
         return c
 
@@ -163,15 +163,15 @@ class WhiteOnBlackColors (Colors):
         if stylenum == 0:
             c = (0.9, 0.1, 0.1)
         elif stylenum == 1:
-            c = (0.2, 0.9, 0.9)
+            c = (0, 0.1, 0.7)
         elif stylenum == 2:
             c = (0.1, 0.9, 0.4)
         elif stylenum == 3:
-            c = (0.7, 0.7, 0)
+            c = (0.2, 0.9, 0.9)
         elif stylenum == 4:
             c = (0.7, 0, 0.7)
         elif stylenum == 5:
-            c = (0, 0.1, 0.7)
+            c = (0.8, 0.6, 0)
 
         return c
 
