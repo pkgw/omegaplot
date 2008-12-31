@@ -331,8 +331,9 @@ def _render_svg (snips, outbase, header, cfg):
     else: svgtmpl = outbase + '.svg'
 
     dvifile = _makeDvi (snips, outbase, header, cfg)
-
+    
     try:
+        epss = [] # in case makesvgs dies
         epss, svgs = _makeSvgs (dvifile, outbase, svgtmpl, count, cfg)
     finally:
         _recklessUnlink (dvifile, cfg)
