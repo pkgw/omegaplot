@@ -139,7 +139,7 @@ class PagerWindow (gtk.Window):
     __gsignals__ = { 'key-press-event' : 'override' }
 
     
-    def __init__ (self, blocking, autoRepaint, parent=None):
+    def __init__ (self, blocking, autoRepaint, style=None, parent=None):
         gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
         
         self.set_title ('OmegaPlot Pager')
@@ -150,7 +150,8 @@ class PagerWindow (gtk.Window):
         #self.set_urgency_hint (True)
 
         if parent is not None: self.set_transient_for (parent)
-
+        if style is None: style = _defaultStyle ()
+        
         # Construct simple widget heirarchy.
         # We don't create the OmegaPainter until we have something
         # to paint.
@@ -158,8 +159,7 @@ class PagerWindow (gtk.Window):
         self.vb = vb = gtk.VBox ()
         self.add (vb)
 
-        self.op = op = OmegaPainter (None, _defaultStyle (), 
-                                     autoRepaint, False)
+        self.op = op = OmegaPainter (None, style, autoRepaint, False)
         self.vb.pack_start (op, True, True, 4)
 
         if not blocking:
@@ -193,8 +193,9 @@ class NoLoopDisplayPager (render.DisplayPager):
     # running. We start and stop the mainloop as needed to
     # show the plots briefly.
     
-    def __init__ (self, parent=None):
+    def __init__ (self, style=None, parent=None):
         self.win = None
+        self.style = style
         self.parent = parent
 
 
@@ -220,7 +221,7 @@ class NoLoopDisplayPager (render.DisplayPager):
 
 
     def _makeWin (self):
-        win = PagerWindow (True, False, self.parent)
+        win = PagerWindow (True, False, self.style, self.parent)
         win.connect ('destroy', self._winDestroyed)
         win.btn.connect ('clicked', self._nextClicked)
         return win
@@ -259,8 +260,9 @@ class YesLoopDisplayPager (render.DisplayPager):
     # running in the background. This is taken to imply that
     # we're running interactively.
     
-    def __init__ (self, parent=None):
+    def __init__ (self, style=None, parent=None):
         self.win = None
+        self.style = style
         self.parent = parent
 
 
@@ -277,7 +279,7 @@ class YesLoopDisplayPager (render.DisplayPager):
 
 
     def _makeWin (self):
-        win = PagerWindow (False, interactiveAutoRepaint, self.parent)
+        win = PagerWindow (False, interactiveAutoRepaint, self.style, self.parent)
         win.connect ('destroy', self._winDestroyed)
         return win
 
