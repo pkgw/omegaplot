@@ -307,7 +307,7 @@ class LinearAxisPainter (BlankAxisPainter):
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
     labelMinorTicks = False # draw value labels at the minor tick points?
-
+    
     def nudgeBounds (self):
         span = self.axis.max - self.axis.min
 
@@ -446,8 +446,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         self.axis = axis
 
     labelSeparation = 2 # in smallScale
-    numFormat = '$10^{%d}$' # can be a function mapping float -> str
-    formatLogValue = True # if true, format log10(x value), not the raw x value
+    formatLogValue = False # if true, format log10(value), not the raw value
     majorTickScale = 2 # in largeScale
     minorTickScale = 2 # in smallScale
     tickStyle = 'bgLinework' # style ref.
@@ -455,44 +454,46 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
     labelMinorTicks = False # draw value labels at the minor tick points?
+    labelSomeMinorTicks = False # label 3x and 6x minor ticks?
 
     def nudgeBounds (self):
         self.axis.logmin = N.floor (self.axis.logmin)
         self.axis.logmax = N.ceil (self.axis.logmax)
 
-    def formatLabel (self, val):
-        if self.formatLogValue: val = N.log10 (val)
+    def formatLabel (self, coeff, exp):
+        if callable (self.numFormat): return self.numFormat (coeff, exp)
+
+        if self.formatLogValue: val = exp + N.log10 (coeff)
+        else: val = coeff * 10.**exp
         
-        if callable (self.numFormat): return self.numFormat (val)
         return self.numFormat % (val)
 
+    def numFormat (self, coeff, exp):
+        if abs (exp) < 3:
+            return '$%d$' % (coeff * 10.**exp)
+
+        if coeff == 1:
+            return '$10^{%d}$' % exp
+
+        return r'$%d\cdot\!10^{%d}$' % (coeff, exp)
+    
     def getTickLocations (self):
         # Tick spacing variables
 
         curpow = int (N.floor (self.axis.logmin))
-        inc = 10. ** curpow
-        coeff = int (N.ceil (10. ** self.axis.logmin / inc)) - 1
-        val = inc * (coeff + 1)
+        coeff = int (N.ceil (10. ** (self.axis.logmin - curpow)))
 
-        if coeff == 0:
-            # The loop bumps this up again.
-            curpow -= 1
-            inc /= 10.
+        while self.axis.inbounds (coeff*10.**curpow):
+            v = self.axis.transform (coeff*10.**curpow)
+            maj = coeff == 1
             
-        while self.axis.inbounds (val):
-            v = self.axis.transform (val)
+            yield (coeff, curpow, v, maj)
 
-            if coeff % 9 == 0:
-                # Avoid rounding errors by nudging our variables.
+            if coeff == 9:
+                coeff = 1
                 curpow += 1
-                inc = 10. ** curpow
-                val = inc
-                yield (val, v, True)
             else:
-                yield (val, v, False)
-
-            val += inc
-            coeff += 1
+                coeff += 1
 
     def getLabelInfos (self, ctxt, style):
         # Create the TextStamper objects all at once, so that if we
@@ -502,10 +503,15 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         
         labels = []
         
-        for (val, xformed, isMajor) in self.getTickLocations ():
-            if not isMajor and not self.labelMinorTicks: continue
+        for (coeff, exp, xformed, isMajor) in self.getTickLocations ():
+            if self.labelMinorTicks:
+                pass
+            elif self.labelSomeMinorTicks:
+                if not isMajor and coeff != 3 and coeff != 6: continue
+            else:
+                if not isMajor: continue
 
-            s = self.formatLabel (val)
+            s = self.formatLabel (coeff, exp)
 
             labels.append ((TextStamper (s), xformed, isMajor))
 
@@ -528,7 +534,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
         style.apply (ctxt, self.tickStyle)
 
-        for (val, xformed, isMajor) in self.getTickLocations ():
+        for (coeff, exp, xformed, isMajor) in self.getTickLocations ():
             if isMajor: len = self.majorTickScale * style.largeScale
             else: len = self.minorTickScale * style.smallScale
             
