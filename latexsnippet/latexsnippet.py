@@ -278,7 +278,7 @@ def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
             _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0], 
                                                           sktmpl, shutflag), cfg)
         skfiles = [sktmpl]
-        bboxes = [_getBBox (epstmpl)]
+        bboxes = [_getBBox (epsfiles[0])]
     else:
         skfiles = []
         bboxes = []
