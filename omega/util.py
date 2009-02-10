@@ -46,6 +46,12 @@ def quickXY (*args, **kwargs):
 :type ymax: float
 :param ymax: The upper Y bound of the plot. Analogous semantics to
              *xmin*.
+:type xlog: bool
+:param xlog: Whether the X axis should be rendered logarithmically.
+             Defaults to :const:`False`.
+:type ylog: bool
+:param ylog: Whether the Y axis should be rendered logarithmically.
+             Defaults to :const:`False`.
 :type lines: bool
 :param lines: Whether to connect the data points with lines. If 
               :const:`False`, the data points are instead marked
@@ -108,10 +114,17 @@ and display a plot object::
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
     ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
+    xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
+    ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
     
     rp = rect.RectPlot ()
     rp.addXY (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
+    rp.setLinLogAxes (xlog, ylog)
+
+    if xlog or ylog:
+        rp.rebound ()
+    
     return rp
 
 def quickXYErr (*args, **kwargs):
@@ -119,10 +132,17 @@ def quickXYErr (*args, **kwargs):
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
     ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
+    xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
+    ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
     
     rp = rect.RectPlot ()
     rp.addXYErr (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
+    rp.setLinLogAxes (xlog, ylog)
+
+    if xlog or ylog:
+        rp.rebound ()
+    
     return rp
 
 def quickHist (data, bins=10, range=None, normed=False, **kwargs):
