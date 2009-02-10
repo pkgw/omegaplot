@@ -471,7 +471,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     def numFormat (self, coeff, exp):
         if exp >= 0 and exp < 3:
             return '$%.0f$' % (coeff * 10.**exp)
-        if exp > -3:
+        if exp > -3 and exp < 0:
             return '$%.*f$' % (-exp, coeff * 10.**exp)
 
         if coeff == 1:
