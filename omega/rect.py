@@ -311,7 +311,17 @@ class LinearAxisPainter (BlankAxisPainter):
     def nudgeBounds (self):
         span = self.axis.max - self.axis.min
 
-        if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
+        if span == 0:
+            if self.axis.max == 0:
+                self.axis.min = -1
+                self.axis.max = 1
+                return
+
+            self.axis.min *= 0.95
+            self.axis.max *= 1.05
+            return
+        
+        if span < 0.: raise ValueError ('Illegal axis range: min > max.')
         
         mip = N.floor (N.log10 (span)) # major interval power
         step = 10. ** mip
