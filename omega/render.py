@@ -23,6 +23,11 @@ class Pager (object):
         raise NotImplementedError ()
 
 
+    def sendMany (self, piter):
+        for p in piter:
+            self.send (p)
+
+
     def done (self):
         raise NotImplementedError ()
 
