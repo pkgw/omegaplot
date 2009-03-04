@@ -119,6 +119,7 @@ class VectorSizes (Sizes):
 class Colors (object):
     background = None
     foreground = None
+    muted = None
     faint = None
 
 
@@ -129,7 +130,8 @@ class Colors (object):
 class BlackOnWhiteColors (Colors):
     background = (1, 1, 1)
     foreground = (0, 0, 0)
-    faint = (0.3, 0.3, 0.3)
+    muted = (0.3, 0.3, 0.3)
+    faint = (0.9, 0.9, 0.9)
 
 
     def getDataColor (self, stylenum):
@@ -154,7 +156,8 @@ class BlackOnWhiteColors (Colors):
 class WhiteOnBlackColors (Colors):
     background = (0, 0, 0)
     foreground = (1, 1, 1)
-    faint = (0.7, 0.7, 0.7)
+    muted = (0.7, 0.7, 0.7)
+    faint = (0.15, 0.15, 0.15)
 
 
     def getDataColor (self, stylenum):
@@ -298,7 +301,7 @@ class Roles (object):
 class DefaultRoles (Roles):
     def apply_bgLinework (self, ctxt, style):
         ctxt.set_line_width (style.sizes.fineLine)
-        ctxt.set_source_rgb (*style.colors.faint)
+        ctxt.set_source_rgb (*style.colors.muted)
 
 
     def apply_strongLine (self, ctxt, style):
@@ -311,10 +314,7 @@ class DefaultRoles (Roles):
         # so it would be best to avoid any use of the
         # alpha channel by default in any of our styles.
 
-        ctxt.set_source_rgba (style.colors.foreground[0],
-                              style.colors.foreground[1],
-                              style.colors.foreground[2],
-                              0.2)
+        ctxt.set_source_rgb (*style.colors.faint)
 
 # Now put them all together
 
