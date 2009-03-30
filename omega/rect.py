@@ -1831,3 +1831,63 @@ class XBand (FieldPainter):
         if self.stroke: ctxt.stroke ()
         if self.fill: ctxt.fill ()
         ctxt.restore ()
+
+class VEnvelope (FieldPainter):
+    """Paint a vertical envelope region."""
+
+    style = 'genericBand'
+    needsPrimaryStyle = False
+    primaryStyleNum = None
+    stroke = False
+    fill = True
+
+    def __init__ (self, keyText='VEnvelope', stroke=False, fill=True):
+        Painter.__init__ (self)
+
+        self.stroke = stroke
+        self.fill = fill
+        self.keyText = keyText
+
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 2)
+
+    def getDataBounds (self):
+        ign, ign, x, ys = self.data.get (self.cinfo)
+
+        if N.any (ys[0] > ys[1]):
+            raise RuntimeError ('First y column must always be less than second y column.')
+
+        return x.min (), x.max (), ys[0].min (), ys[0].max ()
+
+    def getKeyPainter (self):
+        # FIXME
+        return None
+
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        ign, ign, x, ys = self.data.getMapped (self.cinfo, self.xform)
+        x = x[0]
+        ylo, yhi = ys
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+
+        ctxt.move_to (x[0], yhi[0])
+
+        for i in xrange (1, yhi.size):
+            if x[i] < x[i-1]:
+                raise RuntimeError ('x values must be sorted')
+            ctxt.line_to (x[i], yhi[i])
+
+        for i in xrange (yhi.size - 1, -1, -1):
+            ctxt.line_to (x[i], ylo[i])
+
+        ctxt.close_path ()
+
+        if self.stroke: ctxt.stroke ()
+        if self.fill: ctxt.fill ()
+
+        ctxt.restore ()
