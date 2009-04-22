@@ -63,7 +63,7 @@ class _ArrayGrower (object):
 
 
 def contourValue (data, rowcoords, colcoords, value):
-    """Trace out contours of 2D array 'data', which describes data
+    """Compute contours of 2D array 'data', which describes data
     points living on a regular grid. 'rowcoords' and 'colcoords' are
     1D arrays giving the coordinate values of the first and second
     indices of 'data', respectively. 'value' is the value to contour
@@ -317,7 +317,14 @@ def contourValue (data, rowcoords, colcoords, value):
 
 
 def contourValues (data, rowcoords, colcoords, values):
-    """
+    """Compute contours of the 2D array 'data' at multiple
+    values. See documentation for the function 'contourValue' for
+    documentation of arguments. 'values' is an iterable of values
+    that are contoured.
+
+    Returns a dictionary mapping from each distinct value in 'values'
+    into a list of 2D arrays as returned by 'contourValue'. If a value
+    is listed repeatedly in 'values', it is contoured only once.
     """
 
     retval = {}
@@ -331,3 +338,107 @@ def contourValues (data, rowcoords, colcoords, values):
 
 
 __all__ = ['contourValue', 'contourValues']
+
+
+# Functions for generating helpful 'values' arrays.
+
+_defaultN = 10
+
+def valsLinRange (lower, upper, pad=False, n=_defaultN):
+    n = int (n)
+
+    if pad:
+        d = float (upper - lower) / (n + 1)
+    else:
+        d = 0
+
+    return N.linspace (lower + d, upper - d, n)
+
+
+def valsLogRange (lower, upper, pad=False, n=_defaultN):
+    return N.exp (valsLinRange (N.log (lower), N.log (upper), pad, n))
+
+
+def rangeBounds (data):
+    data = N.asarray (data)
+    return data.min (), data.max ()
+
+
+def valsLinBounds (data, n=_defaultN):
+    mn, mx = rangeBounds (data)
+    return valsLinRange (mn, mx, True, n)
+
+
+def valsLogBounds (data, n=_defaultN):
+    mn, mx = rangeBounds (data)
+    return valsLogRange (mn, mx, True, n)
+
+
+def rangeRMSMax (data, frms, fmax):
+    data = N.asarray (data)
+    return frms * N.sqrt ((data**2).mean ()), fmax * data.max ()
+
+
+def valsLinRMSMax (data, frms, fmax, n=_defaultN):
+    mn, mx = rangeRMSMax (data, frms, fmax)
+    return valsLinRange (mn, mx, False, n)
+
+
+def valsLogRMSMax (data, frms, fmax, n=_defaultN):
+    mn, mx = rangeRMSMax (data, frms, fmax)
+    return valsLogRange (mn, mx, False, n)
+
+
+def contourAuto (data, rowcoords, colcoords, range='b', space='lin',
+                 n=_defaultN, values=None, frms=3, fmax=0.75):
+    """Compute contours of the 2D array 'data', which describes data
+    points living on a regular grid. 'rowcoords' and 'colcoords' are
+    1D arrays giving the coordinate values of the first and second
+    indices of 'data', respectively. The values to contour can be
+    determined automatically or specified by the user.
+
+    'range': 'b' for dataset bounds, 'rm' for RMS/Max bounds, or
+      a 2-element indexable for user-specified bounds
+
+    'space': 'lin' for linear, 'log' for logarithmic
+
+    'n': the number of values between the bounds
+
+    'values': just use the values specified in this arraylike
+
+    'frms': use frms * RMS(data) for the lower bound in RMS/Max
+
+    'fmax': use fmax * max(data) for the upper bound in RMS/Max
+
+    Returns a dict of lists of arrays, {value: [contour1,
+    ...contourN]}
+
+    Oh god this documentation is so poor.
+
+    """
+    if values is not None:
+        values = N.asarray (values)
+    else:
+        if range == 'b':
+            r = rangeBounds (data)
+            pad = True
+        elif range == 'rm':
+            r = rangeRMSMax (data, frms, fmax)
+            pad = False
+        elif len (range) == 2:
+            r = range
+            pad = False
+        else:
+            raise ValueError ('Unhandled range value %s' % range)
+
+        if space == 'lin':
+            values = valsLinRange (r[0], r[1], pad, n)
+        elif space == 'log':
+            values = valsLogRange (r[0], r[1], pad, n)
+
+    return contourValues (data, rowcoords, colcoords, values)
+
+
+__all__ += ['valsLinRange', 'valsLogRange', 'rangeBounds',
+            'valsLinBounds', 'valsLogBounds', 'rangeRMSMax',
+            'valsLinRMSMax', 'valsLogRMSMax', 'contourAuto']
