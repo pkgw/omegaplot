@@ -1,9 +1,9 @@
 # ACLOCAL_AMFLAGS = -I . --install
 ACLOCAL_AMFLAGS = -I .
 
-DIST_SUBDIRS = latexsnippet omega demo doc
+DIST_SUBDIRS = oputil omega demo doc
 
-SUBDIRS = latexsnippet omega demo
+SUBDIRS = oputil omega demo
 
 if BUILD_DOCS
 SUBDIRS += doc

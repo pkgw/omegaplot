@@ -1,5 +1,5 @@
 import cairo
-import latexsnippet
+from oputil import latexsnippet
 import atexit
 
 from base import *

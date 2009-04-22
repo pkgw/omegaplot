@@ -24,7 +24,7 @@ doc/conf.py
 doc/doctrees
 doc/html
 doc/*.sphstamp
-latexsnippet/Makefile
-latexsnippet/Makefile.in
+oputil/Makefile
+oputil/Makefile.in
 omega/Makefile
 omega/Makefile.in

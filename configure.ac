@@ -103,7 +103,7 @@ dnl All done.
 
 AC_CONFIG_FILES([
 Makefile
-latexsnippet/Makefile
+oputil/Makefile
 omega/Makefile
 demo/Makefile
 doc/Makefile
