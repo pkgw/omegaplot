@@ -44,6 +44,13 @@ if $BUILD_DOCS ; then
    AC_CONFIG_FILES([doc/conf.py])
 fi
 
+dnl We use this in the doc/ install rule. On my Fedora 10 computers this
+dnl subst wasn't needed but on a SuSE 10.2 it was -- I think that older
+dnl (<=1.9) automakes don't define this automatically whereas newer ones
+dnl do.
+AC_PROG_MKDIR_P
+AC_SUBST([MKDIR_P])
+
 dnl Configuration checks for latexsnippet -- need to make
 dnl sure that we have latex, dvips, pstoedit, and the preview package
 dnl installed.

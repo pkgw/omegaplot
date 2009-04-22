@@ -1,10 +1,13 @@
-noinst_DATA = \
+dist_noinst_DATA = \
  apiref.txt \
  common.inc \
  index.txt \
  intro.txt \
  omega.txt \
  omega_util.txt
+
+# Hack: make sure the empty 'static' directory gets created
+EXTRA_DIST = static/.gitignore
 
 SCANNEDPY = \
  $(top_srcdir)/omega/__init__.py \
