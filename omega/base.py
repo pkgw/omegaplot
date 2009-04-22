@@ -679,6 +679,11 @@ class ImagePainter (_ImagePainterBase):
 # Expandable keyword arg handling
 
 def _kwordDefaulted (kwargs, name, coerce, default):
+    # This routine is useful if we want our routine to
+    # accept keyword arguments, but we also want to take
+    # *args arguments, which preclude standard keyword
+    # arguments.
+
     if name not in kwargs:
         return default
 
@@ -689,6 +694,24 @@ def _kwordDefaulted (kwargs, name, coerce, default):
     
     del kwargs[name]
     return val
+
+
+def _kwordExtract (kwargs, *names):
+    # This routine is useful if we want to pass parts
+    # of **kwargs on to different subroutines. It will
+    # extract the named keywords into a separate dictionary
+    # that can be used as a **kwargs in a function call
+    # and remove them from our **kwargs.
+
+    retval = {}
+
+    for n in names:
+        if n in kwargs:
+            retval[n] = kwargs[n]
+            del kwargs[n]
+
+    return retval
+
 
 def _checkKwordsConsumed (kwargs):
     if len (kwargs) == 0: return

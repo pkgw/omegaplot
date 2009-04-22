@@ -164,6 +164,20 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     return rp
 
 
+def quickContours (data, rowcoords, colcoords, keyText='Contours',
+                   xmin=None, xmax=None, ymin=None, ymax=None,
+                   xlog=False, ylog=False, **kwargs):
+    rp = rect.RectPlot ()
+    rp.addContours (data, rowcoords, colcoords, keyText, **kwargs)
+    rp.setBounds (xmin, xmax, ymin, ymax)
+    rp.setLinLogAxes (xlog, ylog)
+
+    if xlog or ylog:
+        rp.rebound ()
+
+    return rp
+
+
 # A function to easily make a demo plot to make testing of 
 # rendering features quick. The purpose of these is not
 # to demonstrate fancy plots, but just to give something

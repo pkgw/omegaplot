@@ -2,7 +2,8 @@
 
 import numpy as N
 from base import *
-from base import _TextPainterBase, _kwordDefaulted, _checkKwordsConsumed
+from base import (_TextPainterBase, _kwordDefaulted,
+                  _kwordExtract, _checkKwordsConsumed)
 from layout import RightRotationPainter
 
 class RectDataHolder (DataHolder):
@@ -879,7 +880,18 @@ class RectPlot (Painter):
 
         return self.add (dp, **kwargs)
 
+
+    def addContours (self, data, rowcoords, colcoords, keyText='Contours',
+                     **kwargs):
+        dp = GridContours (keyText=keyText, **_kwordExtract (kwargs, 'lineStyle'))
+
+        kadd = _kwordExtract (kwargs, 'autokey', 'rebound', 'nudgex',
+                              'nudgey', 'stylenum')
         
+        dp.setData (data, rowcoords, colcoords, **kwargs)
+
+        return self.add (dp, **kadd)
+
     
     def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
@@ -1889,5 +1901,86 @@ class VEnvelope (FieldPainter):
 
         if self.stroke: ctxt.stroke ()
         if self.fill: ctxt.fill ()
+
+        ctxt.restore ()
+
+class GridContours (FieldPainter):
+    """Paint contours computed from gridded data."""
+
+    lineStyle = None
+    needsPrimaryStyle = True
+    primaryStyleNum = None
+
+    def __init__ (self, computed=None, lineStyle=None, keyText='Contours'):
+        super (GridContours, self).__init__ ()
+
+        self.lineStyle = lineStyle
+        self.keyText = keyText
+        self.computed = computed
+
+
+    def setComputed (self, computed):
+        self.computed = computed
+
+
+    def setData (self, data, rowcoords, colcoords, **kwargs):
+        from oputil.contourgrid import contourAuto
+        self.computed = contourAuto (data, rowcoords, colcoords, **kwargs)
+
+
+    def getDataBounds (self):
+        if self.computed is None:
+            # could return all Nones...
+            raise RuntimeError ('Must set contour data before computing bounds!')
+
+        xmin = xmax = ymin = ymax = None
+
+        for k, cntrs in self.computed.iteritems ():
+            for cntr in cntrs:
+                if xmin is None:
+                    xmin = cntr[0].min ()
+                    xmax = cntr[0].max ()
+                    ymin = cntr[1].min ()
+                    ymax = cntr[1].max ()
+                else:
+                    xmin = min (xmin, cntr[0].min ())
+                    xmax = max (xmax, cntr[0].max ())
+                    ymin = min (ymin, cntr[1].min ())
+                    ymax = max (ymax, cntr[1].max ())
+
+        return xmin, xmax, ymin, ymax
+
+
+    def getKeyPainter (self):
+        if self.keyText is None: return None
+
+        # XXX tmp.
+        return None
+
+
+    def doPaint (self, ctxt, style):
+        super (GridContours, self).doPaint (ctxt, style)
+
+        # FIXME: different line styles and this and that
+
+        ctxt.save ()
+        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.apply (ctxt, self.lineStyle)
+
+        for k, cntrs in self.computed.iteritems ():
+            for cntr in cntrs:
+                x = self.xform.mapX (cntr[0])
+                y = self.xform.mapY (cntr[1])
+
+                ctxt.move_to (x[0], y[0])
+
+                for i in xrange (1, x.size):
+                    ctxt.line_to (x[i], y[i])
+
+                    if i > 0 and i % 100 == 0:
+                        ctxt.stroke ()
+                        ctxt.move_to (x[i], y[i])
+
+                ctxt.stroke ()
 
         ctxt.restore ()
