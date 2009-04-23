@@ -1572,8 +1572,7 @@ class LineOnlyKeyPainter (GenericKeyPainter):
 
 
     def _applyStampStyle (self, style, ctxt):
-        style.applyDataStamp (ctxt, self.owner.primaryStyleNum)
-        style.apply (ctxt, self.owner.stampStyle)
+        pass
 
 
 class DiscreteSteppedPainter (FieldPainter):
@@ -1954,8 +1953,7 @@ class GridContours (FieldPainter):
     def getKeyPainter (self):
         if self.keyText is None: return None
 
-        # XXX tmp.
-        return None
+        return LineOnlyKeyPainter (self)
 
 
     def doPaint (self, ctxt, style):
