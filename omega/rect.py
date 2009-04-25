@@ -1333,14 +1333,6 @@ class RectPlot (Painter):
     def doPaint (self, ctxt, style):
         """Paint the rectangular plot: axes and data items."""
 
-        # Axes
-        
-        ctxt.save ()
-        ctxt.translate (self.ext_total[3], self.ext_total[0])
-        self._axisApplyHelper (self.fieldw, self.fieldh, \
-                               'paint', ctxt, style)
-        ctxt.restore ()
-
         # Clip to the field, then paint the field items.
         
         ctxt.save ()
@@ -1351,6 +1343,14 @@ class RectPlot (Painter):
         for fp in self.fpainters:
             fp.paint (ctxt, style)
 
+        ctxt.restore ()
+
+        # Axes
+
+        ctxt.save ()
+        ctxt.translate (self.ext_total[3], self.ext_total[0])
+        self._axisApplyHelper (self.fieldw, self.fieldh, \
+                               'paint', ctxt, style)
         ctxt.restore ()
 
         # Now, outer painters
