@@ -1,3 +1,7 @@
+This file is no longer maintained. For descriptions of changes, please
+consult the Git repository history. The information below has been
+preserved for consultation if it happens to be of use.
+
 2007-09-11  Peter Williams  <peter@newton.cx>
 
 	* omega/__init__.py (MQD): Ah, fuck it, commit this utility thingie.
