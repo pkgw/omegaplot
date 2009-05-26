@@ -892,6 +892,16 @@ class RectPlot (Painter):
 
         return self.add (dp, **kadd)
 
+
+    def addHLine (self, ypos, keyText='HLine', lineStyle=None, **kwargs):
+        dp = HLine (ypos, keyText=keyText, lineStyle=lineStyle)
+        return self.add (dp, **kwargs)
+
+
+    def addVLine (self, xpos, keyText='VLine', lineStyle=None, **kwargs):
+        dp = VLine (xpos, keyText=keyText, lineStyle=lineStyle)
+        return self.add (dp, **kwargs)
+
     
     def rebound (self, nudgex=True, nudgey=True):
         """Recalculate the bounds of the default field based on the data
@@ -1803,6 +1813,75 @@ class AbsoluteFieldOverlay (FieldPainter):
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
         self.child.paint (ctxt, style)
+
+
+class HLine (FieldPainter):
+    lineStyle = None
+    needsPrimaryStyle = True
+    primaryStyleNum = None
+
+    def __init__ (self, ypos=0., keyText='HLine', lineStyle=None):
+        super (HLine, self).__init__ ()
+
+        self.ypos = ypos
+        self.keyText = keyText
+        self.lineStyle = lineStyle
+
+    def getDataBounds (self):
+        return (None, None, self.ypos, self.ypos)
+
+    def getKeyPainter (self):
+        if self.keyText is None: return None
+
+        return LineOnlyKeyPainter (self)
+
+    def doPaint (self, ctxt, style):
+        super (HLine, self).doPaint (ctxt, style)
+
+        y = self.xform.mapY (self.ypos)
+
+        ctxt.save ()
+        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.apply (ctxt, self.lineStyle)
+        ctxt.move_to (0, y)
+        ctxt.line_to (self.width, y)
+        ctxt.stroke ()
+        ctxt.restore ()
+
+
+class VLine (FieldPainter):
+    lineStyle = None
+    needsPrimaryStyle = True
+    primaryStyleNum = None
+
+    def __init__ (self, xpos=0., keyText='VLine', lineStyle=None):
+        super (VLine, self).__init__ ()
+
+        self.xpos = xpos
+        self.keyText = keyText
+        self.lineStyle = lineStyle
+
+    def getDataBounds (self):
+        return (self.xpos, self.xpos, None, None)
+
+    def getKeyPainter (self):
+        if self.keyText is None: return None
+
+        return LineOnlyKeyPainter (self)
+
+    def doPaint (self, ctxt, style):
+        super (VLine, self).doPaint (ctxt, style)
+
+        x = self.xform.mapX (self.xpos)
+
+        ctxt.save ()
+        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.apply (ctxt, self.lineStyle)
+        ctxt.move_to (x, 0)
+        ctxt.line_to (x, self.height)
+        ctxt.stroke ()
+        ctxt.restore ()
+
 
 class XBand (FieldPainter):
     style = 'genericBand'
