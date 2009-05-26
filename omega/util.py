@@ -153,7 +153,11 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     ymin = _kwordDefaulted (kwargs, 'ymin', float, 0.0)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
 
-    values, edges = histogram (data, bins, range, normed)
+    try:
+        values, edges = histogram (data, bins, range, normed, new=False)
+    except TypeError:
+        # Pre-1.2 numpy.
+        values, edges = histogram (data, bins, range, normed)
 
     fp = rect.ContinuousSteppedPainter (**kwargs)
     fp.setFloats (edges, values)
