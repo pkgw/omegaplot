@@ -324,16 +324,16 @@ class LinearAxisPainter (BlankAxisPainter):
         
         if span < 0.: raise ValueError ('Illegal axis range: min > max.')
         
-        mip = N.floor (N.log10 (span)) # major interval power
-        step = 10. ** mip
+        mip = int (N.floor (N.log10 (span))) # major interval power
+        step = 10 ** mip
 
         #if span / step > 8:
         #    # upgrade to bigger range
         #    mip += 1
         #    step *= 10
         
-        newmin = N.floor (self.axis.min / step) * step
-        newmax = N.ceil (self.axis.max / step) * step
+        newmin = int (N.floor (self.axis.min / step)) * step
+        newmax = int (N.ceil (self.axis.max / step)) * step
         
         #print 'NB:', span, N.log10 (span), mip, step, newmin, newmax
 
@@ -343,6 +343,7 @@ class LinearAxisPainter (BlankAxisPainter):
         if callable (self.numFormat): return self.numFormat (val)
         return self.numFormat % (val)
 
+
     def getTickLocations (self):
         # Tick spacing variables
         
@@ -350,7 +351,7 @@ class LinearAxisPainter (BlankAxisPainter):
 
         if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
         
-        mip = N.floor (N.log10 (span)) # major interval power
+        mip = int (N.floor (N.log10 (span))) # major interval power
 
         #print 'GTL:', span, N.log10 (span), mip
         
@@ -358,6 +359,15 @@ class LinearAxisPainter (BlankAxisPainter):
             # If we wouldn't have that many tickmarks, decrease MIP
             # to make the labels denser.
             mip -= 1
+
+        # NOTE: 'inc' can fall prey to floating-point inexactness,
+        # e.g. "0.2" really is 0.2 + 1.1e-17. This can be a problem
+        # when the bounds have been nudged to be nice and round 
+        # because the inexactness may accumulate as we increment
+        # 'val', resulting in the final tick not being drawn and
+        # labeled because 'val' is 6 + 1e-16, not 6 exactly. To
+        # combat this, we round off 'val' when it is at major tick,
+        # which have nice round values.
             
         inc = 10. ** mip / self.minorTicks # incr. between minor ticks
         coeff = int (N.ceil (self.axis.min / inc)) # coeff. of first tick
@@ -374,16 +384,21 @@ class LinearAxisPainter (BlankAxisPainter):
             zeroclamp = scale * 1e-6
         else:
             zeroclamp = None
-        
+
         while self.axis.inbounds (val):
-            if zeroclamp and abs(val) < zeroclamp:
-                val = 0.
-            
             v = self.axis.transform (val)
             yield (val, v, coeff % self.minorTicks == 0)
 
             val += inc
             coeff += 1
+
+            # Adjust the value here so that the inbounds
+            # test gets a better value to check.
+            if zeroclamp and abs(val) < zeroclamp:
+                val = 0.
+            if coeff % self.minorTicks == 0:
+                val = int (round (val / 10.**mip)) * 10**mip
+
 
     def getLabelInfos (self, ctxt, style):
         # Create the TextStamper objects all at once, so that if we
