@@ -114,6 +114,7 @@ class PSPager (Pager):
 def EPSPager (*args, **kwargs):
     # This is probably not the recommended way of doing this.
     kwargs['useEPS'] = True
+    kwargs['smartOrient'] = False
     return PSPager (*args, **kwargs)
 
 
