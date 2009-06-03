@@ -45,10 +45,13 @@ LetterDims = (11.0 * 72, 8.5 * 72)
 LetterMargins = (36, 36, 36, 36)
 BigImageSize = (800, 600)
 BigImageMargins = (4, 4, 4, 4)
+EPSDims = (384, 4 * 72) # 4:3 aspect ratio, 4 in tall
+EPSMargins = (8, 8, 8, 8)
 
 
 class PSPager (Pager):
-    def __init__ (self, filename, pagedims_in_points, margins, style, smartOrient=True):
+    def __init__ (self, filename, pagedims_in_points, margins, style, smartOrient=True,
+                  useEPS=False):
         w, h = pagedims_in_points
         landscape = w > h and smartOrient
 
@@ -56,6 +59,10 @@ class PSPager (Pager):
             surf = cairo.PSSurface (filename, h, w)
         else:
             surf = cairo.PSSurface (filename, w, h)
+
+        if useEPS:
+            # Cairo < 1.8 (?) doesn't support this
+            surf.set_eps (True)
 
         self.surf = surf
 
@@ -102,6 +109,12 @@ class PSPager (Pager):
         self.surf.finish ()
         self.surf = None
         self._rfunc = None
+
+
+def EPSPager (*args, **kwargs):
+    # This is probably not the recommended way of doing this.
+    kwargs['useEPS'] = True
+    return PSPager (*args, **kwargs)
 
 
 class PDFPager (Pager):
@@ -404,6 +417,7 @@ class ReusingPager (Pager):
 
 pagerInfo = [
  ('ps', PSPager, LetterDims, LetterMargins, styles.BlackOnWhiteVector),
+ ('eps', EPSPager, EPSDims, EPSMargins, styles.BlackOnWhiteVector),
  ('pdf', PDFPager, LetterDims, LetterMargins, styles.BlackOnWhiteVector),
  ('svg', SVGPager, LetterDims, LetterMargins, styles.BlackOnWhiteVector),
  ('png', PNGPager, BigImageSize, BigImageMargins, styles.BlackOnWhiteBitmap)
