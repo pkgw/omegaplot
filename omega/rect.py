@@ -1997,6 +1997,60 @@ class VEnvelope (FieldPainter):
 
         ctxt.restore ()
 
+
+class Polygon (FieldPainter):
+    """Paint a polygonal region."""
+
+    style = 'genericBand'
+    needsPrimaryStyle = False
+    primaryStyleNum = None
+    stroke = False
+    fill = True
+
+    def __init__ (self, keyText='Polygon', stroke=False, fill=True):
+        Painter.__init__ (self)
+
+        self.stroke = stroke
+        self.fill = fill
+        self.keyText = keyText
+
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+
+    def getDataBounds (self):
+        ign, ign, x, y = self.data.get (self.cinfo)
+
+        return x.min (), x.max (), y.min (), y.max ()
+
+    def getKeyPainter (self):
+        # FIXME
+        return None
+
+    def doPaint (self, ctxt, style):
+        FieldPainter.doPaint (self, ctxt, style)
+
+        ign, ign, x, y = self.data.getMapped (self.cinfo, self.xform)
+        x = x[0]
+        y = y[0]
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+
+        ctxt.move_to (x[0], y[0])
+
+        for i in xrange (1, y.size):
+            ctxt.line_to (x[i], y[i])
+
+        ctxt.close_path ()
+
+        if self.stroke: ctxt.stroke ()
+        if self.fill: ctxt.fill ()
+
+        ctxt.restore ()
+
+
 class GridContours (FieldPainter):
     """Paint contours computed from gridded data."""
 
