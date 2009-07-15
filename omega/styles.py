@@ -214,7 +214,7 @@ class MonochromeDataTheme (DataTheme):
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
 
-        u = style.largeScale
+        u = style.smallScale
         stylenum = stylenum % 5
 
         if stylenum == 0:
