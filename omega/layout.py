@@ -315,7 +315,7 @@ class LinearBox (Painter):
     
     def _lostChild (self, child):
         for i in xrange (0, self.size):
-            (ptr, wt, minh) = self._elements[i]
+            (ptr, wt, tmp, tmp, tmp) = self._elements[i]
 
             if ptr is child:
                 newptr = NullPainter ()

@@ -1194,7 +1194,8 @@ class RectPlot (Painter):
                     sz = op.getMinimumSize (ctxt, style)
 
             # End second part of hack.
-
+            # FIXME: ignoring opainter borders
+            w, h = sz[0:2]
             weff = max (w - minfw, 0)
             heff = max (h - minfh, 0)
             
@@ -1257,7 +1258,7 @@ class RectPlot (Painter):
             fw, fh = max (fw, w), max (fh, h)
 
         #print 'new fwh', fw, fh
-        
+
         # Minimum sizes outside of field based on requirements from
         # axis painters. Combine this with the minimal field size
         # to get the minimum central area size.
@@ -1267,8 +1268,8 @@ class RectPlot (Painter):
         self.pad_axis = self._calcAxisPadding (s)
         #print 'new pad_axis', self.pad_axis
 
-        mainw = fw + s[1] + s[3]
-        mainh = fh + s[0] + s[2]
+        mainw = fw + self.pad_axis[1] + self.pad_axis[3]
+        mainh = fh + self.pad_axis[0] + self.pad_axis[2]
         
         # The outer painters are considered to contribute to our border
         # requirements.
