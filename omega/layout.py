@@ -454,7 +454,7 @@ class LinearBox (Painter):
             self._elements[i][0].paint (ctxt, style)
 
 
-class VBox (Painter):
+class VBox (LinearBox):
     def _setHBorderSize (self, val):
         self.minBorderSize = val
 
@@ -487,7 +487,7 @@ class VBox (Painter):
         child.configurePainting (ctxt, style, minor, major, bmaj1, bmin1, bmaj2, bmin2)
 
 
-class HBox (Painter):
+class HBox (LinearBox):
     def _setHBorderSize (self, val):
         self.majBorderSize = val
 
