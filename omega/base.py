@@ -441,9 +441,11 @@ class Painter (object):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
         # need ctxt for measuring text, unless another way is found.
-        return 0, 0
+        # Return min_interior_width, min_interior_height, min_top_border,
+        # min_right_border, min_bot_border, min_left_border
+        return 0, 0, 0, 0, 0, 0
 
-    def configurePainting (self, ctxt, style, w, h):
+    def configurePainting (self, ctxt, style, w, h, btop, brt, bbot, bleft):
         p = self._getParent ()
         
         if p is None:
@@ -452,6 +454,7 @@ class Painter (object):
         self.matrix = ctxt.get_matrix ()
         self.width = w
         self.height = h
+        self.border = (btop, brt, bbot, bleft)
 
     def paint (self, ctxt, style):
         ctxt.save ()
@@ -459,6 +462,9 @@ class Painter (object):
         style.apply (ctxt, self.mainStyle)
         self.doPaint (ctxt, style)
         ctxt.restore ()
+
+    def doPaint (self, ctxt, style):
+        raise NotImplementedError ()
 
     def renderBasic (self, ctxt, style, w, h):
         # Must init the context before calling getMinimumSize
@@ -468,13 +474,18 @@ class Painter (object):
 
         style.initContext (ctxt, w, h)
 
-        minw, minh = self.getMinimumSize (ctxt, style)
+        szinfo = self.getMinimumSize (ctxt, style)
+        minw = szinfo[0] + szinfo[3] + szinfo[5]
+        minh = szinfo[1] + szinfo[2] + szinfo[4]
 
         if w < minw or h < minh:
             raise ContextTooSmallError ('Context too small: got (%d, %d) ; need (%d, %d)' % \
                                         (w, h, minw, minh))
 
-        self.configurePainting (ctxt, style, w, h)
+        fullw = w - szinfo[3] - szinfo[5]
+        fullh = h = szinfo[2] - szinfo[4]
+
+        self.configurePainting (ctxt, style, fullw, fullh, *szinfo[2:])
         self.paint (ctxt, style)
 
     def render (self, func):
@@ -516,19 +527,12 @@ class Painter (object):
 
     
 class NullPainter (Painter):
-    def getMinimumSize (self, ctxt, style):
-        return 0, 0
-
-
     def doPaint (self, ctxt, style): pass
 
 
 class DebugPainter (Painter):
     lineStyle = 'strongLine'
     
-    def getMinimumSize (self, ctxt, style):
-        return 0, 0
-
     def doPaint (self, ctxt, style):
         style.apply (ctxt, self.lineStyle)
         
@@ -538,6 +542,7 @@ class DebugPainter (Painter):
         ctxt.move_to (0, self.height)
         ctxt.line_to (self.width, 0)
         ctxt.stroke ()
+
 
 # Stamps -- things that draw some shape but are
 # not full-fledged space-allocating painters.
@@ -593,11 +598,11 @@ class CairoTextPainter (_TextPainterBase):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
-        return self.extents[2:4]
+        return self.extents[2], self.extents[3], 0, 0, 0, 0
 
     def doPaint (self, ctxt, style):
-        dx = (self.width - self.extents[2]) * self.hAlign
-        dy = (self.height - self.extents[3]) * self.vAlign
+        dx = self.border[3] + (self.width - self.extents[2]) * self.hAlign
+        dy = self.border[0] + (self.height - self.extents[3]) * self.vAlign
 
         ctxt.move_to (dx - self.extents[0], dy - self.extents[1])
         ctxt.set_source_rgb (*style.getColor (self.color))
@@ -657,7 +662,7 @@ class _ImagePainterBase (Painter):
         if not isinstance (surf, cairo.ImageSurface):
             raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
         
-        return surf.get_width (), surf.get_height ()
+        return surf.get_width (), surf.get_height (), 0, 0, 0, 0
 
     def doPaint (self, ctxt, style):
         surf = self.getSurf (style)
@@ -665,7 +670,7 @@ class _ImagePainterBase (Painter):
         ctxt.set_source_surface (surf)
         # Whatever the default is, it seems to do the right thing.
         #ctxt.set_operator (cairo.OPERATOR_ATOP)
-
+        ctxt.translate (self.border[3], self.border[0])
         ctxt.paint ()
 
 class ImagePainter (_ImagePainterBase):

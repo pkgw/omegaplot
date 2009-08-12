@@ -22,10 +22,10 @@ class LatexPainter (_TextPainterBase):
 
     def getMinimumSize (self, ctxt, style):
         r = self.cache.getRenderer (self.handle)
-        return r.bbw, r.bbh
+        return r.bbw, r.bbh, 0, 0, 0, 0
 
     def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
+        super (self, LatexPainter).configurePainting (ctxt, style, w, h)
 
         r = self.cache.getRenderer (self.handle)
         self.dx = self.hAlign * (w - r.bbw)
@@ -35,7 +35,7 @@ class LatexPainter (_TextPainterBase):
         ctxt.save ()
         style.apply (ctxt, self.style)
         ctxt.set_source_rgb (*style.getColor (self.color))
-        ctxt.translate (self.dx, self.dy)
+        ctxt.translate (self.border[3] + self.dx, self.border[0] + self.dy)
         self.cache.getRenderer (self.handle).render (ctxt, True)
         ctxt.restore ()
         
