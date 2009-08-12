@@ -288,7 +288,7 @@ class LinearBox (Painter):
         return self._elements[idx][0]
 
     def __setitem__ (self, idx, value):
-        prevptr, prevwt, prevmin = self._elements[idx]
+        prevptr, prevwt, prevb1, prevmaj, prevb2 = self._elements[idx]
         
         if prevptr is value: return
 
@@ -303,7 +303,7 @@ class LinearBox (Painter):
         if value is None: value = NullPainter ()
         value.setParent (self)
         
-        self._elements[idx] = (value, prevwt, prevmin)
+        self._elements[idx] = (value, prevwt, prevb1, prevmaj, prevb2)
 
     def appendChild (self, child, weight=1.0):
         if child is None: child = NullPainter ()
