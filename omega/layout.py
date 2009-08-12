@@ -1,12 +1,14 @@
 from math import pi
 from base import Painter, NullPainter
+import numpy as N
+
 
 class Overlay (Painter):
     """An overlay in which multiple painters can be stacked in one
     box, with an optional border area."""
 
     def __init__ (self):
-        Painter.__init__ (self)
+        super (self, Overlay).__init__ ()
         self.painters = []
 
     hBorderSize = 4 # in style.smallScale
@@ -14,30 +16,27 @@ class Overlay (Painter):
     bgStyle = None # style ref
 
     def getMinimumSize (self, ctxt, style):
-        w, h = 0, 0
+        sz = N.zeros (6)
 
         for p in self.painters:
-            childw, childh = p.getMinimumSize (ctxt, style)
-            w = max (w, childw)
-            h = max (h, childh)
+            sz = N.maximum (sz, p.getMinimumSize (ctxt, style))
 
-        return w + 2 * self.hBorderSize * style.smallScale, \
-               h + 2 * self.vBorderSize * style.smallScale
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
+        sz[3:6:2] += self.hBorderSize * style.smallScale
+        sz[2:6:2] += self.vBorderSize * style.smallScale
         
-        hreal = self.hBorderSize * style.smallScale
-        vreal = self.vBorderSize * style.smallScale
+        return sz
 
-        childw = w - 2 * hreal
-        childh = h - 2 * vreal
-        
+    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (self, Overlay).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+
+        h = self.hBorderSize * style.smallScale
+        v = self.vBorderSize * style.smallScale
+
         ctxt.save ()
-        ctxt.translate (hreal, vreal)
+        ctxt.translate (h, v)
 
         for p in self.painters:
-            p.configurePainting (ctxt, style, childw, childh)
+            p.configurePainting (ctxt, style, w, h, bt - v, br - h, bb - v, bl - h)
 
         ctxt.restore ()
         
@@ -45,7 +44,7 @@ class Overlay (Painter):
         if self.bgStyle:
             ctxt.save ()
             style.apply (ctxt, self.bgStyle)
-            ctxt.rectangle (0, 0, self.width, self.height)
+            ctxt.rectangle (0, 0, self.fullw, self.fullh)
             ctxt.fill ()
             ctxt.restore ()
             
@@ -59,17 +58,18 @@ class Overlay (Painter):
     def _lostChild (self, p):
         self.painters.remove (p)
 
+
 class Grid (Painter):
     def __init__ (self, nw, nh):
-        Painter.__init__ (self)
+        super (self, Grid).__init__ ()
         self.nw = int (nw)
         self.nh = int (nh)
-        self._elements = [None] * nw * nh
+        self._elements = N.empty ((nh, nw), N.object)
         
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                self[i,j] = NullPainter ()
-                self[i,j].setParent (self)
+        for r in xrange (self.nh):
+            for c in xrange (self.nw):
+                self[r,c] = NullPainter ()
+                self[r,c].setParent (self)
 
     # FIXME: when these are changed, need to indicate
     # that a reconfigure is necessary.
@@ -81,19 +81,12 @@ class Grid (Painter):
     def _mapIndex (self, idx):
         try:
             asint = int (idx)
-            if self.nw == 1: idx = [0, asint]
-            elif self.nh == 1: idx = [asint, 0]
+            if self.nw == 1: idx = (0, asint)
+            elif self.nh == 1: idx = (asint, 0)
         except TypeError:
-            idx = list (idx)
+            pass
 
-        if len (idx) != 2:
-            raise IndexError ('Bad Grid index: %s' % idx)
-        if idx[0] >= self.nw:
-            raise IndexError ('Grid index width out of bounds')
-        if idx[1] >= self.nh:
-            raise IndexError ('Grid index height out of bounds')
-        
-        return idx[0] * self.nh + idx[1]
+        return idx
 
     def __getitem__ (self, idx):
         return self._elements[self._mapIndex (idx)]
@@ -125,81 +118,73 @@ class Grid (Painter):
         self._elements[midx] = value
 
     def _lostChild (self, child):
-        midx = self._elements.index (child)
-        self._elements[midx] = NullPainter ()
-        self._elements[midx].setParent (self)
+        wh = N.where (self._elements == child)
+        p = NullPainter ()
+        self._elements[wh] = p
+        p.setParent (self)
         
     def getMinimumSize (self, ctxt, style):
-        minw = 2 * self.hBorderSize * style.smallScale
-        minh = 2 * self.vBorderSize * style.smallScale
+        v = N.empty ((self.nh, self.nw, 6))
 
-        minw += (self.nw - 1) * self.hPadSize * style.smallScale
-        minh += (self.nh - 1) * self.vPadSize * style.smallScale
+        for r in xrange (self.nh):
+            for c in xrange (self.nc):
+                v[r,c] = self._elements[r,c].getMinimumSize (ctxt, style)
 
-        dw = dh = 0
+        # Simple, totally uniform borders and sizes.
+        
+        self.maxes = maxes = v.max (0).max (0)
+        
+        minw = self.nw * maxes[0]
+        minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
+        minh = self.nh * maxes[1]
+        minh += (self.nh - 1) * (maxes[2] + maxes[4] + self.vPadSize * style.smallScale)
 
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                childw, childh = self[i,j].getMinimumSize (ctxt, style)
-                dw = max (childw, dw)
-                dh = max (childh, dh)
+        hb = self.hBorderSize * style.smallScale
+        vb = self.vBorderSize * style.smallScale
 
-        minw += dw * self.nw
-        minh += dh * self.nh
+        return (minw, minh, maxes[0] + vb, maxes[1] + hb,
+                maxes[2] + vb, maxes[3] + hb)
 
-        # This code calculates for a nonuniform grid:
-        #dhs = [0] * self.nh
-        #
-        #for i in xrange (0, nw):
-        #    dw = 0
-        #    
-        #    for j in xrange (0, nh):
-        #        childw, childh = self[i,j].getMinimumSize (ctxt, style)
-        #
-        #        dw = max (childw, dw)
-        #        dhs[j] = max (childh, dhs[j])
-        #
-        #    minw += dw
-        #
-        #for j in xrange (0, nh): minh += dhs[j]
+    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (self, Grid).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
-        return minw, minh
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
-
-        hBorderReal = self.hBorderSize * style.smallScale
-        vBorderReal = self.vBorderSize * style.smallScale
         hPadReal = self.hPadSize * style.smallScale
         vPadReal = self.vPadSize * style.smallScale
-        
-        childw = w - 2 * hBorderReal
-        childh = h - 2 * vBorderReal
-        childw -= (self.nw - 1) * hPadReal
-        childh -= (self.nh - 1) * vPadReal
-        
-        childw /= self.nw
-        childh /= self.nh
+        hb = self.hBorderSize * style.smallScale
+        vb = self.vBorderSize * style.smallScale
+
+        bt -= vb
+        br -= hb
+        bb -= vb
+        bl -= hb
+
+        childw = (w - (self.nw - 1) * (hPadReal + bl + br)) / self.nw
+        childh = (h - (self.nh - 1) * (vPadReal + bt + bb)) / self.nh
+
+        fullcw = childw + hPadReal + bl + br
+        fullch = childh + vPadReal + bt + bb
 
         ctxt.save ()
-        ctxt.translate (hBorderReal, vBorderReal)
+        ctxt.translate (hb, vb)
         
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                dx = i * (childw + hPadReal)
-                dy = j * (childh + vPadReal)
+        for r in xrange (self.nh):
+            for c in xrange (self.nw):
+                dx = c * fullcw
+                dy = r * fullch
 
                 ctxt.translate (dx, dy)
-                self[i,j].configurePainting (ctxt, style, childw, childh)
+                self._elements[r,c].configurePainting (ctxt, style, childw, childh,
+                                                       bt, br, bb, bl)
                 ctxt.translate (-dx, -dy)
 
         ctxt.restore ()
 
     def doPaint (self, ctxt, style):
-        for i in xrange (0, self.nw):
-            for j in xrange (0, self.nh):
-                self[i,j].paint (ctxt, style)
-    
+        for r in xrange (self.nh):
+            for c in xrange (self.nw):
+                self._elements[r,c].paint (ctxt, style)
+
+
 class RightRotationPainter (Painter):
     ROT_NONE = 0
     ROT_CW90 = 1
@@ -229,15 +214,25 @@ class RightRotationPainter (Painter):
     def setRotation (self, value):
         self.rotation = value
         
+    def _rotateSize (self, rot, w, h, bt, br, bb, bl):
+        if rot == self.ROT_NONE:
+            return w, h, bt, br, bb, bl
+        elif rot == self.ROT_CW90:
+            return h, w, bl, bt, br, bb
+        elif rot == self.ROT_180:
+            return w, h, bb, bl, bt, br
+        elif rot == self.ROT_CCW90:
+            return h, w, br, bb, bl, bt
+        else:
+            raise ValueError ('rot')
+
     def getMinimumSize (self, ctxt, style):
-        w, h = self.child.getMinimumSize (ctxt, style)
+        sz = self.child.getMinimumSize (ctxt, style)
+        return self._rotateSize (self.rotation, *sz)
 
-        if self.rotation % 2 == 1:
-            return h, w
-        return w, h
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
+    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (self, RightRotationPainter).configurePainting (ctxt, style, w, h,
+                                                              bt, br, bb, bl)
 
         ctxt.save ()
         
@@ -251,33 +246,43 @@ class RightRotationPainter (Painter):
             ctxt.rotate (-pi / 2)
             ctxt.translate (-h, 0)
 
-        if self.rotation % 2 == 1:
-            self.child.configurePainting (ctxt, style, h, w)
-        else:
-            self.child.configurePainting (ctxt, style, w, h)
+        # Reverse the effects of the rotation on the boundaries
+        rot = self.rotation
+        if rot == self.ROT_CW90:
+            rot = self.ROT_CCW90
+        elif rot == self.ROT_CCW90:
+            rot = self.ROT_CW90
+        sz = self._rotateSize (rot, w, h, bt, br, bb, bl)
+
+        self.child.configurePainting (ctxt, style, *sz)
 
         ctxt.restore ()
         
     def doPaint (self, ctxt, style):
         self.child.paint (ctxt, style)
 
-class VBox (Painter):
+
+class LinearBox (Painter):
+    # The "major axis" is the direction in which the box extends
+    # as children are added, while the "minor axis" is always
+    # one painter tall.
+
     def __init__ (self, size):
-        Painter.__init__ (self)
+        super (LinearBox, self).__init__ ()
         self.size = int (size)
 
         self._elements = [None] * self.size
         
         for i in xrange (0, self.size):
             np = NullPainter ()
-            self._elements[i] = (np, 1.0, 0.0)
+            self._elements[i] = (np, 1.0, 0.0, 0.0, 0.0)
             np.setParent (self)
 
     # FIXME: when these are changed, need to indicate
     # that a reconfigure is necessary.
-    hBorderSize = 2 # size of horz. border in style.smallScale
-    vBorderSize = 2 # as above for vertical border
-    padSize = 1 # as above for interior vertical padding
+    majBorderSize = 2 # size of major axis border in style.smallScale
+    minBorderSize = 2 # as above for minor axis border
+    padSize = 1 # as above for interior padding along major axis
     
     def __getitem__ (self, idx):
         return self._elements[idx][0]
@@ -304,7 +309,7 @@ class VBox (Painter):
         if child is None: child = NullPainter ()
         child.setParent (self)
         
-        self._elements.append ((None, weight, 0.0))
+        self._elements.append ((None, weight, 0.0, 0.0, 0.0))
         self.size += 1
         self[self.size - 1] = child
     
@@ -314,257 +319,202 @@ class VBox (Painter):
 
             if ptr is child:
                 newptr = NullPainter ()
-                self._elements[i] = (newptr, wt, 0.0)
+                self._elements[i] = (newptr, wt, 0.0, 0.0, 0.0)
                 newptr.setParent (self)
 
+
     def setWeight (self, index, wt):
-        (ptr, oldwt, minh) = self._elements[index]
-        self._elements[index] = (ptr, wt, minh)
-    
-    def getMinimumSize (self, ctxt, style):
-        minw = 2 * self.hBorderSize * style.smallScale
-        minh = 2 * self.vBorderSize * style.smallScale
+        (ptr, oldwt, bmaj1, majsz, bmaj2) = self._elements[index]
+        self._elements[index] = (ptr, wt, bmaj1, majsz, bmaj2)
 
-        minh += (self.size - 1) * self.padSize * style.smallScale
 
-        dw = 0
+    def _getChildMinSize (self, child, ctxt, style):
+        raise NotImplementedError ()
+
+
+    def _boxGetMinimumSize (self, ctxt, style):
+        majb = self.majBorderSize * style.smallScale
+        minb = self.minBorderSize * style.smallScale
+
+        minmaj = (self.size - 1) * self.padSize * style.smallScale
+
         maxSPW = 0 # max size per weight
         totwt = 0
-        H_maxtw = 0
+        maxbmin1 = maxbmin2 = maxcmin = 0
 
-        from rect import GenericKeyPainter # HACK XXX FIXME H_
+        for i in xrange (self.size):
+            (ptr, wt, tmp, tmp, tmp) = self._elements[i]
+            cmaj, cmin, cbmaj1, cbmin1, cbmaj2, cbmin2 = self._getChildMinSize (ptr, ctxt, style)
 
-        for i in xrange (0, self.size):
-            (ptr, wt, oldminh) = self._elements[i]
-            childw, childh = ptr.getMinimumSize (ctxt, style)
-            self._elements[i] = (ptr, wt, childh)
+            # Along the major direction, we don't equalize borders at all, so the
+            # effective size of each child includes its borders...
             
-            dw = max (childw, dw)
+            cfull = cbmaj1 + cmaj + cbmaj2
+            cbmaj1eff = cbmaj1
+            cbmaj2eff = cbmaj2
+
+            # ... except that the borders of the first and last children are
+            # incorporated to the borders of the box as a whole.
+
+            if i == 0:
+                bmaj1 = cbmaj1
+                cfull -= cbmaj1
+                cbmaj1eff = 0
+            if i == self.size - 1:
+                bmaj2 = cbmaj2
+                cfull -= cbmaj2
+                cbmaj2eff = 0
+
+            maxcmin = max (maxcmin, cmin)
+            maxbmin1 = max (maxbmin1, cbmin1)
+            maxbmin2 = max (maxbmin1, cbmin2)
+
+            self._elements[i] = (ptr, wt, cbmaj1eff, cmaj, cbmaj2eff)
 
             if wt == 0:
-                minh += childh
+                minmaj += cfull
             else:
-                maxSPW = max (maxSPW, 1. * childh / wt)
-            
-            totwt += wt
+                maxSPW = max (maxSPW, 1. * cfull / wt)
+                totwt += wt
+
             #print i, childh, minh
 
-            # HACK FIXME XXX H_ to make key boxes look nice
+        minmaj += maxSPW * totwt
 
-            if isinstance (ptr, GenericKeyPainter):
-                H_maxtw = max (H_maxtw, ptr.H_getTextWidth ())
+        return (minmaj, maxcmin, bmaj1 + majb, maxbmin1 + minb,
+                bmaj2 + majb, maxbmin2 + minb)
 
-        # HACK FIXME XXX H_
 
-        if H_maxtw > 0:
-            for i in xrange (0, self.size):
-                (ptr, wt, oldminh) = self._elements[i]
-                if isinstance (ptr, GenericKeyPainter):
-                    ptr.H_forceTextWidth (H_maxtw)
+    def _boxTranslate (self, ctxt, major, minor):
+        raise NotImplementedError ()
 
-        minw += dw
-        minh += maxSPW * totwt
-        
-        return minw, minh
 
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
+    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
+                            bmaj2, bmin2):
+        raise NotImplementedError ()
 
-        hBorderReal = self.hBorderSize * style.smallScale
-        vBorderReal = self.vBorderSize * style.smallScale
-        padReal = self.padSize * style.smallScale
-        
-        childw = w - 2 * hBorderReal
 
-        hspace = h - 2 * vBorderReal
-        hspace -= (self.size - 1) * padReal
+    def _boxConfigurePainting (self, ctxt, style, major, minor, bmaj1, bmin1, bmaj2, bmin2):
+        bmaj = self.majBorderSize * style.smallScale
+        bmin = self.minBorderSize * style.smallScale
+        pad = self.padSize * style.smallScale
 
+        bmaj1_first = bmaj1 - bmaj
+        bmaj2_last = bmaj2 - bmaj
+        bmin1 -= bmin
+        bmin2 -= bmin
+
+        majspace = major - (self.size - 1) * pad
         totwt = 0.0
         
-        for i in xrange (0, self.size): 
-            wt = self._elements[i][1]
+        for i in xrange (self.size):
+            e = self._elements[i]
+            wt = e[1]
             totwt += wt
 
-            if wt == 0: hspace -= self._elements[i][2]
-            
-        ctxt.save ()
-        ctxt.translate (hBorderReal, vBorderReal)
-        
-        for i in xrange (0, self.size):
-            ptr, wt, minh = self._elements[i]
-
-            # print 'vb1', i, self.size, totwt, wt, minh, hspace
-            
             if wt == 0:
-                childh = minh
+                majspace -= e[2] + e[3] + e[4]
+
+        ctxt.save ()
+        self._boxTranslate (ctxt, bmaj, bmin)
+        
+        for i in xrange (self.size):
+            ptr, wt, cbmaj1, cmaj, cbmaj2 = self._elements[i]
+
+            if wt == 0:
+                cfullmaj = cbmaj1 + cmaj + cbmaj2
             else:
                 if totwt > 0:
-                    childh = hspace * wt / totwt
+                    cfullmaj = majspace * wt / totwt
                 else:
-                    childh = 0
+                    cfullmaj = 0
             
-                if childh < minh: childh = minh
-                # print 'vb2a', childh
-                assert childh <= hspace, 'Not enough room in vbox!'
+                cfullmaj = max (cfullmaj, minmaj)
+                assert childmaj <= majspace, 'Not enough room in vbox!'
 
-            # print 'vb2', childw, childh
-            ptr.configurePainting (ctxt, style, childw, childh)
-            
-            ctxt.translate (0, childh + padReal)
+            if i == 0:
+                cbmaj1 = bmaj1 - bmaj
+            if i == self.size - 1:
+                cbmaj2 = bmaj2 - bmaj
+
+            cmaj = cfullmaj - cbmaj1 - cbmaj2
+
+            self._boxConfigureChild (self, ptr, ctxt, style, cmaj, minor,
+                                     cbmaj1, bmin1, cbmaj2, bmin2)
+            self._boxTranslate (ctxt, cfullmaj + pad, 0)
 
             if wt != 0:
-                hspace -= childh
+                majspace -= cfullmaj
                 totwt -= wt
 
         ctxt.restore ()
 
     def doPaint (self, ctxt, style):
-        for i in xrange (0, self.size):
+        for i in xrange (self.size):
             self._elements[i][0].paint (ctxt, style)
+
+
+class VBox (Painter):
+    def _setHBorderSize (self, val):
+        self.minBorderSize = val
+
+    def _getHBorderSize (self):
+        return self.minBorderSize
+
+    hBorderSize = property (_getHBorderSize, _setHBorderSize)
+
+
+    def _setVBorderSize (self, val):
+        self.majBorderSize = val
+
+    def _getVBorderSize (self):
+        return self.majBorderSize
+
+    vBorderSize = property (_getVBorderSize, _setVBorderSize)
+
+
+    def _getChildMinSize (self, child, ctxt, style):
+        t = child.getMinimumSize (ctxt, style)
+        return t[1], t[0], t[2], t[3], t[4], t[5]
+
+
+    def _boxTranslate (self, ctxt, major, minor):
+        ctxt.translate (minor, major)
+
+
+    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
+                            bmaj2, bmin2):
+        child.configurePainting (ctxt, style, minor, major, bmaj1, bmin1, bmaj2, bmin2)
+
 
 class HBox (Painter):
-    def __init__ (self, size):
-        Painter.__init__ (self)
-        self.size = int (size)
+    def _setHBorderSize (self, val):
+        self.majBorderSize = val
 
-        self._elements = [None] * self.size
-        
-        for i in xrange (0, self.size):
-            np = NullPainter ()
-            self._elements[i] = (np, 1.0, 0.0)
-            np.setParent (self)
+    def _getHBorderSize (self):
+        return self.majBorderSize
 
-    # FIXME: when these are changed, need to indicate
-    # that a reconfigure is necessary.
-    hBorderSize = 2 # size of horz. border in style.smallScale
-    vBorderSize = 2 # as above for vertical border
-    padSize = 1 # as above for interior horizontal padding
-    
-    def __getitem__ (self, idx):
-        return self._elements[idx][0]
+    hBorderSize = property (_getHBorderSize, _setHBorderSize)
 
-    def __setitem__ (self, idx, value):
-        prevptr, prevwt, prevmin = self._elements[idx]
-        
-        if prevptr is value: return
 
-        # This will recurse to our own _lostChild
-        if prevptr is not None: prevptr.setParent (None)
+    def _setVBorderSize (self, val):
+        self.minBorderSize = val
 
-        # Do this before modifying self._elements, so that
-        # if value is already in _elements and is being
-        # moved to an earlier position, _lostChild doesn't
-        # remove the wrong entry.
-        
-        if value is None: value = NullPainter ()
-        value.setParent (self)
-        
-        self._elements[idx] = (value, prevwt, prevmin)
+    def _getVBorderSize (self):
+        return self.minBorderSize
 
-    def appendChild (self, child, weight=1.0):
-        if child is None: child = NullPainter ()
-        child.setParent (self)
-        
-        self._elements.append ((None, weight, 0.0))
-        self.size += 1
-        self[self.size - 1] = child
-    
-    def _lostChild (self, child):
-        for i in xrange (0, self.size):
-            (ptr, wt, minh) = self._elements[i]
+    vBorderSize = property (_getVBorderSize, _setVBorderSize)
 
-            if ptr is child:
-                newptr = NullPainter ()
-                self._elements[i] = (newptr, wt, 0.0)
-                newptr.setParent (self)
 
-    def setWeight (self, index, wt):
-        (ptr, oldwt, minh) = self._elements[index]
-        self._elements[index] = (ptr, wt, minh)
-    
-    def getMinimumSize (self, ctxt, style):
-        minw = 2 * self.hBorderSize * style.smallScale
-        minh = 2 * self.vBorderSize * style.smallScale
+    def _getChildMinSize (self, child, ctxt, style):
+        t = child.getMinimumSize (ctxt, style)
+        return t[0], t[1], t[5], t[2], t[3], t[4]
 
-        minw += (self.size - 1) * self.padSize * style.smallScale
 
-        dh = 0
-        maxSPW = 0 # max size per weight
-        totwt = 0
-        
-        for i in xrange (0, self.size):
-            (ptr, wt, oldminh) = self._elements[i]
-            childw, childh = ptr.getMinimumSize (ctxt, style)
-            self._elements[i] = (ptr, wt, childw)
-            
-            dh = max (childh, dh)
+    def _boxTranslate (self, ctxt, major, minor):
+        ctxt.translate (major, minor)
 
-            if wt == 0:
-                minw += childw
-            else:
-                maxSPW = max (maxSPW, 1. * childw / wt)
 
-            totwt += wt
-            #print i, childh, minh
-
-        minh += dh
-        minw += maxSPW * totwt
-        
-        return minw, minh
-
-    def configurePainting (self, ctxt, style, w, h):
-        Painter.configurePainting (self, ctxt, style, w, h)
-
-        hBorderReal = self.hBorderSize * style.smallScale
-        vBorderReal = self.vBorderSize * style.smallScale
-        padReal = self.padSize * style.smallScale
-        
-        childh = h - 2 * vBorderReal
-
-        hspace = w - 2 * hBorderReal
-        hspace -= (self.size - 1) * padReal
-
-        totwt = 0.0
-
-        for i in xrange (0, self.size):
-            wt = self._elements[i][1]
-            totwt += wt
-
-            if wt == 0:
-                hspace -= self._elements[i][2]
-            
-        ctxt.save ()
-        ctxt.translate (hBorderReal, vBorderReal)
-        
-        for i in xrange (0, self.size):
-            ptr, wt, minw = self._elements[i]
-
-            # print 'hbcp1', i, self.size, totwt, wt, minw, hspace
-            
-            if wt == 0:
-                childw = minw
-            else:
-                if totwt > 0:
-                    childw = hspace * wt / totwt
-                else:
-                    childw = 0
-            
-                if childw < minw: childw = minw
-                # print 'hbcp2a', childw, childh
-                assert childw <= hspace, 'Not enough room in hbox!'
-
-            # print 'hbcp2', childw, childh
-            
-            ptr.configurePainting (ctxt, style, childw, childh)
-            
-            ctxt.translate (childw + padReal, 0)
-
-            if wt != 0:
-                hspace -= childw
-                totwt -= wt
-
-        ctxt.restore ()
-
-    def doPaint (self, ctxt, style):
-        for i in xrange (0, self.size):
-            self._elements[i][0].paint (ctxt, style)
+    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
+                            bmaj2, bmin2):
+        child.configurePainting (ctxt, style, major, minor, bmin1, bmaj2, bmin2, bmaj1)

@@ -455,6 +455,8 @@ class Painter (object):
         self.width = w
         self.height = h
         self.border = (btop, brt, bbot, bleft)
+        self.fullw = w + brt + bleft
+        self.fullh = h + btop + bbot
 
     def paint (self, ctxt, style):
         ctxt.save ()
