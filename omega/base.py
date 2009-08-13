@@ -542,10 +542,13 @@ class DebugPainter (Painter):
         style.apply (ctxt, self.lineStyle)
         
         ctxt.move_to (0, 0)
-        ctxt.line_to (self.width, self.height)
+        ctxt.line_to (self.fullw, self.fullh)
         ctxt.stroke ()
-        ctxt.move_to (0, self.height)
-        ctxt.line_to (self.width, 0)
+        ctxt.move_to (0, self.fullh)
+        ctxt.line_to (self.fullw, 0)
+        ctxt.stroke ()
+
+        ctxt.rectangle (self.border[3], self.border[0], self.width, self.height)
         ctxt.stroke ()
 
 
