@@ -537,7 +537,21 @@ class NullPainter (Painter):
 
 class DebugPainter (Painter):
     lineStyle = 'strongLine'
-    
+
+    minWidth = 0
+    minHeight = 0
+    bTop = 0
+    bRight = 0
+    bBottom = 0
+    bLeft = 0
+
+
+    def getMinimumSize (self, ctxt, style):
+        s = style.smallScale
+        return (self.minWidth * s, self.minHeight * s, self.bTop * s, self.bRight * s,
+                self.bBottom * s, self.bLeft * s)
+
+
     def doPaint (self, ctxt, style):
         style.apply (ctxt, self.lineStyle)
         
