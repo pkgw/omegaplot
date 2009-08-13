@@ -375,7 +375,7 @@ class LinearBox (Painter):
 
             maxcmin = max (maxcmin, cmin)
             maxbmin1 = max (maxbmin1, cbmin1)
-            maxbmin2 = max (maxbmin1, cbmin2)
+            maxbmin2 = max (maxbmin2, cbmin2)
 
             self._elements[i] = (ptr, wt, cbmaj1eff, cmaj, cbmaj2eff)
 
@@ -407,12 +407,17 @@ class LinearBox (Painter):
         bmin = self.minBorderSize * style.smallScale
         pad = self.padSize * style.smallScale
 
-        bmaj1_first = bmaj1 - bmaj
-        bmaj2_last = bmaj2 - bmaj
+        # Compensate for our whitespace border.
         bmin1 -= bmin
         bmin2 -= bmin
 
-        majspace = major - (self.size - 1) * pad
+        # How much major-axis space do we have to allocate for the
+        # painters that have nonzero weights? It's the total major
+        # axis space including borders except for our whitespace
+        # border, minus the internal padding, minus the size of the
+        # painters with zero weights.
+
+        majspace = major - (self.size - 1) * pad + bmaj1 + bmaj2 - 2 * bmaj
         totwt = 0.0
         
         for i in xrange (self.size):
@@ -422,6 +427,8 @@ class LinearBox (Painter):
 
             if wt == 0:
                 majspace -= e[2] + e[3] + e[4]
+
+        # Allocate space to the painters
 
         ctxt.save ()
         self._boxTranslate (ctxt, bmaj, bmin)
@@ -535,7 +542,7 @@ class HBox (LinearBox):
 
     def getMinimumSize (self, ctxt, style):
         t = self._boxGetMinimumSize (ctxt, style)
-        return t[0], t[1], t[5], t[2], t[3], t[4]
+        return t[0], t[1], t[3], t[4], t[5], t[2]
 
 
     def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
