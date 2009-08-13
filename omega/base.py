@@ -459,6 +459,9 @@ class Painter (object):
         self.fullh = h + btop + bbot
 
     def paint (self, ctxt, style):
+        if self.matrix is None:
+            raise RuntimeError ('Attempting to paint without having called configurePainting')
+
         ctxt.save ()
         ctxt.set_matrix (self.matrix)
         style.apply (ctxt, self.mainStyle)
