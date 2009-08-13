@@ -8,7 +8,7 @@ class Overlay (Painter):
     box, with an optional border area."""
 
     def __init__ (self):
-        super (self, Overlay).__init__ ()
+        super (Overlay, self).__init__ ()
         self.painters = []
 
     hBorderSize = 4 # in style.smallScale
@@ -27,7 +27,7 @@ class Overlay (Painter):
         return sz
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (self, Overlay).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+        super (Overlay, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
         h = self.hBorderSize * style.smallScale
         v = self.vBorderSize * style.smallScale
@@ -61,7 +61,7 @@ class Overlay (Painter):
 
 class Grid (Painter):
     def __init__ (self, nw, nh):
-        super (self, Grid).__init__ ()
+        super (Grid, self).__init__ ()
         self.nw = int (nw)
         self.nh = int (nh)
         self._elements = N.empty ((nh, nw), N.object)
@@ -146,7 +146,7 @@ class Grid (Painter):
                 maxes[2] + vb, maxes[3] + hb)
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (self, Grid).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+        super (Grid, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
         hPadReal = self.hPadSize * style.smallScale
         vPadReal = self.vPadSize * style.smallScale
@@ -231,7 +231,7 @@ class RightRotationPainter (Painter):
         return self._rotateSize (self.rotation, *sz)
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (self, RightRotationPainter).configurePainting (ctxt, style, w, h,
+        super (RightRotationPainter, self).configurePainting (ctxt, style, w, h,
                                                               bt, br, bb, bl)
 
         ctxt.save ()

@@ -1284,7 +1284,7 @@ class RectPlot (Painter):
         return mainw, mainh, balloc[0], balloc[1], balloc[2], balloc[3]
     
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (self, RectPlot).configurePainting (self, ctxt, style, w, h,
+        super (RectPlot, self).configurePainting (self, ctxt, style, w, h,
                                                   bt, br, bb, bl)
 
         # Size of the field without axes?
@@ -1808,7 +1808,7 @@ class AbsoluteFieldOverlay (FieldPainter):
         return self.chsize[0] + hAct, self.chsize[1] + vAct, 0, 0, 0, 0
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (self, AbsoluteFieldOverlay).configurePainting (ctxt, style, w, h,
+        super (AbsoluteFieldOverlay, self).configurePainting (ctxt, style, w, h,
                                                               bt, br, bb, bl)
 
         hAct = self.hPadding * style.smallScale
@@ -1829,7 +1829,7 @@ class AbsoluteFieldOverlay (FieldPainter):
     def getKeyPainter (self): return None
     
     def doPaint (self, ctxt, style):
-        super (self, AbsoluteFieldOverlay).doPaint (ctxt, style)
+        super (AbsoluteFieldOverlay, self).doPaint (ctxt, style)
         self.child.paint (ctxt, style)
 
 
