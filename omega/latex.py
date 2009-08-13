@@ -24,8 +24,8 @@ class LatexPainter (_TextPainterBase):
         r = self.cache.getRenderer (self.handle)
         return r.bbw, r.bbh, 0, 0, 0, 0
 
-    def configurePainting (self, ctxt, style, w, h):
-        super (LatexPainter, self).configurePainting (ctxt, style, w, h)
+    def configurePainting (self, ctxt, style, w, h, bt, br, bl, bb):
+        super (LatexPainter, self).configurePainting (ctxt, style, w, h, bt, br, bl, bb)
 
         r = self.cache.getRenderer (self.handle)
         self.dx = self.hAlign * (w - r.bbw)
