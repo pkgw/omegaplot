@@ -429,8 +429,8 @@ class LinearBox (Painter):
                 else:
                     cfullmaj = 0
             
-                cfullmaj = max (cfullmaj, minmaj)
-                assert childmaj <= majspace, 'Not enough room in vbox!'
+                cfullmaj = max (cfullmaj, cbmaj1 + cmaj + cbmaj2)
+                assert cfullmaj <= majspace, 'Not enough room in vbox!'
 
             if i == 0:
                 cbmaj1 = bmaj1 - bmaj
@@ -439,7 +439,7 @@ class LinearBox (Painter):
 
             cmaj = cfullmaj - cbmaj1 - cbmaj2
 
-            self._boxConfigureChild (self, ptr, ctxt, style, cmaj, minor,
+            self._boxConfigureChild (ptr, ctxt, style, cmaj, minor,
                                      cbmaj1, bmin1, cbmaj2, bmin2)
             self._boxTranslate (ctxt, cfullmaj + pad, 0)
 
@@ -478,6 +478,11 @@ class VBox (LinearBox):
         return t[1], t[0], t[2], t[3], t[4], t[5]
 
 
+    def getMinimumSize (self, ctxt, style):
+        t = self._boxGetMinimumSize (ctxt, style)
+        return t[1], t[0], t[2], t[3], t[4], t[5]
+
+
     def _boxTranslate (self, ctxt, major, minor):
         ctxt.translate (minor, major)
 
@@ -485,6 +490,10 @@ class VBox (LinearBox):
     def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
                             bmaj2, bmin2):
         child.configurePainting (ctxt, style, minor, major, bmaj1, bmin1, bmaj2, bmin2)
+
+
+    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        self._boxConfigurePainting (ctxt, style, h, w, bt, br, bb, bl)
 
 
 class HBox (LinearBox):
@@ -515,6 +524,15 @@ class HBox (LinearBox):
         ctxt.translate (major, minor)
 
 
+    def getMinimumSize (self, ctxt, style):
+        t = self._boxGetMinimumSize (ctxt, style)
+        return t[0], t[1], t[5], t[2], t[3], t[4]
+
+
     def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
                             bmaj2, bmin2):
         child.configurePainting (ctxt, style, major, minor, bmin1, bmaj2, bmin2, bmaj1)
+
+
+    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        self._boxConfigurePainting (ctxt, style, w, h, bl, bt, br, bb)

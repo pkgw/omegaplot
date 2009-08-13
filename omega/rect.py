@@ -1442,17 +1442,10 @@ class GenericKeyPainter (Painter):
         w += self.hPadding * style.smallScale
         w += self.tw
 
-        return w, h
+        # FIXME: align labels!
+        return w, h, 0, 0, 0, 0
 
     
-    def H_getTextWidth (self):
-        return self.tw
-
-
-    def H_forceTextWidth (self, tw):
-        self.tw = tw
-
-
     def doPaint (self, ctxt, style):
         w, h = self.width, self.height
         dw = w - self.hPadding * style.smallScale - self.tw
