@@ -1284,7 +1284,7 @@ class RectPlot (Painter):
         return mainw, mainh, balloc[0], balloc[1], balloc[2], balloc[3]
     
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (RectPlot, self).configurePainting (self, ctxt, style, w, h,
+        super (RectPlot, self).configurePainting (ctxt, style, w, h,
                                                   bt, br, bb, bl)
 
         # Size of the field without axes?
@@ -1318,7 +1318,7 @@ class RectPlot (Painter):
         # Configure the field painters, which is easy.
 
         ctxt.save ()
-        ctxt.translate (fieldx, fieldy)
+        ctxt.translate (self.fieldx, self.fieldy)
 
         for fp in self.fpainters:
             fp.configurePainting (ctxt, style, fieldw, fieldh, 0, 0, 0, 0)
@@ -1332,7 +1332,7 @@ class RectPlot (Painter):
         
         for (op, side, pos) in self.opainters:
             # well this is gross
-            ow, oh = op.getMinimumSize (ctxt, style)
+            ow, oh, ign, ign, ign, ign = op.getMinimumSize (ctxt, style)
 
             if side == self.SIDE_TOP:
                 x = (w - ow) * pos + bl
