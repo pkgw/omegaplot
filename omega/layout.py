@@ -71,12 +71,14 @@ class Grid (Painter):
                 self[r,c] = NullPainter ()
                 self[r,c].setParent (self)
 
+
     # FIXME: when these are changed, need to indicate
     # that a reconfigure is necessary.
     hBorderSize = 2 # size of horz. border in style.smallScale
     vBorderSize = 2 # as above for vertical border
     hPadSize = 1 # size of interior horz. padding in style.smallScale
     vPadSize = 1 # as above for interior vertical padding
+
     
     def _mapIndex (self, idx):
         try:
@@ -88,8 +90,10 @@ class Grid (Painter):
 
         return idx
 
+
     def __getitem__ (self, idx):
         return self._elements[self._mapIndex (idx)]
+
 
     def __setitem__ (self, idx, value):
         midx = self._mapIndex (idx)
@@ -117,17 +121,19 @@ class Grid (Painter):
         
         self._elements[midx] = value
 
+
     def _lostChild (self, child):
         wh = N.where (self._elements == child)
         p = NullPainter ()
         self._elements[wh] = p
         p.setParent (self)
-        
+
+
     def getMinimumSize (self, ctxt, style):
         v = N.empty ((self.nh, self.nw, 6))
 
         for r in xrange (self.nh):
-            for c in xrange (self.nc):
+            for c in xrange (self.nw):
                 v[r,c] = self._elements[r,c].getMinimumSize (ctxt, style)
 
         # Simple, totally uniform borders and sizes.
@@ -142,8 +148,9 @@ class Grid (Painter):
         hb = self.hBorderSize * style.smallScale
         vb = self.vBorderSize * style.smallScale
 
-        return (minw, minh, maxes[0] + vb, maxes[1] + hb,
-                maxes[2] + vb, maxes[3] + hb)
+        return (minw, minh, maxes[2] + vb, maxes[3] + hb,
+                maxes[4] + vb, maxes[5] + hb)
+
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (Grid, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
@@ -178,6 +185,7 @@ class Grid (Painter):
                 ctxt.translate (-dx, -dy)
 
         ctxt.restore ()
+
 
     def doPaint (self, ctxt, style):
         for r in xrange (self.nh):
