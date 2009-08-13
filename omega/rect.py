@@ -1482,17 +1482,15 @@ class GenericKeyPainter (Painter):
 
         h = max (self.th, self.vDrawSize * style.largeScale)
 
-        w = self.hDrawSize * style.largeScale
-        w += self.hPadding * style.smallScale
-        w += self.tw
+        bl = self.hDrawSize * style.largeScale
+        bl += self.hPadding * style.smallScale
 
-        # FIXME: align labels!
-        return w, h, 0, 0, 0, 0
+        return self.tw, h, 0, 0, 0, bl
 
     
     def doPaint (self, ctxt, style):
         w, h = self.width, self.height
-        dw = w - self.hPadding * style.smallScale - self.tw
+        dw = self.border[3] - self.hPadding * style.smallScale
 
         if self._drawLine ():
             ctxt.save ()
@@ -1508,11 +1506,11 @@ class GenericKeyPainter (Painter):
             self._getStamp ().paintAt (ctxt, style, dw / 2, h / 2)
             ctxt.restore ()
 
-        tx = w - self.tw
         ty = (h - self.th) / 2
         tc = style.getColor (self.textColor)
 
-        self.ts.paintAt (ctxt, tx, ty, tc)
+        self.ts.paintAt (ctxt, self.border[3], ty, tc)
+
 
 class XYKeyPainter (GenericKeyPainter):
     def _getText (self):
