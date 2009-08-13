@@ -1145,7 +1145,8 @@ class RectPlot (Painter):
     def setLabels (self, xval, yval):
         self.setXLabel (xval)
         self.setYLabel (yval)
-    
+
+
     # Sizing and configuration
     
     def _axisApplyHelper (self, w, h, fn, *args):
@@ -1166,67 +1167,7 @@ class RectPlot (Painter):
         return (rt, rr, rb, rl)
 
 
-    def _calcBorders (self, ctxt, style, minfw, minfh):
-        btrue = [0] * 4
-        balloc = [0] * 4
-        any = [False] * 4
-        
-        T, R, B, L = 0, 1, 2, 3
-        
-        for (op, side, pos) in self.opainters:
-            any[side] = True
-            sz = op.getMinimumSize (ctxt, style)
-
-            # Second part of the side label rotation hack. If the
-            # aspect ratio is too big, rotate.
-
-            if op in self.mainLabels and side % 2 == 1 and \
-                   isinstance (op, RightRotationPainter) and \
-                   sz[0] > 0 and sz[1] > 0:
-                aspect = float (sz[0]) / sz[1]
-
-                if aspect > 3.:
-                    if side == R:
-                        op.setRotation (RightRotationPainter.ROT_CW90)
-                    elif side == L:
-                        op.setRotation (RightRotationPainter.ROT_CCW90)
-                
-                    sz = op.getMinimumSize (ctxt, style)
-
-            # End second part of hack.
-            # FIXME: ignoring opainter borders
-            w, h = sz[0:2]
-            weff = max (w - minfw, 0)
-            heff = max (h - minfh, 0)
-            
-            if side == T:
-                btrue[T] = max (btrue[T], h)
-                balloc[L] = max (balloc[L], weff * (1 - pos))
-                balloc[R] = max (balloc[R], weff * pos)
-            elif side == B:
-                btrue[B] = max (btrue[B], h)
-                balloc[L] = max (balloc[L], weff * (1 - pos))
-                balloc[R] = max (balloc[R], weff * pos)
-            elif side == L:
-                btrue[L] = max (btrue[L], w)
-                balloc[B] = max (balloc[B], heff * (1 - pos))
-                balloc[T] = max (balloc[T], heff * pos)
-            elif side == R:
-                btrue[R] = max (btrue[R], w)
-                balloc[B] = max (balloc[B], heff * (1 - pos))
-                balloc[T] = max (balloc[T], heff * pos)
-
-        opad = self.outerPadding * style.smallScale
-
-        for i in xrange (4):
-            if any[i]:
-                btrue[i] += opad
-            balloc[i] = max (balloc[i], btrue[i])
-
-        return btrue, balloc
-
-
-    def _calcAxisPadding (self, s):
+    def _calcAxisSpace (self, s):
         # s has four elements, one for each side of the plot,
         # indexed by the RectPlot.SIDE_X constants. Each element is a
         # tuple with two values. The first value is the amount of space
@@ -1248,53 +1189,147 @@ class RectPlot (Painter):
         return [max (s[i][0], prots[i]) for i in xrange (4)]
 
 
+    def _calcBorders (self, ctxt, style, axis_space):
+        border = [0.] * 4
+        any = [False] * 4
+        self.osizes = []
+
+        # For each side of the plot, we record the maximum border and
+        # interior sizes both along and away from that side.
+
+        d = N.zeros ((4, 6))
+        work = N.zeros (6)
+
+        for (op, side, pos) in self.opainters:
+            any[side] = True
+            sz = op.getMinimumSize (ctxt, style)
+
+            # Second part of the side label rotation hack. If the
+            # aspect ratio is too big, rotate.
+
+            if op in self.mainLabels and side % 2 == 1 and \
+                   isinstance (op, RightRotationPainter) and \
+                   sz[0] > 0 and sz[1] > 0:
+                aspect = float (sz[0]) / sz[1]
+
+                if aspect > 3.:
+                    if side == 1:
+                        op.setRotation (RightRotationPainter.ROT_CW90)
+                    elif side == 3:
+                        op.setRotation (RightRotationPainter.ROT_CCW90)
+                
+                    sz = op.getMinimumSize (ctxt, style)
+
+            # End second part of hack.
+            # Record minimum sizing so configurePainting can put this painter
+            # in the right spot. (We always paint outer painters at their
+            # minimum sizes.)
+
+            self.osizes.append (sz)
+
+            # Translate the outer painter's sizing information from the x/y
+            # plane to the along/away "plane"
+
+            work[0] = sz[side + 2] # border size farther from axis
+            work[1] = sz[1 - (side % 2)] # interior size away from axis
+            work[2] = sz[((side + 2) % 4) + 2] # border size nearer to axis
+            work[3] = sz[((side + 1) % 4) + 2] # b sz to right of axis looking away from it
+            work[4] = sz[side % 2] # interior size along axis
+            work[5] = sz[((side + 3) % 4) + 2] # b sz to left of axis looking away from it
+
+            # Now accumulate that information in the table for this side
+
+            d[side] = N.maximum (d[side], work)
+
+        # Given a side, the axis labels on the sides adjacent to it do
+        # some of the work required in terms of creating border space
+        # *along* that side. Take this into account.
+
+        for i in xrange (4):
+            d[side,3] = max (d[side,3] - axis_space[(side + 1) % 4], 0)
+            d[side,5] = max (d[side,5] - axis_space[(side + 3) % 4], 0)
+
+        self.subborder_data = d
+
+        # The minimum border size for each side is either its minimum farther sub-border,
+        # plus its minimum nearer sub-border, plus its minimum "away" interior size,
+        # plus the padding between the axis labels and the outer painters if there
+        # are any outer painters; or the maximum adjacent border jutting into the side,
+        # whichever is greater. Simple!
+
+        opad = self.outerPadding * style.smallScale
+
+        for i in xrange (4):
+            if any[i]:
+                b = opad + d[i,0] + d[i,1] + d[i,2]
+            else:
+                b = 0
+
+            b = max (b, d[(i + 1) % 4,5])
+            border[i] = max (b, d[(i + 3) % 4,3])
+
+        # The minimum sizes of the outer painters along their axes also constrain
+        # the sizes of the main plot field.
+
+        minfw = max (d[1,4], d[3,4])
+        minfh = max (d[0,4], d[2,4])
+
+        # Finally done.
+
+        return border, minfw, minfh
+
+
     def getMinimumSize (self, ctxt, style):
         # Get minimum size of plot field based on field painters.
 
-        fw, fh = 0, 0
+        fsizes = N.zeros (6)
+
         for fp in self.fpainters:
-            # FieldPainters must have borders of 0 size.
-            w, h, tmp, tmp, tmp, tmp = fp.getMinimumSize (ctxt, style)
-            fw, fh = max (fw, w), max (fh, h)
+            fsizes = N.maximum (fsizes, fp.getMinimumSize (ctxt, style))
 
-        #print 'new fwh', fw, fh
+        fw = fsizes[0] + fsizes[3] + fsizes[5]
+        fh = fsizes[1] + fsizes[2] + fsizes[4]
+        self.fsizes = fsizes
 
-        # Minimum sizes outside of field based on requirements from
-        # axis painters. Combine this with the minimal field size
-        # to get the minimum central area size.
+        # Minimum size of interior region is size of field combined
+        # with minimal space to draw the axis labels.
 
         s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
-        #print 'new s', s
-        self.pad_axis = self._calcAxisPadding (s)
-        #print 'new pad_axis', self.pad_axis
+        self.axis_space = self._calcAxisSpace (s)
 
-        mainw = fw + self.pad_axis[1] + self.pad_axis[3]
-        mainh = fh + self.pad_axis[0] + self.pad_axis[2]
+        mainw = fw + self.axis_space[1] + self.axis_space[3]
+        mainh = fh + self.axis_space[0] + self.axis_space[2]
         
-        # The outer painters are considered to contribute to our border
-        # requirements.
+        # The border requirements are set by the "outer painters" and
+        # are computed in another function because the bookkeeping is
+        # a pain. The outer painters are positioned relative to the
+        # field, not the field+axes, so we need to be careful about
+        # what the actual minimal borders are. The outer painters can
+        # also affect the minimum required field dimensions.
         
-        btrue, balloc = self._calcBorders (ctxt, style, fw, fh)
-        self.btrue, self.balloc = btrue, balloc
-        #print 'new btrue', btrue
-        #print 'new balloc', balloc
+        border, minofw, minofh = self._calcBorders (ctxt, style, self.axis_space)
+        mainw = max (mainw, minofw)
+        mainh = max (mainh, minofh)
 
         # All done.
 
-        return mainw, mainh, balloc[0], balloc[1], balloc[2], balloc[3]
-    
+        return mainw, mainh, border[0], border[1], border[2], border[3]
+
+
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (RectPlot, self).configurePainting (ctxt, style, w, h,
                                                   bt, br, bb, bl)
 
-        # Size of the field without axes?
+        # w and h give the size of the central region: the field and
+        # the axes (with labels). What is the size of the field
+        # without axes?
         
-        fieldw = w - self.pad_axis[1] - self.pad_axis[3]
-        fieldh = h - self.pad_axis[0] - self.pad_axis[2]
+        fieldw = w - self.axis_space[1] - self.axis_space[3]
+        fieldh = h - self.axis_space[0] - self.axis_space[2]
 
         fdelta_x = fdelta_y = 0
 
-        if self.fieldAspect:
+        if self.fieldAspect is not None:
             cur = float (fieldw) / fieldh
 
             if cur > self.fieldAspect:
@@ -1312,47 +1347,55 @@ class RectPlot (Painter):
 
         self.fieldw = fieldw
         self.fieldh = fieldh
-        self.fieldx = bl + self.pad_axis[3] + fdelta_x
-        self.fieldy = bt + self.pad_axis[0] + fdelta_y
+        self.fieldx = fieldx = bl + self.axis_space[3] + fdelta_x
+        self.fieldy = fieldy = bt + self.axis_space[0] + fdelta_y
 
-        # Configure the field painters, which is easy.
+        # Configure the field painters, which is easy. We just give them
+        # the smallest possible borders that will make them all happy.
+
+        fsizes = self.fsizes
+        fpw = fieldw - fsizes[3] - fsizes[5]
+        fph = fieldh - fsizes[2] - fsizes[4]
 
         ctxt.save ()
         ctxt.translate (self.fieldx, self.fieldy)
 
         for fp in self.fpainters:
-            fp.configurePainting (ctxt, style, fieldw, fieldh, 0, 0, 0, 0)
+            fp.configurePainting (ctxt, style, fpw, fph, *fsizes[2:])
 
         ctxt.restore ()
         
-        # Now do the outer painters, which live in our
-        # border area.
+        # Now we need to do the outer painters. These live in our border
+        # region and have sub-borders of their own and are obnoxious
+        # to get right.
 
         opad = self.outerPadding * style.smallScale
-        
-        for (op, side, pos) in self.opainters:
-            # well this is gross
-            ow, oh, ign, ign, ign, ign = op.getMinimumSize (ctxt, style)
+        d = self.subborder_data
+
+        for i in xrange (len (self.osizes)):
+            op, side, pos = self.opainters[i]
+            ow, oh, obt, obr, obb, obl = self.osizes[i]
 
             if side == self.SIDE_TOP:
-                x = (w - ow) * pos + bl
-                y = bt - oh - opad
+                x = fieldx + (fieldw - ow) * pos - obl
+                y = bt - opad - d[0,2] - oh - obt
+                obb = d[0,2]
             elif side == self.SIDE_BOTTOM:
-                x = (w - ow) * pos + bl
+                x = fieldx + (fieldw - ow) * pos - obl
                 y = self.fullh - bb + opad
+                obt = d[2,2]
             elif side == self.SIDE_LEFT:
-                x = bl - ow - opad
-                y = (h - oh) * (1 - pos) + bt
+                x = bl - opad - d[3,2] - ow - obl
+                y = fieldy + (fieldh - oh) * (1 - pos) - obt
+                obr = d[3,2]
             elif side == self.SIDE_RIGHT:
                 x = self.fullw - br + opad
-                y = (h - oh) * (1 - pos) + bt
+                y = fieldy + (fieldh - oh) * (1 - pos) - obt
+                obl = d[1,2]
 
-            #print ' -> %s, %d, %f to (%f, %f)' % (op, side, pos, x, y)
-            
-            ctxt.save ()
             ctxt.translate (x, y)
-            op.configurePainting (ctxt, style, ow, oh, 0, 0, 0, 0)
-            ctxt.restore ()
+            op.configurePainting (ctxt, style, ow, oh, obt, obr, obb, obl)
+            ctxt.translate (-x, -y)
 
 
     def doPaint (self, ctxt, style):
@@ -1373,7 +1416,7 @@ class RectPlot (Painter):
         # Axes
 
         ctxt.save ()
-        ctxt.translate (self.border[3], self.border[0])
+        ctxt.translate (self.fieldx, self.fieldy)
         self._axisApplyHelper (self.fieldw, self.fieldh, \
                                'paint', ctxt, style)
         ctxt.restore ()
@@ -1394,7 +1437,7 @@ class FieldPainter (Painter):
         if self.field is None:
             raise Exception ('Need to set field of FieldPainter before painting!')
         
-        self.xform = self.field.makeTransformer (self.width, self.height, True)
+        self.xform = self.field.makeTransformer (self.fullw, self.fullh, True)
 
     def setBounds (self, *args):
         self.field.setBounds (*args)
@@ -1431,6 +1474,7 @@ class GenericKeyPainter (Painter):
 
     def _getStamp (self):
         raise NotImplementedError ()
+
 
     def getMinimumSize (self, ctxt, style):
         self.ts = TextStamper (self._getText ())
@@ -1537,7 +1581,7 @@ class XYDataPainter (FieldPainter):
         return XYKeyPainter (self)
     
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (XYDataPainter, self).doPaint (ctxt, style)
 
         imisc, fmisc, allx, ally = self.data.getAllMapped (self.xform)
         
@@ -1761,12 +1805,14 @@ class ContinuousSteppedPainter (FieldPainter):
         ctxt.line_to (finalx, prevy)
         ctxt.stroke ()
 
+
 class AbsoluteFieldOverlay (FieldPainter):
     child = None
     hAlign = 0.0
     vAlign = 0.0
     hPadding = 3 # in style.smallScale
     vPadding = 3 # in style.smallScale
+
 
     def __init__ (self, child=None, hAlign=0.0, vAlign=0.0):
         Painter.__init__ (self)
@@ -1775,6 +1821,7 @@ class AbsoluteFieldOverlay (FieldPainter):
 
         self.hAlign = float (hAlign)
         self.vAlign = float (vAlign)
+
 
     def setChild (self, child):
         if child is self.child: return
@@ -1788,38 +1835,45 @@ class AbsoluteFieldOverlay (FieldPainter):
         child.setParent (self)
         self.child = child
 
+
     def _lostChild (self, p):
         self.child = NullPainter ()
         self.child.setParent (self)
 
+
     def getMinimumSize (self, ctxt, style):
-        hAct = self.hPadding * style.smallScale
-        vAct = self.vPadding * style.smallScale
+        h = self.hPadding * style.smallScale
+        v = self.vPadding * style.smallScale
 
         # FIXME: ignoring padding requests of the child.
-        self.chsize = self.child.getMinimumSize (ctxt, style)
-        return self.chsize[0] + hAct, self.chsize[1] + vAct, 0, 0, 0, 0
+        self.chsize = sz = self.child.getMinimumSize (ctxt, style)
+        return sz[0], sz[1], sz[2] + v, sz[3] + h, sz[4] + v, sz[5] + h
+
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (AbsoluteFieldOverlay, self).configurePainting (ctxt, style, w, h,
                                                               bt, br, bb, bl)
 
-        hAct = self.hPadding * style.smallScale
-        vAct = self.vPadding * style.smallScale
-        
-        dx = hAct + self.hAlign * (w - self.chsize[0] - 2 * hAct)
-        dy = vAct + self.vAlign * (h - self.chsize[1] - 2 * vAct)
+        # The width and height that we are given are the size of the entire
+        # plot field. We place the child at its minimal size inside the field,
+        # aligned according to hAlign and vAlign, so that its non-border edges
+        # land on the edge of the non-border region of the field.
+
+        dx = bl - self.chsize[5] + self.hAlign * (w - self.chsize[0])
+        dy = bt - self.chsize[2] + self.vAlign * (h - self.chsize[1])
 
         ctxt.save ()
         ctxt.translate (dx, dy)
-        self.child.configurePainting (ctxt, style, self.chsize[0],
-                                      self.chsize[1], 0, 0, 0, 0)
+        self.child.configurePainting (ctxt, style, *self.chsize)
         ctxt.restore ()
+
 
     def getDataBounds (self):
         return None, None, None, None
 
+
     def getKeyPainter (self): return None
+
     
     def doPaint (self, ctxt, style):
         super (AbsoluteFieldOverlay, self).doPaint (ctxt, style)
