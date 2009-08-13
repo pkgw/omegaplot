@@ -493,6 +493,7 @@ class VBox (LinearBox):
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (VBox, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
         self._boxConfigurePainting (ctxt, style, h, w, bt, br, bb, bl)
 
 
@@ -535,4 +536,5 @@ class HBox (LinearBox):
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (HBox, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
         self._boxConfigurePainting (ctxt, style, w, h, bl, bt, br, bb)
