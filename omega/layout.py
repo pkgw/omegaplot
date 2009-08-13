@@ -83,8 +83,8 @@ class Grid (Painter):
     def _mapIndex (self, idx):
         try:
             asint = int (idx)
-            if self.nw == 1: idx = (0, asint)
-            elif self.nh == 1: idx = (asint, 0)
+            if self.nw == 1: idx = (asint, 0)
+            elif self.nh == 1: idx = (0, asint)
         except TypeError:
             pass
 
