@@ -23,20 +23,20 @@ class Overlay (Painter):
 
         sz[3:6:2] += self.hBorderSize * style.smallScale
         sz[2:6:2] += self.vBorderSize * style.smallScale
-        
+
         return sz
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (Overlay, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
-        h = self.hBorderSize * style.smallScale
-        v = self.vBorderSize * style.smallScale
+        bh = self.hBorderSize * style.smallScale
+        bv = self.vBorderSize * style.smallScale
 
         ctxt.save ()
-        ctxt.translate (h, v)
+        ctxt.translate (bh, bv)
 
         for p in self.painters:
-            p.configurePainting (ctxt, style, w, h, bt - v, br - h, bb - v, bl - h)
+            p.configurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
 
         ctxt.restore ()
         
