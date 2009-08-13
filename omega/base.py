@@ -488,7 +488,7 @@ class Painter (object):
                                         (w, h, minw, minh))
 
         fullw = w - szinfo[3] - szinfo[5]
-        fullh = h = szinfo[2] - szinfo[4]
+        fullh = h - szinfo[2] - szinfo[4]
 
         self.configurePainting (ctxt, style, fullw, fullh, *szinfo[2:])
         self.paint (ctxt, style)
