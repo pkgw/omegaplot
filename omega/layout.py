@@ -243,16 +243,18 @@ class RightRotationPainter (Painter):
                                                               bt, br, bb, bl)
 
         ctxt.save ()
-        
+
+        fw, fh = self.fullw, self.fullh
+
         if self.rotation == self.ROT_CW90:
             ctxt.rotate (pi / 2)
-            ctxt.translate (0, -w)
+            ctxt.translate (0, -fw)
         elif self.rotation == self.ROT_180:
             ctxt.rotate (pi)
-            ctxt.translate (-w, -h)
+            ctxt.translate (-fw, -fh)
         elif self.rotation == self.ROT_CCW90:
             ctxt.rotate (-pi / 2)
-            ctxt.translate (-h, 0)
+            ctxt.translate (-fh, 0)
 
         # Reverse the effects of the rotation on the boundaries
         rot = self.rotation
