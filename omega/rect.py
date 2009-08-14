@@ -1718,7 +1718,7 @@ class DiscreteSteppedPainter (FieldPainter):
 
         idxs = axis.valuesToIndices (allx[0])
         nidx = axis.numAbscissae ()
-        xpos = axis.transformIndices (axis.allIndices ()) * self.width
+        xpos = axis.transformIndices (axis.allIndices ()) * self.fullw
         ys = self.xform.mapY (ally[0])
         
         style.applyDataLine (ctxt, self.primaryStyleNum)
@@ -1734,7 +1734,7 @@ class DiscreteSteppedPainter (FieldPainter):
                 xleft = (xpos[idx] + xpos[idx-1]) / 2
 
             if idx == nidx - 1:
-                xright = self.width
+                xright = self.fullw
             else:
                 xright = (xpos[idx] + xpos[idx+1]) / 2
 
@@ -1947,7 +1947,7 @@ class HLine (FieldPainter):
         style.applyDataLine (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
         ctxt.move_to (0, y)
-        ctxt.line_to (self.width, y)
+        ctxt.line_to (self.fullw, y)
         ctxt.stroke ()
         ctxt.restore ()
 
@@ -1981,7 +1981,7 @@ class VLine (FieldPainter):
         style.applyDataLine (ctxt, self.primaryStyleNum)
         style.apply (ctxt, self.lineStyle)
         ctxt.move_to (x, 0)
-        ctxt.line_to (x, self.height)
+        ctxt.line_to (x, self.fullh)
         ctxt.stroke ()
         ctxt.restore ()
 
