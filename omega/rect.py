@@ -153,6 +153,7 @@ class BlankAxisPainter (object):
     drawBaseline = True
     lineStyle = 'bgLinework'
 
+
     # FIXME: minimum size should reflect current style's
     # linewidth
     
@@ -165,12 +166,11 @@ class BlankAxisPainter (object):
         helper.paintBaseline (ctxt)
 
         ctxt.restore ()
-            
+
+
     def spaceExterior (self, helper, ctxt, style):
-        """Return how much space is required exterior to the plot field to
-        paint this axis correctly. First element is orthogonal to the side
-        we're on, second is along it."""
-        return 0, 0
+        return 0, 0, 0
+
 
     def nudgeBounds (self):
         """Modify the bounds of our axis to a superset of the inputs.
@@ -268,6 +268,7 @@ class AxisPaintHelper (object):
             ctxt.rel_move_to (-rw / 2, 0)
         elif self.side == RectPlot.SIDE_LEFT:
             ctxt.rel_move_to (-rw, -rh / 2)
+
         
     def spaceRectOut (self, rw, rh):
         """Return the amount of exterior space orthogonal to the side we're on that
@@ -276,7 +277,8 @@ class AxisPaintHelper (object):
         if self.side == RectPlot.SIDE_TOP or self.side == RectPlot.SIDE_BOTTOM:
             return rh
         return rw
-        
+
+
     def spaceRectAlong (self, rw, rh):
         """Return the amount of exterior space along the side we're on that is
         required for a rectangle aligned as described in relMoveRectOut."""
@@ -284,7 +286,32 @@ class AxisPaintHelper (object):
         if self.side == RectPlot.SIDE_TOP or self.side == RectPlot.SIDE_BOTTOM:
             return rw
         return rh
-        
+
+
+    def spaceRectPos (self, pos, rw, rh):
+        """Return the amount of space along the side we're on that is
+        required for a rectangle at the given position beyond the edge of the
+        plot field and behind it."""
+
+        if self.side == RectPlot.SIDE_TOP:
+            forward = rw / 2 + (pos - 1) * self.w
+            behind = rw / 2 - pos * self.w
+        elif self.side == RectPlot.SIDE_RIGHT:
+            forward = rh / 2 - pos * self.h
+            behind = rh / 2 + (pos - 1) * self.h
+        elif self.side == RectPlot.SIDE_BOTTOM:
+            forward = rw / 2 - pos * self.w
+            behind = rw / 2 + (pos - 1) * self.w
+        elif self.side == RectPlot.SIDE_LEFT:
+            forward = rh / 2 + (pos - 1) * self.h
+            behind = rh / 2 - pos * self.h
+
+        forward = max (forward, 0)
+        behind = max (behind, 0)
+
+        return forward, behind
+
+
 class LinearAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a standard linear
     axis with evenly spaced tick marks."""
@@ -420,14 +447,18 @@ class LinearAxisPainter (BlankAxisPainter):
 
             yield (ts, xformed, w, h)
 
-    def spaceExterior (self, helper, ctxt, style):
-        outside, along = 0, 0
-        
-        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
-            outside = max (outside, helper.spaceRectOut (w, h))
-            along = max (along, helper.spaceRectAlong (w, h))
 
-        return outside + self.labelSeparation * style.smallScale, along
+    def spaceExterior (self, helper, ctxt, style):
+        forward = outside = backward = 0
+
+        for ts, xformed, w, h in self.getLabelInfos (ctxt, style):
+            outside = max (outside, helper.spaceRectOut (w, h))
+            fw, bw = helper.spaceRectPos (xformed, w, h)
+            forward = max (forward, fw)
+            backward = max (backward, bw)
+
+        return forward, outside, backward
+
 
     def paint (self, helper, ctxt, style):
         BlankAxisPainter.paint (self, helper, ctxt, style)
@@ -548,15 +579,19 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
             yield (ts, xformed, w, h)
 
+
     def spaceExterior (self, helper, ctxt, style):
-        outside, along = 0, 0
-        
-        for (ts, xformed, w, h) in self.getLabelInfos (ctxt, style):
+        forward = outside = backward = 0
+
+        for ts, xformed, w, h in self.getLabelInfos (ctxt, style):
             outside = max (outside, helper.spaceRectOut (w, h))
-            along = max (along, helper.spaceRectAlong (w, h))
+            fw, bw = helper.spaceRectPos (xformed, w, h)
+            forward = max (forward, fw)
+            backward = max (backward, bw)
 
-        return outside + self.labelSeparation * style.smallScale, along
+        return forward, outside, backward
 
+    
     def paint (self, helper, ctxt, style):
         BlankAxisPainter.paint (self, helper, ctxt, style)
 
@@ -610,6 +645,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
     labelStyle = None
 
     def genericFormat (self, v): return str(v)
+
     
     def spaceExterior (self, helper, ctxt, style):
         stampers = []
@@ -630,7 +666,8 @@ class DiscreteAxisPainter (BlankAxisPainter):
         self.stampers = stampers
         
         return outside + self.labelSeparation * style.smallScale, along
-    
+
+
     def paint (self, helper, ctxt, style):
         BlankAxisPainter.paint (self, helper, ctxt, style)
 
@@ -1167,30 +1204,7 @@ class RectPlot (Painter):
         return (rt, rr, rb, rl)
 
 
-    def _calcAxisSpace (self, s):
-        # s has four elements, one for each side of the plot,
-        # indexed by the RectPlot.SIDE_X constants. Each element is a
-        # tuple with two values. The first value is the amount of space
-        # away from that side that is necessary, and the second value is
-        # the amount of space along that side that is necessary. So if we
-        # need 10 units above the top, sideinfo[0][0] = 10. If we need 30
-        # units of width along the top, sideinfo[0][1] = 30. If we need
-        # 50 units of height along the left side, sideinfo[3][1] = 50.
-        #
-        # So, the amount of space we need along an axis is either the
-        # orthogonal distance away from the axis, or the bigger of
-        # half of the distances along the adjacent sides, whichever is
-        # biggest.
-
-        vprot = max (s[1][1], s[3][1]) / 2
-        hprot = max (s[0][1], s[2][1]) / 2
-        prots = [vprot, hprot, vprot, hprot]
-        
-        return [max (s[i][0], prots[i]) for i in xrange (4)]
-
-
-    def _calcBorders (self, ctxt, style, axis_space):
-        border = [0.] * 4
+    def _calcOuterSpace (self, ctxt, style):
         any = [False] * 4
         self.osizes = []
 
@@ -1241,42 +1255,15 @@ class RectPlot (Painter):
 
             d[side] = N.maximum (d[side], work)
 
-        # Given a side, the axis labels on the sides adjacent to it do
-        # some of the work required in terms of creating border space
-        # *along* that side. Take this into account.
-
-        for i in xrange (4):
-            d[side,3] = max (d[side,3] - axis_space[(side + 1) % 4], 0)
-            d[side,5] = max (d[side,5] - axis_space[(side + 3) % 4], 0)
-
-        self.subborder_data = d
-
-        # The minimum border size for each side is either its minimum farther sub-border,
-        # plus its minimum nearer sub-border, plus its minimum "away" interior size,
-        # plus the padding between the axis labels and the outer painters if there
-        # are any outer painters; or the maximum adjacent border jutting into the side,
-        # whichever is greater. Simple!
-
-        opad = self.outerPadding * style.smallScale
-
-        for i in xrange (4):
-            if any[i]:
-                b = opad + d[i,0] + d[i,1] + d[i,2]
-            else:
-                b = 0
-
-            b = max (b, d[(i + 1) % 4,5])
-            border[i] = max (b, d[(i + 3) % 4,3])
-
         # The minimum sizes of the outer painters along their axes also constrain
         # the sizes of the main plot field.
 
-        minfw = max (d[1,4], d[3,4])
-        minfh = max (d[0,4], d[2,4])
+        minfw = max (d[0,4], d[2,4])
+        minfh = max (d[1,4], d[3,4])
 
         # Finally done.
 
-        return border, minfw, minfh
+        return d, minfw, minfh
 
 
     def getMinimumSize (self, ctxt, style):
@@ -1291,107 +1278,141 @@ class RectPlot (Painter):
         fh = fsizes[1] + fsizes[2] + fsizes[4]
         self.fsizes = fsizes
 
-        # Minimum size of interior region is size of field combined
-        # with minimal space to draw the axis labels.
+        # Compute bounds information for the outer painters.  The
+        # outer painters can force the plot field to be bigger since
+        # they must fit within it.
 
-        s = self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
-        self.axis_space = self._calcAxisSpace (s)
+        obd, minofw, minofh = self._calcOuterSpace (ctxt, style)
+        self.outer_border_data = obd
+        opad = self.outerPadding * style.smallScale
+        fw = max (fw, minofw)
+        fh = max (fh, minofh)
 
-        mainw = fw + self.axis_space[1] + self.axis_space[3]
-        mainh = fh + self.axis_space[0] + self.axis_space[2]
-        
-        # The border requirements are set by the "outer painters" and
-        # are computed in another function because the bookkeeping is
-        # a pain. The outer painters are positioned relative to the
-        # field, not the field+axes, so we need to be careful about
-        # what the actual minimal borders are. The outer painters can
-        # also affect the minimum required field dimensions.
-        
-        border, minofw, minofh = self._calcBorders (ctxt, style, self.axis_space)
-        mainw = max (mainw, minofw)
-        mainh = max (mainh, minofh)
+        # Now do so for the axes. We use the current minimum field size
+        # to guess how much the axis labels are going to overlap from one side
+        # of the plot to adjacent sides. (Preview of coming attractions.)
 
-        # All done.
+        axspace = self._axisApplyHelper (fw, fh, 'spaceExterior', ctxt, style)
 
-        return mainw, mainh, border[0], border[1], border[2], border[3]
+        # The minimal border can be tricky. It's easy to compute the minimum
+        # size along each size based on the extent of the axis labels and
+        # outer painters sticking out of that side:
+
+        border = [0] * 4
+
+        for i in xrange (4):
+            ospace = obd[i][0:3].sum ()
+            if ospace > 0:
+                # only add padding space if there are painters on this side
+                ospace += opad
+            border[i] = axspace[i][1] + ospace
+            #print i, axspace[i], obd[i][0:3], opad, border[i]
+
+            # However, axis labels can overlap from their assigned sides
+            # onto the sides adjacent to them. This is particularly a
+            # problem with totally empty sides, since any content on the
+            # adjacent sides will require a little bit of a
+            # border. Unfortunately, we can't know how much an axis label
+            # will overlap until we know the actual width and height of
+            # the plot. We were conservative and used the minimum possible
+            # field size, which would lead to the maximum possible
+            # overlap.
+
+            olap = max (axspace[(i + 1) % 4][2], axspace[(i + 3) % 4][0])
+            border[i] = max (border[i], olap)
+
+        return fw, fh, border[0], border[1], border[2], border[3]
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (RectPlot, self).configurePainting (ctxt, style, w, h,
                                                   bt, br, bb, bl)
 
-        # w and h give the size of the central region: the field and
-        # the axes (with labels). What is the size of the field
-        # without axes?
+        # w and h give the size of the field, bl and bt the x and y
+        # offsets to get to its upper left corner.
         
-        fieldw = w - self.axis_space[1] - self.axis_space[3]
-        fieldh = h - self.axis_space[0] - self.axis_space[2]
+        # FIXME: this new model prevents us from being able to specify
+        # the aspect ratio of the field. That logic will have to land
+        # somewhere else. Preserving the code here.
 
-        fdelta_x = fdelta_y = 0
+        #if self.fieldAspect is not None:
+        #    cur = float (fieldw) / fieldh
 
-        if self.fieldAspect is not None:
-            cur = float (fieldw) / fieldh
-
-            if cur > self.fieldAspect:
-                # Wider than desired ; bump up left/right margins
-                want_fieldw = fieldh * self.fieldAspect
-                fdelta_x = (fieldw - want_fieldw) / 2
-                fieldw = want_fieldw
-            elif cur < self.fieldAspect:
-                # Taller than desired ; bump up top/bottom margins
-                want_fieldh = fieldw / self.fieldAspect
-                fdelta_y = (fieldh - want_fieldh) / 2
-                #self.ext_total[0] += delta
-                #self.ext_total[2] += delta
-                fieldh = want_fieldh
-
-        self.fieldw = fieldw
-        self.fieldh = fieldh
-        self.fieldx = fieldx = bl + self.axis_space[3] + fdelta_x
-        self.fieldy = fieldy = bt + self.axis_space[0] + fdelta_y
+        #    if cur > self.fieldAspect:
+        #        # Wider than desired ; bump up left/right margins
+        #        want_fieldw = fieldh * self.fieldAspect
+        #        fdelta_x = (fieldw - want_fieldw) / 2
+        #        fieldw = want_fieldw
+        #    elif cur < self.fieldAspect:
+        #        # Taller than desired ; bump up top/bottom margins
+        #        want_fieldh = fieldw / self.fieldAspect
+        #        fdelta_y = (fieldh - want_fieldh) / 2
+        #        fieldh = want_fieldh
 
         # Configure the field painters, which is easy. We just give them
         # the smallest possible borders that will make them all happy.
 
         fsizes = self.fsizes
-        fpw = fieldw - fsizes[3] - fsizes[5]
-        fph = fieldh - fsizes[2] - fsizes[4]
+        fpw = w - fsizes[3] - fsizes[5]
+        fph = h - fsizes[2] - fsizes[4]
 
         ctxt.save ()
-        ctxt.translate (self.fieldx, self.fieldy)
+        ctxt.translate (bl, bt)
 
         for fp in self.fpainters:
             fp.configurePainting (ctxt, style, fpw, fph, *fsizes[2:])
 
         ctxt.restore ()
-        
-        # Now we need to do the outer painters. These live in our border
-        # region and have sub-borders of their own and are obnoxious
-        # to get right.
 
+        # Now that we know how large the field is, we need to compute
+        # the actual bounds of the axis labels. While doing this, we
+        # verify that there's enough space for the outer painters.
+
+        obd = self.outer_border_data
         opad = self.outerPadding * style.smallScale
-        d = self.subborder_data
+        s = self._axisApplyHelper (w, h, 'spaceExterior', ctxt, style)
+        axisWidths = [0.] * 4
+
+        for i in xrange (4):
+            aw = s[i][1]
+            aw = max (aw, s[(i+1) % 4][2])
+            aw = max (aw, s[(i+3) % 4][0])
+
+            ow = obd[i,0] + obd[i,1] + obd[i,2]
+            if ow > 0:
+                ow += opad
+
+            if aw + ow > self.border[i]:
+                #print i, aw, obd[i,0:3], opad, self.border[i]
+                raise RuntimeError ('Not enough space for axis labels and outside painters')
+
+            axisWidths[i] = aw
+
+        # Now we need to do the outer painters. Getting their position
+        # and borders right is obnoxious.
+
+        owidths = [self.border[i] - axisWidths[i] - opad for i in xrange (4)]
 
         for i in xrange (len (self.osizes)):
             op, side, pos = self.opainters[i]
             ow, oh, obt, obr, obb, obl = self.osizes[i]
 
             if side == self.SIDE_TOP:
-                x = fieldx + (fieldw - ow) * pos - obl
-                y = bt - opad - d[0,2] - oh - obt
-                obb = d[0,2]
+                x = bl + (w - ow) * pos - obl
+                y = owidths[0] - obd[0,2] - oh - obt
+                obb = obd[0,2]
             elif side == self.SIDE_BOTTOM:
-                x = fieldx + (fieldw - ow) * pos - obl
-                y = self.fullh - bb + opad
-                obt = d[2,2]
+                x = bl + (w - ow) * pos - obl
+                y = self.fullh - owidths[2]
+                obt = obd[2,2]
             elif side == self.SIDE_LEFT:
-                x = bl - opad - d[3,2] - ow - obl
-                y = fieldy + (fieldh - oh) * (1 - pos) - obt
-                obr = d[3,2]
+                x = owidths[3] - obd[3,2] - ow - obl
+                y = bt + (h - oh) * (1 - pos) - obt
+                obr = obd[3,2]
             elif side == self.SIDE_RIGHT:
-                x = self.fullw - br + opad
-                y = fieldy + (fieldh - oh) * (1 - pos) - obt
-                obl = d[1,2]
+                x = self.fullw - owidths[1]
+                y = bt + (h - oh) * (1 - pos) - obt
+                obl = obd[1,2]
 
             ctxt.translate (x, y)
             op.configurePainting (ctxt, style, ow, oh, obt, obr, obb, obl)
@@ -1404,8 +1425,8 @@ class RectPlot (Painter):
         # Clip to the field, then paint the field items.
         
         ctxt.save ()
-        ctxt.rectangle (self.fieldx, self.fieldy,
-                        self.fieldw, self.fieldh)
+        ctxt.rectangle (self.border[3], self.border[0],
+                        self.width, self.height)
         ctxt.clip ()
         
         for fp in self.fpainters:
@@ -1416,8 +1437,8 @@ class RectPlot (Painter):
         # Axes
 
         ctxt.save ()
-        ctxt.translate (self.fieldx, self.fieldy)
-        self._axisApplyHelper (self.fieldw, self.fieldh, \
+        ctxt.translate (self.border[3], self.border[0])
+        self._axisApplyHelper (self.width, self.height, \
                                'paint', ctxt, style)
         ctxt.restore ()
 
