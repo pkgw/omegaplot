@@ -457,6 +457,9 @@ class LinearAxisPainter (BlankAxisPainter):
             forward = max (forward, fw)
             backward = max (backward, bw)
 
+        if outside > 0:
+            outside += self.labelSeparation * style.smallScale
+
         return forward, outside, backward
 
 
@@ -589,6 +592,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
             forward = max (forward, fw)
             backward = max (backward, bw)
 
+        if outside > 0:
+            outside += self.labelSeparation * style.smallScale
+
         return forward, outside, backward
 
     
@@ -673,6 +679,9 @@ class DiscreteAxisPainter (BlankAxisPainter):
             behind = max (behind, bh)
 
             stampers[i] = (ts, w, h)
+
+        if outside > 0:
+            outside += self.labelSeparation * style.smallScale
 
         self.stampers = stampers
         return forward, outside, behind
