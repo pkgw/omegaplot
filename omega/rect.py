@@ -650,22 +650,32 @@ class DiscreteAxisPainter (BlankAxisPainter):
     def spaceExterior (self, helper, ctxt, style):
         stampers = []
 
+        # Create all of the stampers in this first loop
+        # so that if we're running LaTeX (e.g.) they're
+        # all processed at once, rather than one at a time.
+
         for i in self.axis.ordinates ():
             s = self.formatLabel (i)
             stampers.append (TextStamper (s))
 
-        outside, along = 0, 0
+        # Ok, now we can measure things.
 
-        for i in range (0, len (stampers)):
+        outside = forward = behind = 0
+
+        for (i, x) in enumerate (self.axis.ordinates ()):
             ts = stampers[i]
             w, h = ts.getSize (ctxt, style)
+            x = self.axis.transform (x)
+
             outside = max (outside, helper.spaceRectOut (w, h))
-            along = max (along, helper.spaceRectAlong (w, h))
+            fw, bh = helper.spaceRectPos (x, w, h)
+            forward = max (forward, fw)
+            behind = max (behind, bh)
+
             stampers[i] = (ts, w, h)
 
         self.stampers = stampers
-        
-        return outside + self.labelSeparation * style.smallScale, along
+        return forward, outside, behind
 
 
     def paint (self, helper, ctxt, style):
