@@ -65,7 +65,8 @@ class LinearAxis (RectAxis):
 
     def inbounds (self, values):
         return N.logical_and (values >= self.min, values <= self.max)
-    
+
+
 class LogarithmicAxis (RectAxis):
     """A logarithmic logical axis for a rectangular plot."""
 
@@ -320,7 +321,7 @@ class LinearAxisPainter (BlankAxisPainter):
         BlankAxisPainter.__init__ (self)
 
         if not isinstance (axis, LinearAxis):
-            raise Exception ('Giving linearAxisPainter a'
+            raise Exception ('Giving linearAxisPainter a '
                              'non-linearAxis axis')
         
         self.axis = axis
@@ -624,6 +625,41 @@ class LogarithmicAxisPainter (BlankAxisPainter):
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
             helper.relMoveRectOut (ctxt, w, h)
             ts.paintHere (ctxt, tc)
+
+
+class _LogLinMappingAxis (LinearAxis):
+    def __init__ (self, logaxis):
+        if not isinstance (logaxis, LogarithmicAxis):
+            raise ValueError ('logaxis')
+
+        self.logaxis = logaxis
+
+
+    def _getMax (self):
+        return self.logaxis.logmax
+
+    def _setMax (self, value):
+        self.logaxis.logmax = value
+
+    max = property (_getMax, _setMax)
+
+
+    def _getMin (self):
+        return self.logaxis.logmin
+
+    def _setMin (self, value):
+        self.logaxis.logmin = value
+
+    min = property (_getMin, _setMin)
+
+
+def LogValueAxisPainter (axis):
+    """Creates a LinearAxisPainter that renders the log values of the inputs.
+    Make sure that your axis labels reflect this!"""
+
+    fakeaxis = _LogLinMappingAxis (axis)
+    return LinearAxisPainter (fakeaxis)
+
 
 LogarithmicAxis.defaultPainter = LogarithmicAxisPainter
 
@@ -1087,7 +1123,7 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
-    def setLinLogAxes (self, wantxlog, wantylog):
+    def setLinLogAxes (self, wantxlog, wantylog, xlogvalue=False, ylogvalue=False):
         df = self.defaultField
         if not df: raise Exception ('Need a default field!')
 
@@ -1139,17 +1175,20 @@ class RectPlot (Painter):
         # Make the logic more restrictive in case the
         # user has some custom axes.
         
-        def fixpainter (wantlog, axis, painter):
+        def fixpainter (wantlog, axis, painter, logvalue):
             if wantlog and isinstance (painter, LinearAxisPainter):
-                return LogarithmicAxisPainter (axis)
+                if logvalue:
+                    return LogValueAxisPainter (axis)
+                else:
+                    return LogarithmicAxisPainter (axis)
             elif not wantlog and isinstance (painter, LogarithmicAxisPainter):
                 return LinearAxisPainter (axis)
             return painter
 
-        self.tpainter = fixpainter (wantxlog, df.xaxis, self.tpainter)
-        self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter)
-        self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter)
-        self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter)
+        self.tpainter = fixpainter (wantxlog, df.xaxis, self.tpainter, xlogvalue)
+        self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter, ylogvalue)
+        self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter, xlogvalue)
+        self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter, ylogvalue)
     
     # X and Y axis label helpers
     # FIXME: should have a setTitle too. Not the same as a top-side
