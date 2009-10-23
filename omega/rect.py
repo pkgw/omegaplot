@@ -335,6 +335,7 @@ class LinearAxisPainter (BlankAxisPainter):
     textColor = 'foreground'
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
+    paintLabels = True # draw any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
     
     def nudgeBounds (self):
@@ -429,6 +430,9 @@ class LinearAxisPainter (BlankAxisPainter):
 
 
     def getLabelInfos (self, ctxt, style):
+        if not self.paintLabels:
+            return
+
         # Create the TextStamper objects all at once, so that if we
         # are using the LaTeX backend, we can generate their PNG
         # images all in one go. (That will happen upon the first
@@ -514,6 +518,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     textColor = 'foreground'
     labelStyle = None
     avoidBounds = True # do not draw ticks at extremes of axes
+    paintLabels = True # paint any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
     labelSomeMinorTicks = False # label 3x and 6x minor ticks?
 
@@ -559,6 +564,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
                 coeff += 1
 
     def getLabelInfos (self, ctxt, style):
+        if not self.paintLabels:
+            return
+
         # Create the TextStamper objects all at once, so that if we
         # are using the LaTeX backend, we can generate them images all
         # in one go. (That will happen upon the first invocation of
@@ -1363,8 +1371,6 @@ class RectPlot (Painter):
             if ospace > 0:
                 # only add padding space if there are painters on this side
                 ospace += opad
-            border[i] = axspace[i][1] + ospace
-            #print i, axspace[i], obd[i][0:3], opad, border[i]
 
             # However, axis labels can overlap from their assigned sides
             # onto the sides adjacent to them. This is particularly a
@@ -1376,8 +1382,12 @@ class RectPlot (Painter):
             # field size, which would lead to the maximum possible
             # overlap.
 
-            olap = max (axspace[(i + 1) % 4][2], axspace[(i + 3) % 4][0])
-            border[i] = max (border[i], olap)
+            aspace = axspace[i][1]
+            aspace = max (aspace, axspace[(i + 1) % 4][2])
+            aspace = max (aspace, axspace[(i + 3) % 4][0])
+
+            border[i] = aspace + ospace
+            #print i, axspace[i], obd[i][0:3], opad, border[i]
 
         return fw, fh, border[0], border[1], border[2], border[3]
 
