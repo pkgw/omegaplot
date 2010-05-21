@@ -486,8 +486,8 @@ def makePager (filename, type=None, dims=None, margins=None,
 
 
 
-def savePainter (painter, filename, type=None, dims=None, margins=None, **kwargs):
-    pager = makePager (filename, type, dims= margins, **kwargs)
+def savePainter (painter, filename, type=None, **kwargs):
+    pager = makePager (filename, type, **kwargs)
     pager.send (painter)
     pager.done ()
 
