@@ -39,7 +39,7 @@ import sys, os
 import cairo, gtk
 from os.path import basename, splitext, join, abspath, exists
 import tempfile
-import md5
+
 
 class RenderConfig (object):
     """A simple structure containing parameters used by the
