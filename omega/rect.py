@@ -1018,22 +1018,34 @@ class RectPlot (Painter):
         return self.add (dp, **kwargs)
 
     
-    def rebound (self, nudgex=True, nudgey=True):
+    def rebound (self, nudgex=True, nudgey=True, field=None):
         """Recalculate the bounds of the default field based on the data
         that it contains."""
 
-        first = True
+        # We can't just use RectField.setBounds/expandBounds, since
+        # if the first FieldPainter doesn't define all four bounds,
+        # the default [0, 10, 0, 10] bounds will remain in effect.
+
+        if field is None:
+            field = self.defaultField
+
+        bounds = [None, None, None, None]
+        reducefuncs = [min, max, min, max]
 
         for fp in self.fpainters:
-            if fp.field is not self.defaultField:
+            if fp.field is not field:
                 continue
 
-            if first:
-                self.defaultField.setBounds (*fp.getDataBounds ())
-                first = False
-            else:
-                self.defaultField.expandBounds (*fp.getDataBounds ())
+            b = fp.getDataBounds ()
+            for i in xrange (4):
+                if b[i] is None:
+                    continue
+                if bounds[i] is None:
+                    bounds[i] = b[i]
+                else:
+                    bounds[i] = reducefuncs[i] (bounds[i], b[i])
 
+        field.setBounds (*bounds)
         self.nudgeBounds (nudgex, nudgey)
     
     def addOuterPainter (self, op, side, position):
