@@ -331,6 +331,7 @@ class LinearAxisPainter (BlankAxisPainter):
     majorTickScale = 2.5 # in largeScale
     minorTickScale = 2.5 # in smallScale
     minorTicks = 5
+    autoBumpThreshold = 0.3
     tickStyle = 'bgLinework' # style ref.
     textColor = 'foreground'
     labelStyle = None
@@ -384,7 +385,7 @@ class LinearAxisPainter (BlankAxisPainter):
 
         #print 'GTL:', span, N.log10 (span), mip
         
-        if N.log10 (span) - mip < 0.3:
+        if N.log10 (span) - mip < self.autoBumpThreshold:
             # If we wouldn't have that many tickmarks, decrease MIP
             # to make the labels denser.
             mip -= 1
