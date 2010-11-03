@@ -1617,10 +1617,16 @@ class GenericKeyPainter (Painter):
     def _drawStamp (self):
         raise NotImplementedError ()
     
+    def _drawRegion (self):
+        raise NotImplementedError ()
+
     def _applyLineStyle (self, style, ctxt):
         raise NotImplementedError ()
 
     def _applyStampStyle (self, style, ctxt):
+        raise NotImplementedError ()
+
+    def _applyRegionStyle (self, style, ctxt):
         raise NotImplementedError ()
 
     def _getStamp (self):
@@ -1641,7 +1647,15 @@ class GenericKeyPainter (Painter):
     
     def doPaint (self, ctxt, style):
         w, h = self.width, self.height
-        dw = self.border[3] - self.hPadding * style.smallScale
+        s = style.smallScale
+        dw = self.border[3] - self.hPadding * s
+
+        if self._drawRegion ():
+            ctxt.save ()
+            self._applyRegionStyle (style, ctxt)
+            ctxt.rectangle (0, s, dw, h - 2 * s)
+            ctxt.fill ()
+            ctxt.restore ()
 
         if self._drawLine ():
             ctxt.save ()
@@ -1674,6 +1688,10 @@ class XYKeyPainter (GenericKeyPainter):
 
     def _drawStamp (self):
         return self.owner.pointStamp is not None
+
+
+    def _drawRegion (self):
+        return False
     
 
     def _applyLineStyle (self, style, ctxt):
@@ -1781,7 +1799,11 @@ class LineOnlyKeyPainter (GenericKeyPainter):
 
     def _drawStamp (self):
         return False
-    
+
+
+    def _drawRegion (self):
+        return False
+
 
     def _applyLineStyle (self, style, ctxt):
         style.applyDataLine (ctxt, self.owner.dsn)
