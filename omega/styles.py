@@ -49,12 +49,12 @@ class Style (object):
         ctxt.set_font_size (self.sizes.normalFontSize)
 
 
-    def applyDataLine (self, ctxt, stylenum):
-        self.data.applyLine (self, ctxt, stylenum)
+    def applyDataLine (self, ctxt, dsn):
+        self.data.applyLine (self, ctxt, dsn)
 
 
-    def applyDataStamp (self, ctxt, stylenum):
-        self.data.applyStamp (self, ctxt, stylenum)
+    def applyDataStamp (self, ctxt, dsn):
+        self.data.applyStamp (self, ctxt, dsn)
 
 
     # Shortcut accessors for useful properties
@@ -123,7 +123,7 @@ class Colors (object):
     faint = None
 
 
-    def getDataColor (self, stylenum):
+    def getDataColor (self, dsn):
         raise NotImplementedError ()
     
 
@@ -142,9 +142,9 @@ class BlackOnWhiteColors (Colors):
         (0.8, 0.6, 0),
         ]
 
-    def getDataColor (self, stylenum):
+    def getDataColor (self, dsn):
         dc = self._dataColors
-        return dc[stylenum % len (dc)]
+        return dc[dsn % len (dc)]
 
 
 class WhiteOnBlackColors (Colors):
@@ -162,9 +162,9 @@ class WhiteOnBlackColors (Colors):
         (0.8, 0.6, 0),
         ]
 
-    def getDataColor (self, stylenum):
+    def getDataColor (self, dsn):
         dc = self._dataColors
-        return dc[stylenum % len (dc)]
+        return dc[dsn % len (dc)]
 
 
 # Themes for different kinds of data in a shared plot
@@ -212,23 +212,23 @@ class MonochromeDataTheme (DataTheme):
             dlas.append (asarray (t))
 
 
-    def applyLine (self, style, ctxt, stylenum):
-        if stylenum is None: return
+    def applyLine (self, style, ctxt, dsn):
+        if dsn is None: return
         
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
 
         dlas = self._dashLengthArrays
-        dashlengths = dlas[stylenum % len (dlas)]
+        dashlengths = dlas[dsn % len (dlas)]
 
         if len (dashlengths):
             ctxt.set_dash (dashlengths * style.smallScale, 0.)
 
 
-    def applyStamp (self, style, ctxt, stylenum):
-        if stylenum is None: return
+    def applyStamp (self, style, ctxt, dsn):
+        if dsn is None: return
 
-        # No variation based on stylenum here.
+        # No variation based on data style number here.
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
         
@@ -247,10 +247,10 @@ class MonochromeDataTheme (DataTheme):
                  _wf (stamps.symDownTriangle, False)]
 
     
-    def getSymbolFunc (self, stylenum):
-        stylenum = stylenum % len (self._symFuncs)
+    def getSymbolFunc (self, dsn):
+        dsn = dsn % len (self._symFuncs)
         
-        return self._symFuncs[stylenum]
+        return self._symFuncs[dsn]
     
         
 class ColorDataTheme (DataTheme):
@@ -262,25 +262,25 @@ class ColorDataTheme (DataTheme):
     printers."""
 
 
-    def applyLine (self, style, ctxt, stylenum):
-        if stylenum is None: return
+    def applyLine (self, style, ctxt, dsn):
+        if dsn is None: return
 
-        c = style.colors.getDataColor (stylenum)
+        c = style.colors.getDataColor (dsn)
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (style.sizes.thickLine)
 
 
-    def applyStamp (self, style, ctxt, stylenum):
-        if stylenum is None: return
+    def applyStamp (self, style, ctxt, dsn):
+        if dsn is None: return
 
-        c = style.colors.getDataColor (stylenum)
+        c = style.colors.getDataColor (dsn)
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (style.sizes.thickLine)
 
 
-    def getSymbolFunc (self, stylenum):
+    def getSymbolFunc (self, dsn):
         # FIXME hardcoded hack
-        symnum = (stylenum // 6) % len (MonochromeDataTheme._symFuncs)
+        symnum = (dsn // 6) % len (MonochromeDataTheme._symFuncs)
         return MonochromeDataTheme._symFuncs[symnum]
 
 

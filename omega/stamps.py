@@ -311,8 +311,8 @@ class DataThemedStamp (PrimaryRStamp):
         if self.snholder is None:
             raise Exception ('Need to call setHolder before painting DataThemedStamp!')
 
-        sn = self.snholder.primaryStyleNum
-        style.data.getSymbolFunc (sn) (ctxt, style, size)
+        dsn = self.snholder.dsn
+        style.data.getSymbolFunc (dsn) (ctxt, style, size)
 
 
 # Here are some utility stamps that are *not*

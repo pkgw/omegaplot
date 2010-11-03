@@ -858,7 +858,7 @@ class RectPlot (Painter):
     SIDE_BOTTOM = 2
     SIDE_LEFT = 3
 
-    _nextPrimaryStyleNum = 0
+    _nextDataStyleNum = 0
     
     def __init__ (self, emulate=None):
         Painter.__init__ (self)
@@ -903,7 +903,7 @@ class RectPlot (Painter):
         self.defaultKey.appendChild (item)
     
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
-             stylenum=None):
+             dsn=None):
         # FIXME: don't rebound if the FP doesn't have any data.
         
         assert (isinstance (fp, FieldPainter))
@@ -915,11 +915,11 @@ class RectPlot (Painter):
             fp.field = self.defaultField
 
         if fp.needsPrimaryStyle:
-            if stylenum is not None:
-                fp.primaryStyleNum = int (stylenum)
+            if dsn is not None:
+                fp.dsn = int (dsn)
             else:
-                fp.primaryStyleNum = self._nextPrimaryStyleNum
-                self._nextPrimaryStyleNum += 1
+                fp.dsn = self._nextDataStyleNum
+                self._nextDataStyleNum += 1
         
         if autokey:
             kp = fp.getKeyPainter ()
@@ -1002,7 +1002,7 @@ class RectPlot (Painter):
         dp = GridContours (keyText=keyText, **_kwordExtract (kwargs, 'lineStyle'))
 
         kadd = _kwordExtract (kwargs, 'autokey', 'rebound', 'nudgex',
-                              'nudgey', 'stylenum')
+                              'nudgey', 'dsn')
         
         dp.setData (data, rowcoords, colcoords, **kwargs)
 
@@ -1628,12 +1628,12 @@ class XYKeyPainter (GenericKeyPainter):
     
 
     def _applyLineStyle (self, style, ctxt):
-        style.applyDataLine (ctxt, self.owner.primaryStyleNum)
+        style.applyDataLine (ctxt, self.owner.dsn)
         style.apply (ctxt, self.owner.lineStyle)
 
 
     def _applyStampStyle (self, style, ctxt):
-        style.applyDataStamp (ctxt, self.owner.primaryStyleNum)
+        style.applyDataStamp (ctxt, self.owner.dsn)
         style.apply (ctxt, self.owner.stampStyle)
 
 
@@ -1644,7 +1644,7 @@ class XYDataPainter (FieldPainter):
     lineStyle = None
     stampStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
     lines = True
     pointStamp = None
     
@@ -1688,7 +1688,7 @@ class XYDataPainter (FieldPainter):
         if allx.shape[1] < 1: return
 
         ctxt.save ()
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
 
         x, y = allx[0,:], ally[0,:]
@@ -1708,7 +1708,7 @@ class XYDataPainter (FieldPainter):
         ctxt.restore ()
 
         ctxt.save ()
-        style.applyDataStamp (ctxt, self.primaryStyleNum)
+        style.applyDataStamp (ctxt, self.dsn)
         style.apply (ctxt, self.stampStyle)
         
         if self.pointStamp is not None:
@@ -1730,7 +1730,7 @@ class LineOnlyKeyPainter (GenericKeyPainter):
     
 
     def _applyLineStyle (self, style, ctxt):
-        style.applyDataLine (ctxt, self.owner.primaryStyleNum)
+        style.applyDataLine (ctxt, self.owner.dsn)
         style.apply (ctxt, self.owner.lineStyle)
 
 
@@ -1741,7 +1741,7 @@ class LineOnlyKeyPainter (GenericKeyPainter):
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
     connectors = True
     
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
@@ -1783,7 +1783,7 @@ class DiscreteSteppedPainter (FieldPainter):
         xpos = axis.transformIndices (axis.allIndices ()) * self.fullw
         ys = self.xform.mapY (ally[0])
         
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
 
         for i in xrange (0, ys.size):
@@ -1826,7 +1826,7 @@ class ContinuousSteppedPainter (FieldPainter):
     
     lineStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
     connectors = True
     
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
@@ -1873,7 +1873,7 @@ class ContinuousSteppedPainter (FieldPainter):
         
         if xs.size < 1: return
 
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
 
         prevx, prevy = xs[0], ys[0]
@@ -1983,7 +1983,7 @@ class AbsoluteFieldOverlay (FieldPainter):
 class HLine (FieldPainter):
     lineStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
 
     def __init__ (self, ypos=0., keyText='HLine', lineStyle=None):
         super (HLine, self).__init__ ()
@@ -2006,7 +2006,7 @@ class HLine (FieldPainter):
         y = self.xform.mapY (self.ypos)
 
         ctxt.save ()
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
         ctxt.move_to (0, y)
         ctxt.line_to (self.fullw, y)
@@ -2017,7 +2017,7 @@ class HLine (FieldPainter):
 class VLine (FieldPainter):
     lineStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
 
     def __init__ (self, xpos=0., keyText='VLine', lineStyle=None):
         super (VLine, self).__init__ ()
@@ -2040,7 +2040,7 @@ class VLine (FieldPainter):
         x = self.xform.mapX (self.xpos)
 
         ctxt.save ()
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
         ctxt.move_to (x, 0)
         ctxt.line_to (x, self.fullh)
@@ -2051,7 +2051,7 @@ class VLine (FieldPainter):
 class XBand (FieldPainter):
     style = 'genericBand'
     needsPrimaryStyle = False
-    primaryStyleNum = None
+    dsn = None
     stroke = False
     fill = True
     
@@ -2092,7 +2092,7 @@ class VEnvelope (FieldPainter):
 
     style = 'genericBand'
     needsPrimaryStyle = False
-    primaryStyleNum = None
+    dsn = None
     stroke = False
     fill = True
 
@@ -2153,7 +2153,7 @@ class Polygon (FieldPainter):
 
     style = 'genericBand'
     needsPrimaryStyle = False
-    primaryStyleNum = None
+    dsn = None
     stroke = False
     fill = True
 
@@ -2206,7 +2206,7 @@ class GridContours (FieldPainter):
 
     lineStyle = None
     needsPrimaryStyle = True
-    primaryStyleNum = None
+    dsn = None
 
     def __init__ (self, computed=None, lineStyle=None, keyText='Contours'):
         super (GridContours, self).__init__ ()
@@ -2260,7 +2260,7 @@ class GridContours (FieldPainter):
         # FIXME: different line styles and this and that
 
         ctxt.save ()
-        style.applyDataLine (ctxt, self.primaryStyleNum)
+        style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
 
         for k, cntrs in self.computed.iteritems ():
