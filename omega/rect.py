@@ -1970,6 +1970,123 @@ class ContinuousSteppedPainter (FieldPainter):
         ctxt.stroke ()
 
 
+class SteppedBoundedPainter (FieldPainter):
+    """X values: bin left edges, bin right edges
+    Y values: measurement centers, upper bound. lower bound"""
+
+    lineStyle = None
+    fillStyle = None
+    connectors = False
+    dsn = None
+    needsPrimaryStyle = True
+
+
+    def __init__ (self, lineStyle=None, fillStyle=None, connectors=False,
+                  keyText='Histogram'):
+        super (SteppedBoundedPainter, self).__init__ ()
+
+        self.lineStyle = lineStyle
+        self.fillStyle = fillStyle
+        self.connectors = connectors
+        self.keyText = keyText
+
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 2, 3)
+
+
+    def getDataBounds (self):
+        imisc, fmisc, allx, ally = self.data.getAll ()
+        xls, xrs = allx
+        yvals, yups, ydns = ally
+
+        if len (xls) == 0:
+            return None, None, None, None
+
+        xmin = min (xls.min (), xrs.min ())
+        xmax = max (xls.max (), xrs.max ())
+        ymin = min (ydns.min (), yups.min ())
+        ymax = max (ydns.max (), yups.max ())
+
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
+        if ymin > ymax:
+            ymin, ymax = ymax, ymin
+
+        return xmin, xmax, ymin, ymax
+
+
+    def getKeyPainter (self):
+        if self.keyText is None:
+            return None
+        return LineOnlyKeyPainter (self)
+
+
+    def doPaint (self, ctxt, style):
+        super (SteppedBoundedPainter, self).doPaint (ctxt, style)
+
+        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
+        n = allx.shape[1]
+
+        if n < 1:
+            return
+
+        xls, xrs = allx
+        ys, yups, ydns = ally
+
+        # Rectangular regions
+        style.applyDataRegion (ctxt, self.dsn)
+        style.apply (ctxt, self.fillStyle)
+
+        for i in xrange (n):
+            xl, xr = allx[:,i]
+            y, yup, ydn = ally[:,i]
+
+            ctxt.rectangle (xl, ydn, xr - xl, yup - ydn)
+            ctxt.fill ()
+
+        # Lines, a la regular histogram
+        style.applyDataLine (ctxt, self.dsn)
+        style.apply (ctxt, self.lineStyle)
+
+        if not self.connectors:
+            for i in xrange (n):
+                xl, xr = allx[:,i]
+                y = ally[0,i]
+
+                ctxt.move_to (xl, y)
+                ctxt.line_to (xr, y)
+                ctxt.stroke ()
+        else:
+            prevxr = None
+
+            for i in xrange (n):
+                xl, xr = allx[:,i]
+                y = ally[0,i]
+
+                if prevxr is not None and (prevxr - xl) / abs (xl) > 1e-6:
+                    raise Exception ('Arguments must be sorted in X when using connectors '
+                                     '(%f, %f, %f)' % (prevxr, xl, xl - prevxr))
+
+                if prevxr is None:
+                    ctxt.move_to (xl, y)
+                elif abs ((prevxr - xl) / xl) < 0.01:
+                    # Connector line would be vertical like we'd hope,
+                    # continue making the path
+                    ctxt.line_to (xl, y)
+                else:
+                    # We've jumped in the X domain, so we'll start a
+                    # new line
+                    ctxt.stroke ()
+                    ctxt.move_to (xl, y)
+
+                ctxt.line_to (xr, y)
+                prevxr = xr
+
+            ctxt.stroke ()
+
+
 class AbsoluteFieldOverlay (FieldPainter):
     child = None
     hAlign = 0.0
