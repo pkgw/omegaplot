@@ -1677,35 +1677,47 @@ class GenericKeyPainter (Painter):
         self.ts.paintAt (ctxt, self.border[3], ty, tc)
 
 
-class XYKeyPainter (GenericKeyPainter):
+class GenericDataKeyPainter (GenericKeyPainter):
+    def __init__ (self, owner, drawline, drawstamp, drawregion):
+        super (GenericDataKeyPainter, self).__init__ (owner)
+        self._drawline_val = drawline
+        self._drawstamp_val = drawstamp
+        self._drawregion_val = drawregion
+
     def _getText (self):
         return self.owner.keyText
 
-
     def _drawLine (self):
-        return self.owner.lines
-
+        return self._drawline_val
 
     def _drawStamp (self):
-        return self.owner.pointStamp is not None
-
+        return self._drawstamp_val and (self.owner.pointStamp is not None)
 
     def _drawRegion (self):
-        return False
-    
+        return self._drawregion_val
+
+    def _getStamp (self):
+        return self.owner.pointStamp
 
     def _applyLineStyle (self, style, ctxt):
         style.applyDataLine (ctxt, self.owner.dsn)
         style.apply (ctxt, self.owner.lineStyle)
 
-
     def _applyStampStyle (self, style, ctxt):
         style.applyDataStamp (ctxt, self.owner.dsn)
         style.apply (ctxt, self.owner.stampStyle)
 
+    def _applyRegionStyle (self, style, ctxt):
+        style.applyDataRegion (ctxt, self.owner.dsn)
+        style.apply (ctxt, self.owner.fillStyle)
 
-    def _getStamp (self):
-        return self.owner.pointStamp
+
+class XYKeyPainter (GenericDataKeyPainter):
+    def __init__ (self, owner):
+        super (XYKeyPainter, self).__init__ (owner, True, True, False)
+
+    def _drawLine (self):
+        return self.owner.lines
 
 
 class XYDataPainter (FieldPainter):
@@ -1788,32 +1800,6 @@ class XYDataPainter (FieldPainter):
         ctxt.restore ()
 
 
-class LineOnlyKeyPainter (GenericKeyPainter):
-    def _getText (self):
-        return self.owner.keyText
-
-
-    def _drawLine (self):
-        return True
-
-
-    def _drawStamp (self):
-        return False
-
-
-    def _drawRegion (self):
-        return False
-
-
-    def _applyLineStyle (self, style, ctxt):
-        style.applyDataLine (ctxt, self.owner.dsn)
-        style.apply (ctxt, self.owner.lineStyle)
-
-
-    def _applyStampStyle (self, style, ctxt):
-        pass
-
-
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = None
     needsPrimaryStyle = True
@@ -1842,9 +1828,9 @@ class DiscreteSteppedPainter (FieldPainter):
 
         
     def getKeyPainter (self):
-        if self.keyText is None: return None
-        
-        return LineOnlyKeyPainter (self)
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
 
     
     def doPaint (self, ctxt, style):
@@ -1944,11 +1930,11 @@ class ContinuousSteppedPainter (FieldPainter):
 
         
     def getKeyPainter (self):
-        if self.keyText is None: return None
-        
-        return LineOnlyKeyPainter (self)
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
 
-    
+
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
 
@@ -2042,7 +2028,7 @@ class SteppedBoundedPainter (FieldPainter):
     def getKeyPainter (self):
         if self.keyText is None:
             return None
-        return LineOnlyKeyPainter (self)
+        return GenericDataKeyPainter (self, True, False, True)
 
 
     def doPaint (self, ctxt, style):
@@ -2201,9 +2187,9 @@ class HLine (FieldPainter):
 
 
     def getKeyPainter (self):
-        if self.keyText is None: return None
-
-        return LineOnlyKeyPainter (self)
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
 
 
     def doPaint (self, ctxt, style):
@@ -2238,9 +2224,9 @@ class VLine (FieldPainter):
 
 
     def getKeyPainter (self):
-        if self.keyText is None: return None
-
-        return LineOnlyKeyPainter (self)
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
 
 
     def doPaint (self, ctxt, style):
@@ -2471,9 +2457,9 @@ class GridContours (FieldPainter):
 
 
     def getKeyPainter (self):
-        if self.keyText is None: return None
-
-        return LineOnlyKeyPainter (self)
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
 
 
     def doPaint (self, ctxt, style):
