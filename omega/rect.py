@@ -6,6 +6,7 @@ from base import (_TextPainterBase, _kwordDefaulted,
                   _kwordExtract, _checkKwordsConsumed)
 from layout import RightRotationPainter
 
+
 class RectDataHolder (DataHolder):
     AxisX = 2
     AxisY = 3
@@ -33,6 +34,7 @@ class RectDataHolder (DataHolder):
         imisc, fmisc, x, y = self.get (cinfo)
         return x[0], y[0]
 
+
 class RectAxis (object):
     """Generic class for a logical axis on a rectangular plot. Note that
     this class does not paint the axis; it just maps values from the bounds
@@ -51,6 +53,7 @@ class RectAxis (object):
     def inbounds (self, values):
         """Return True for each value that is within the bounds of this axis."""
         raise NotImplementedError ()
+
 
 class LinearAxis (RectAxis):
     """A linear logical axis for a rectangular plot."""
@@ -110,6 +113,7 @@ class LogarithmicAxis (RectAxis):
         
         return N.logical_and (valid, N.logical_and (lv >= self.logmin, lv <= self.logmax))
 
+
 class DiscreteAxis (RectAxis):
     """A discrete logical axis for a rectangular plot. That is,
     the abscissa values are integers and mapped to sequential points along
@@ -144,6 +148,7 @@ class DiscreteAxis (RectAxis):
             ret = (values - self.min + 0.0) / (self.max - self.min)
 
         return ret
+
 
 # Axis Painters
 
@@ -180,6 +185,7 @@ class BlankAxisPainter (object):
         axis, nudging (1, 9) should probably yield (0, 10)."""
         pass
 
+
 class AxisPaintHelper (object):
     """A helper class that makes common axis-painting operations
     agnostic to the orientation of the axis we are painting. More
@@ -190,6 +196,7 @@ class AxisPaintHelper (object):
         self.side = -1
         self.w = w
         self.h = h
+
 
     def paintBaseline (self, ctxt):
         if self.side == RectPlot.SIDE_TOP:
@@ -205,6 +212,7 @@ class AxisPaintHelper (object):
             ctxt.move_to (0, 0)
             ctxt.line_to (0, self.h)
         ctxt.stroke ()
+
 
     def paintTickIn (self, ctxt, loc, len):
         """Note that the coordinate system used by axis classes needs
@@ -225,8 +233,10 @@ class AxisPaintHelper (object):
             ctxt.rel_line_to (len, 0)
         ctxt.stroke ()
 
+
     def paintTickOut (self, ctxt, loc, len):
         self.paintTickIn (ctxt, w, h, loc, -len)
+
 
     def moveToAlong (self, ctxt, loc):
         """Move to the specified position along the axis"""
@@ -238,6 +248,7 @@ class AxisPaintHelper (object):
             ctxt.move_to (self.w * loc, self.h)
         elif self.side == RectPlot.SIDE_LEFT:
             ctxt.move_to (0, self.h * (1. - loc))
+
 
     def relMoveIn (self, ctxt, len):
         """Perform a relative move orthogonal to the axis towards
@@ -251,8 +262,10 @@ class AxisPaintHelper (object):
         elif self.side == RectPlot.SIDE_LEFT:
             ctxt.rel_move_to (len, 0)
 
+
     def relMoveOut (self, ctxt, len):
         self.relMoveIn (ctxt, -len)
+
 
     def relMoveRectOut (self, ctxt, rw, rh):
         """We are at a given place. We wish to move to a point such
@@ -326,6 +339,7 @@ class LinearAxisPainter (BlankAxisPainter):
         
         self.axis = axis
 
+
     labelSeparation = 2 # in smallScale
     numFormat = '%g' # can be a function mapping float -> str
     majorTickScale = 2.5 # in largeScale
@@ -338,6 +352,7 @@ class LinearAxisPainter (BlankAxisPainter):
     avoidBounds = True # do not draw ticks at extremes of axes
     paintLabels = True # draw any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
+
     
     def nudgeBounds (self):
         span = self.axis.max - self.axis.min
@@ -368,6 +383,7 @@ class LinearAxisPainter (BlankAxisPainter):
         #print 'NB:', span, N.log10 (span), mip, step, newmin, newmax
 
         self.axis.min, self.axis.max = newmin, newmax
+
     
     def formatLabel (self, val):
         if callable (self.numFormat): return self.numFormat (val)
@@ -498,6 +514,7 @@ class LinearAxisPainter (BlankAxisPainter):
 
 LinearAxis.defaultPainter = LinearAxisPainter
 
+
 class LogarithmicAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a standard logarithmic
     axis with evenly spaced tick marks."""
@@ -511,6 +528,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         
         self.axis = axis
 
+
     labelSeparation = 2 # in smallScale
     formatLogValue = False # if true, format log10(value), not the raw value
     majorTickScale = 2 # in largeScale
@@ -523,9 +541,11 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     labelMinorTicks = False # draw value labels at the minor tick points?
     labelSomeMinorTicks = False # label 3x and 6x minor ticks?
 
+
     def nudgeBounds (self):
         self.axis.logmin = N.floor (self.axis.logmin)
         self.axis.logmax = N.ceil (self.axis.logmax)
+
 
     def formatLabel (self, coeff, exp):
         if callable (self.numFormat): return self.numFormat (coeff, exp)
@@ -534,6 +554,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         else: val = coeff * 10.**exp
         
         return self.numFormat % (val)
+
 
     def numFormat (self, coeff, exp):
         if exp >= 0 and exp < 3:
@@ -545,6 +566,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
             return '$10^{%d}$' % exp
 
         return r'$%d\cdot\!10^{%d}$' % (coeff, exp)
+
     
     def getTickLocations (self):
         # Tick spacing variables
@@ -563,6 +585,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
                 curpow += 1
             else:
                 coeff += 1
+
 
     def getLabelInfos (self, ctxt, style):
         if not self.paintLabels:
@@ -672,6 +695,7 @@ def LogValueAxisPainter (axis):
 
 LogarithmicAxis.defaultPainter = LogarithmicAxisPainter
 
+
 class DiscreteAxisPainter (BlankAxisPainter):
     """An axisPainter for the RectPlot class. Paints a tick mark and label
     for each item of a DiscreteAxis. Overriding the formatLabel property
@@ -688,12 +712,14 @@ class DiscreteAxisPainter (BlankAxisPainter):
         self.axis = axis
         self.formatLabel = formatLabel or self.genericFormat
 
+
     ticksBetween = False
     labelSeparation = 2 # in smallScale
     tickScale = 2 # in largeScale
     tickStyle = 'bgLinework' # style ref.
     textColor = 'foreground'
     labelStyle = None
+
 
     def genericFormat (self, v): return str(v)
 
@@ -752,6 +778,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
 
 DiscreteAxis.defaultPainter = DiscreteAxisPainter
 
+
 class RectField (object):
     """A rectangular field. A field is associated with X and Y axes; other objects
     use the field to map X and Y values input from the user into coordinates at which
@@ -768,6 +795,7 @@ class RectField (object):
 
         self.xaxis = xaxisOrField
         self.yaxis = yaxis
+
     
     class Transformer (object):
         """A utility class tied to a RectField object. Has three members:
@@ -819,8 +847,10 @@ class RectField (object):
 
             return raw * self.height
 
+
     def makeTransformer (self, width, height, weakClamp):
         return self.Transformer (self, width, height, weakClamp)
+
 
     def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         if xmin is not None:
@@ -831,6 +861,7 @@ class RectField (object):
             self.yaxis.min = float (ymin)
         if ymax is not None:
             self.yaxis.max = float (ymax)
+
 
     def expandBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         if xmin is not None:
@@ -882,11 +913,14 @@ class RectPlot (Painter):
         self.defaultKey = None
         self.defaultKeyOverlay = None
 
+
     def setDefaultAxes (self, xaxis, yaxis):
         self.defaultField = RectField (xaxis, yaxis)
+
                       
     def setDefaultField (self, field):
         self.defaultField = field
+
 
     def addKeyItem (self, item):
         if self.defaultKey is None:
@@ -901,6 +935,7 @@ class RectPlot (Painter):
             item.vAlign = self.defaultKeyOverlay.vAlign
 
         self.defaultKey.appendChild (item)
+
     
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
              dsn=None):
@@ -930,6 +965,7 @@ class RectPlot (Painter):
             self.rebound (nudgex, nudgey)
 
         return fp
+
 
     def addXY (self, *args, **kwargs):
         l = len (args)
@@ -1048,10 +1084,12 @@ class RectPlot (Painter):
 
         field.setBounds (*bounds)
         self.nudgeBounds (nudgex, nudgey)
+
     
     def addOuterPainter (self, op, side, position):
         op.setParent (self)
         self.opainters.append ((op, side, position))
+
 
     def _outerPainterIndex (self, op):
         for i in xrange (0, len(self.opainters)):
@@ -1059,9 +1097,11 @@ class RectPlot (Painter):
 
         raise ValueError ('%s not in list of outer painters' % (op))
 
+
     def moveOuterPainter (self, op, side, position):
         idx = self._outerPainterIndex (self, op)
         self.opainters[idx] = (op, side, position)
+
     
     def _lostChild (self, child):
         try:
@@ -1073,6 +1113,7 @@ class RectPlot (Painter):
         idx = self._outerPainterIndex (child)
         del self.opainters[idx]
         return
+
         
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
@@ -1144,6 +1185,7 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
+
     def setLinLogAxes (self, wantxlog, wantylog, xlogvalue=False, ylogvalue=False):
         df = self.defaultField
         if not df: raise Exception ('Need a default field!')
@@ -1210,6 +1252,7 @@ class RectPlot (Painter):
         self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter, ylogvalue)
         self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter, xlogvalue)
         self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter, ylogvalue)
+
     
     # X and Y axis label helpers
     # FIXME: should have a setTitle too. Not the same as a top-side
@@ -1219,6 +1262,7 @@ class RectPlot (Painter):
     def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         self.defaultField.setBounds (xmin, xmax, ymin, ymax)
 
+
     def nudgeBounds (self, nudgex=True, nudgey=True):
         if nudgex:
             self.bpainter.nudgeBounds ()
@@ -1226,6 +1270,7 @@ class RectPlot (Painter):
         if nudgey:
             self.lpainter.nudgeBounds ()
             self.rpainter.nudgeBounds ()
+
     
     def setSideLabel (self, side, val):
         if self.mainLabels[side] is not None:
@@ -1252,11 +1297,14 @@ class RectPlot (Painter):
         self.addOuterPainter (val, side, 0.5)
         self.mainLabels[side] = val
 
+
     def setXLabel (self, val):
         self.setSideLabel (self.SIDE_BOTTOM, val)
+
         
     def setYLabel (self, val):
         self.setSideLabel (self.SIDE_LEFT, val)
+
 
     def setLabels (self, xval, yval):
         self.setXLabel (xval)
@@ -1550,6 +1598,7 @@ class FieldPainter (Painter):
     def getKeyPainter (self):
         raise NotImplementedError ()
 
+
 class GenericKeyPainter (Painter):
     vDrawSize = 2 # in style.largeScale
     hDrawSize = 5 # in style.largeScale
@@ -1640,6 +1689,7 @@ class XYKeyPainter (GenericKeyPainter):
     def _getStamp (self):
         return self.owner.pointStamp
 
+
 class XYDataPainter (FieldPainter):
     lineStyle = None
     stampStyle = None
@@ -1667,6 +1717,7 @@ class XYDataPainter (FieldPainter):
 
         self.keyText = keyText
 
+
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
 
@@ -1675,10 +1726,12 @@ class XYDataPainter (FieldPainter):
         
         return xs.min (), xs.max (), ys.min (), ys.max ()
 
+
     def getKeyPainter (self):
         if self.keyText is None: return None
         
         return XYKeyPainter (self)
+
     
     def doPaint (self, ctxt, style):
         super (XYDataPainter, self).doPaint (ctxt, style)
@@ -1716,6 +1769,7 @@ class XYDataPainter (FieldPainter):
 
         ctxt.restore ()
 
+
 class LineOnlyKeyPainter (GenericKeyPainter):
     def _getText (self):
         return self.owner.keyText
@@ -1744,6 +1798,7 @@ class DiscreteSteppedPainter (FieldPainter):
     dsn = None
     connectors = True
     
+
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
         Painter.__init__ (self)
 
@@ -1757,15 +1812,18 @@ class DiscreteSteppedPainter (FieldPainter):
 
         self.keyText = keyText
 
+
     def getDataBounds (self):
         ign, ign, xs, ys = self.data.getAll ()
 
         return xs.min (), xs.max (), ys.min (), ys.max ()
+
         
     def getKeyPainter (self):
         if self.keyText is None: return None
         
         return LineOnlyKeyPainter (self)
+
     
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
@@ -1821,6 +1879,7 @@ class DiscreteSteppedPainter (FieldPainter):
             prevxright = xright
             previdx = idx
 
+
 class ContinuousSteppedPainter (FieldPainter):
     """The X values are the left edges of the bins."""
     
@@ -1828,6 +1887,7 @@ class ContinuousSteppedPainter (FieldPainter):
     needsPrimaryStyle = True
     dsn = None
     connectors = True
+
     
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
         Painter.__init__ (self)
@@ -1842,6 +1902,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
         self.keyText = keyText
 
+
     def _calcMaxX (self, d):
         # FIXME: assuming data are sorted in X. We check in doPaint ()
         # but could stand to check here too.
@@ -1852,16 +1913,19 @@ class ContinuousSteppedPainter (FieldPainter):
             return 0.0
         
         return 2 * d[-1] - d[-2]
+
     
     def getDataBounds (self):
         imisc, fmisc, xs, ys = self.data.getAll ()
 
         return xs.min (), self._calcMaxX (xs[0]), ys.min (), ys.max ()
+
         
     def getKeyPainter (self):
         if self.keyText is None: return None
         
         return LineOnlyKeyPainter (self)
+
     
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
@@ -1992,13 +2056,16 @@ class HLine (FieldPainter):
         self.keyText = keyText
         self.lineStyle = lineStyle
 
+
     def getDataBounds (self):
         return (None, None, self.ypos, self.ypos)
+
 
     def getKeyPainter (self):
         if self.keyText is None: return None
 
         return LineOnlyKeyPainter (self)
+
 
     def doPaint (self, ctxt, style):
         super (HLine, self).doPaint (ctxt, style)
@@ -2026,13 +2093,16 @@ class VLine (FieldPainter):
         self.keyText = keyText
         self.lineStyle = lineStyle
 
+
     def getDataBounds (self):
         return (self.xpos, self.xpos, None, None)
+
 
     def getKeyPainter (self):
         if self.keyText is None: return None
 
         return LineOnlyKeyPainter (self)
+
 
     def doPaint (self, ctxt, style):
         super (VLine, self).doPaint (ctxt, style)
@@ -2054,6 +2124,7 @@ class XBand (FieldPainter):
     dsn = None
     stroke = False
     fill = True
+
     
     def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText='Band'):
         Painter.__init__ (self)
@@ -2066,12 +2137,15 @@ class XBand (FieldPainter):
         
         self.keyText = keyText
 
+
     def getDataBounds (self):
         return self.xmin, self.xmax, None, None
+
 
     def getKeyPainter (self):
         # FIXME
         return None
+
     
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
@@ -2087,6 +2161,7 @@ class XBand (FieldPainter):
         if self.fill: ctxt.fill ()
         ctxt.restore ()
 
+
 class VEnvelope (FieldPainter):
     """Paint a vertical envelope region."""
 
@@ -2095,6 +2170,7 @@ class VEnvelope (FieldPainter):
     dsn = None
     stroke = False
     fill = True
+
 
     def __init__ (self, keyText='VEnvelope', stroke=False, fill=True):
         Painter.__init__ (self)
@@ -2108,6 +2184,7 @@ class VEnvelope (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 2)
 
+
     def getDataBounds (self):
         ign, ign, x, ys = self.data.get (self.cinfo)
 
@@ -2116,9 +2193,11 @@ class VEnvelope (FieldPainter):
 
         return x.min (), x.max (), ys[0].min (), ys[0].max ()
 
+
     def getKeyPainter (self):
         # FIXME
         return None
+
 
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
@@ -2157,6 +2236,7 @@ class Polygon (FieldPainter):
     stroke = False
     fill = True
 
+
     def __init__ (self, keyText='Polygon', stroke=False, fill=True):
         Painter.__init__ (self)
 
@@ -2169,14 +2249,17 @@ class Polygon (FieldPainter):
         self.data.exportIface (self)
         self.cinfo = self.data.register (0, 0, 1, 1)
 
+
     def getDataBounds (self):
         ign, ign, x, y = self.data.get (self.cinfo)
 
         return x.min (), x.max (), y.min (), y.max ()
 
+
     def getKeyPainter (self):
         # FIXME
         return None
+
 
     def doPaint (self, ctxt, style):
         FieldPainter.doPaint (self, ctxt, style)
