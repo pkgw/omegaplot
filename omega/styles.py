@@ -23,6 +23,10 @@ class Style (object):
             styleItem (ctxt, self)
             return
 
+        if isinstance (styleItem, dict):
+            self._applyDictStyle (ctxt, styleItem)
+            return
+
         if isinstance (styleItem, basestring):
             fn = 'apply_' + styleItem
 
@@ -32,6 +36,20 @@ class Style (object):
 
         raise Exception ('Don\'t know what to do with '
                          'style item %s' % styleItem)
+
+
+    def _applyDictStyle (self, ctxt, item):
+        v = item.get ('color')
+        if v is not None:
+            ctxt.set_source_rgb (*self.getColor (v))
+
+        v = item.get ('linewidth')
+        if v is not None:
+            ctxt.set_line_width (v * self.sizes.thickLine)
+
+        v = item.get ('dashing')
+        if v is not None:
+            ctxt.set_dash (N.asarray (v) * self.sizes.smallScale, 0.)
 
 
     def getColor (self, color):
