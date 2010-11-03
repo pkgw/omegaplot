@@ -71,6 +71,10 @@ class Style (object):
         self.data.applyLine (self, ctxt, dsn)
 
 
+    def applyDataRegion (self, ctxt, dsn):
+        self.data.applyRegion (self, ctxt, dsn)
+
+
     def applyDataStamp (self, ctxt, dsn):
         self.data.applyStamp (self, ctxt, dsn)
 
@@ -210,10 +214,11 @@ class DataTheme (object):
     def applyLine (self, style, ctxt, n):
         raise NotImplementedError ()
 
+    def applyRegion (self, style, ctxt, n):
+        raise NotImplementedError ()
 
     def applyStamp (self, style, ctxt, n):
         raise NotImplementedError ()
-
 
     def getSymbolFunc (self, n):
         raise NotImplementedError ()
@@ -259,6 +264,14 @@ class MonochromeDataTheme (DataTheme):
             ctxt.set_dash (dashlengths * style.smallScale, 0.)
 
 
+    def applyRegion (self, style, ctxt, dsn):
+        if dsn is None:
+            return
+
+        ctxt.set_source_rgb (*style.colors.muted)
+        # FIXME: different fill patterns
+
+
     def applyStamp (self, style, ctxt, dsn):
         if dsn is None: return
 
@@ -302,6 +315,15 @@ class ColorDataTheme (DataTheme):
         c = style.colors.getDataColor (dsn)
         ctxt.set_source_rgb (*c)
         ctxt.set_line_width (style.sizes.thickLine)
+
+
+    def applyRegion (self, style, ctxt, dsn):
+        if dsn is None:
+            return
+
+        c = style.colors.getDataColor (dsn)
+        c = style.colors.towardBG (c, 0.6)
+        ctxt.set_source_rgb (*c)
 
 
     def applyStamp (self, style, ctxt, dsn):
