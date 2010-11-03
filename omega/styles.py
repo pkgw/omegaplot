@@ -344,5 +344,3 @@ def ColorOnBlackVector ():
 def ColorOnWhiteVector ():
     return Style (VectorSizes (), BlackOnWhiteColors (),
                   ColorDataTheme (), DefaultRoles ())
-
-
