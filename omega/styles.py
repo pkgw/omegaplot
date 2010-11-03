@@ -196,27 +196,33 @@ class MonochromeDataTheme (DataTheme):
     sources by dashing lines in different ways and
     using different plot symbols."""
 
+    _dashLengthTuples = [
+        (),
+        (2, 2),
+        (3, 1, 0.5, 1),
+        (3, 1, 1, 1, 1, 1),
+        (3, 1, 0.5, 1, 0.5, 1),
+        ]
+
+    def __init__ (self):
+        from numpy import asarray
+        dlas = self._dashLengthArrays = []
+
+        for t in self._dashLengthTuples:
+            dlas.append (asarray (t))
+
+
     def applyLine (self, style, ctxt, stylenum):
         if stylenum is None: return
         
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
 
-        u = style.smallScale
-        stylenum = stylenum % 5
+        dlas = self._dashLengthArrays
+        dashlengths = dlas[stylenum % len (dlas)]
 
-        if stylenum == 0:
-            return
-        elif stylenum == 1:
-            a = [u * 2, u * 2]
-        elif stylenum == 2:
-            a = [u * 3, u, u / 2, u]
-        elif stylenum == 3:
-            a = [u * 3, u, u, u, u, u]
-        elif stylenum == 4:
-            a = [u * 3, u, u / 2, u, u / 2, u]
-
-        ctxt.set_dash (a, 0.)
+        if len (dashlengths):
+            ctxt.set_dash (dashlengths * style.smallScale, 0.)
 
 
     def applyStamp (self, style, ctxt, stylenum):
