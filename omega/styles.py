@@ -133,24 +133,18 @@ class BlackOnWhiteColors (Colors):
     muted = (0.3, 0.3, 0.3)
     faint = (0.9, 0.9, 0.9)
 
+    _dataColors = [
+        (0.9, 0.1, 0.1),
+        (0, 0.1, 0.7),
+        (0.1, 0.9, 0.4),
+        (0.2, 0.9, 0.9),
+        (0.7, 0, 0.7),
+        (0.8, 0.6, 0),
+        ]
 
     def getDataColor (self, stylenum):
-        stylenum = stylenum % 6
-
-        if stylenum == 0:
-            c = (0.9, 0.1, 0.1)
-        elif stylenum == 1:
-            c = (0, 0.1, 0.7)
-        elif stylenum == 2:
-            c = (0.1, 0.9, 0.4)
-        elif stylenum == 3:
-            c = (0.2, 0.9, 0.9)
-        elif stylenum == 4:
-            c = (0.7, 0, 0.7)
-        elif stylenum == 5:
-            c = (0.8, 0.6, 0)
-
-        return c
+        dc = self._dataColors
+        return dc[stylenum % len (dc)]
 
 
 class WhiteOnBlackColors (Colors):
@@ -159,24 +153,18 @@ class WhiteOnBlackColors (Colors):
     muted = (0.7, 0.7, 0.7)
     faint = (0.15, 0.15, 0.15)
 
+    _dataColors = [
+        (0.9, 0.1, 0.1),
+        (0, 0.1, 0.7),
+        (0.1, 0.9, 0.4),
+        (0.2, 0.9, 0.9),
+        (0.7, 0, 0.7),
+        (0.8, 0.6, 0),
+        ]
 
     def getDataColor (self, stylenum):
-        stylenum = stylenum % 6
-
-        if stylenum == 0:
-            c = (0.9, 0.1, 0.1)
-        elif stylenum == 1:
-            c = (0, 0.1, 0.7)
-        elif stylenum == 2:
-            c = (0.1, 0.9, 0.4)
-        elif stylenum == 3:
-            c = (0.2, 0.9, 0.9)
-        elif stylenum == 4:
-            c = (0.7, 0, 0.7)
-        elif stylenum == 5:
-            c = (0.8, 0.6, 0)
-
-        return c
+        dc = self._dataColors
+        return dc[stylenum % len (dc)]
 
 
 # Themes for different kinds of data in a shared plot
