@@ -140,10 +140,12 @@ class Colors (object):
     muted = None
     faint = None
 
-
     def getDataColor (self, dsn):
         raise NotImplementedError ()
-    
+
+    def towardBG (self, color, howfar):
+        raise NotImplementedError ()
+
 
 class BlackOnWhiteColors (Colors):
     background = (1, 1, 1)
@@ -164,6 +166,13 @@ class BlackOnWhiteColors (Colors):
         dc = self._dataColors
         return dc[dsn % len (dc)]
 
+    def towardBG (self, color, howfar):
+        f = 1. - howfar
+        r = howfar + f * color[0]
+        g = howfar + f * color[1]
+        b = howfar + f * color[2]
+        return r, g, b
+
 
 class WhiteOnBlackColors (Colors):
     background = (0, 0, 0)
@@ -183,6 +192,13 @@ class WhiteOnBlackColors (Colors):
     def getDataColor (self, dsn):
         dc = self._dataColors
         return dc[dsn % len (dc)]
+
+    def towardBG (self, color, howfar):
+        f = 1. - howfar
+        r = f * color[0]
+        g = f * color[1]
+        b = f * color[2]
+        return r, g, b
 
 
 # Themes for different kinds of data in a shared plot
