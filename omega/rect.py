@@ -938,15 +938,17 @@ class RectPlot (Painter):
 
     
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
-             dsn=None):
+             dsn=None, field=None):
         # FIXME: don't rebound if the FP doesn't have any data.
         
         assert (isinstance (fp, FieldPainter))
         
         fp.setParent (self)
         self.fpainters.append (fp)
-        
-        if fp.field is None:
+
+        if field is not None:
+            fp.field = field
+        elif fp.field is None:
             fp.field = self.defaultField
 
         if fp.needsPrimaryStyle:
