@@ -964,7 +964,7 @@ class RectPlot (Painter):
                 self.addKeyItem (kp)
         
         if rebound:
-            self.rebound (nudgex, nudgey)
+            self.rebound (nudgex, nudgey, field)
 
         return fp
 
