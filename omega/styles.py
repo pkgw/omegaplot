@@ -1,5 +1,7 @@
 """style - Graphical styling classes."""
 
+import numpy as N
+
 class Style (object):
     def __init__ (self, sizes, colors, data, roles):
         self.sizes = sizes
