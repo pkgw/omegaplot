@@ -951,7 +951,7 @@ class RectPlot (Painter):
         elif fp.field is None:
             fp.field = self.defaultField
 
-        if fp.needsPrimaryStyle:
+        if fp.needsDataStyle:
             if dsn is not None:
                 fp.dsn = int (dsn)
             else:
@@ -1583,7 +1583,7 @@ class RectPlot (Painter):
 
 class FieldPainter (Painter):
     field = None
-    needsPrimaryStyle = False
+    needsDataStyle = False
     
     def doPaint (self, ctxt, style):
         if self.field is None:
@@ -1725,7 +1725,7 @@ class XYKeyPainter (GenericDataKeyPainter):
 class XYDataPainter (FieldPainter):
     lineStyle = None
     stampStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
     lines = True
     pointStamp = None
@@ -1804,7 +1804,7 @@ class XYDataPainter (FieldPainter):
 
 class DiscreteSteppedPainter (FieldPainter):
     lineStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
     connectors = True
     
@@ -1894,7 +1894,7 @@ class ContinuousSteppedPainter (FieldPainter):
     """The X values are the left edges of the bins."""
     
     lineStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
     connectors = True
 
@@ -1988,7 +1988,7 @@ class SteppedBoundedPainter (FieldPainter):
     fillStyle = None
     connectors = False
     dsn = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
 
 
     def __init__ (self, lineStyle=None, fillStyle=None, connectors=False,
@@ -2173,7 +2173,7 @@ class AbsoluteFieldOverlay (FieldPainter):
 
 class HLine (FieldPainter):
     lineStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
 
     def __init__ (self, ypos=0., keyText='HLine', lineStyle=None):
@@ -2210,7 +2210,7 @@ class HLine (FieldPainter):
 
 class VLine (FieldPainter):
     lineStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
 
     def __init__ (self, xpos=0., keyText='VLine', lineStyle=None):
@@ -2247,7 +2247,7 @@ class VLine (FieldPainter):
 
 class XBand (FieldPainter):
     style = 'genericBand'
-    needsPrimaryStyle = False
+    needsDataStyle = False
     dsn = None
     stroke = False
     fill = True
@@ -2293,7 +2293,7 @@ class VEnvelope (FieldPainter):
     """Paint a vertical envelope region."""
 
     style = 'genericBand'
-    needsPrimaryStyle = False
+    needsDataStyle = False
     dsn = None
     stroke = False
     fill = True
@@ -2358,7 +2358,7 @@ class Polygon (FieldPainter):
     """Paint a polygonal region."""
 
     style = 'genericBand'
-    needsPrimaryStyle = False
+    needsDataStyle = False
     dsn = None
     stroke = False
     fill = True
@@ -2415,7 +2415,7 @@ class GridContours (FieldPainter):
     """Paint contours computed from gridded data."""
 
     lineStyle = None
-    needsPrimaryStyle = True
+    needsDataStyle = True
     dsn = None
 
     def __init__ (self, computed=None, lineStyle=None, keyText='Contours'):
