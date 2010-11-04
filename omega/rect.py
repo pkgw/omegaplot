@@ -1722,6 +1722,53 @@ class XYKeyPainter (GenericDataKeyPainter):
         return self.owner.lines
 
 
+class RegionKeyPainter (GenericDataKeyPainter):
+    def __init__ (self, owner):
+        super (RegionKeyPainter, self).__init__ (owner, True, False, True)
+
+    def _drawLine (self):
+        return self.owner.stroke
+
+    def _drawRegion (self):
+        return self.owner.fill
+
+    def _applyLineStyle (self, style, ctxt):
+        if self.owner.dsn is not None:
+            style.applyDataLine (ctxt, self.owner.dsn)
+        style.apply (ctxt, self.owner.style)
+
+    def _applyRegionStyle (self, style, ctxt):
+        if self.owner.dsn is not None:
+            style.applyDataRegion (ctxt, self.owner.dsn)
+        style.apply (ctxt, self.owner.style)
+
+    def doPaint (self, ctxt, style):
+        w, h = self.width, self.height
+        s = style.smallScale
+        dw = self.border[3] - self.hPadding * s
+
+        ctxt.rectangle (0, s, dw, h - 2 * s)
+
+        if self._drawRegion ():
+            ctxt.save ()
+            self._applyRegionStyle (style, ctxt)
+            ctxt.set_line_width (0) # !!!
+            ctxt.fill_preserve ()
+            ctxt.restore ()
+
+        if self._drawLine ():
+            ctxt.save ()
+            self._applyLineStyle (style, ctxt)
+            ctxt.stroke_preserve ()
+            ctxt.restore ()
+
+        # Clear path for the text drawing
+        ctxt.new_path ()
+        ty = (h - self.th) / 2
+        tc = style.getColor (self.textColor)
+        self.ts.paintAt (ctxt, self.border[3], ty, tc)
+
+
 class XYDataPainter (FieldPainter):
     lineStyle = None
     stampStyle = None
@@ -2270,8 +2317,9 @@ class XBand (FieldPainter):
 
 
     def getKeyPainter (self):
-        # FIXME
-        return None
+        if self.keyText is None:
+            return None
+        return RegionKeyPainter (self)
 
     
     def doPaint (self, ctxt, style):
@@ -2322,8 +2370,9 @@ class VEnvelope (FieldPainter):
 
 
     def getKeyPainter (self):
-        # FIXME
-        return None
+        if self.keyText is None:
+            return None
+        return RegionKeyPainter (self)
 
 
     def doPaint (self, ctxt, style):
@@ -2384,8 +2433,9 @@ class Polygon (FieldPainter):
 
 
     def getKeyPainter (self):
-        # FIXME
-        return None
+        if self.keyText is None:
+            return None
+        return RegionKeyPainter (self)
 
 
     def doPaint (self, ctxt, style):
