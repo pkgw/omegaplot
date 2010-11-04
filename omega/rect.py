@@ -331,7 +331,7 @@ class LinearAxisPainter (BlankAxisPainter):
     axis with evenly spaced tick marks."""
     
     def __init__ (self, axis):
-        BlankAxisPainter.__init__ (self)
+        super (LinearAxisPainter, self).__init__ ()
 
         if not isinstance (axis, LinearAxis):
             raise Exception ('Giving linearAxisPainter a '
@@ -520,7 +520,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     axis with evenly spaced tick marks."""
 
     def __init__ (self, axis):
-        BlankAxisPainter.__init__ (self)
+        super (LogarithmicAxisPainter, self).__init__ ()
 
         if not isinstance (axis, LogarithmicAxis):
             raise Exception ('Giving logarithmicAxisPainter a'
@@ -632,7 +632,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     
     def paint (self, helper, ctxt, style):
-        BlankAxisPainter.paint (self, helper, ctxt, style)
+        super (LogarithmicAxisPainter, self).paint (helper, ctxt, style)
 
         style.apply (ctxt, self.tickStyle)
 
@@ -703,7 +703,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
     days of the week, members, etc."""
     
     def __init__ (self, axis, formatLabel=None):
-        BlankAxisPainter.__init__ (self)
+        super (DiscreteAxisPainter, self).__init__ ()
 
         if not isinstance (axis, DiscreteAxis):
             raise Exception ('Giving DiscreteAxisPainter a'
@@ -759,7 +759,7 @@ class DiscreteAxisPainter (BlankAxisPainter):
 
 
     def paint (self, helper, ctxt, style):
-        BlankAxisPainter.paint (self, helper, ctxt, style)
+        super (DiscreteAxisPainter, self).paint (helper, ctxt, style)
 
         style.apply (ctxt, self.tickStyle)
 
@@ -892,7 +892,7 @@ class RectPlot (Painter):
     _nextDataStyleNum = 0
     
     def __init__ (self, emulate=None):
-        Painter.__init__ (self)
+        super (RectPlot, self).__init__ ()
         
         # we might want to plot two data sets with different logical axes,
         # but store default ones here to make life easier in the common case.
@@ -1731,7 +1731,7 @@ class XYDataPainter (FieldPainter):
     pointStamp = None
     
     def __init__ (self, lines=True, pointStamp=None, keyText='Data'):
-        Painter.__init__ (self)
+        super (XYDataPainter, self).__init__ ()
         
         self.data = RectDataHolder (DataHolder.AxisTypeFloat,
                                     DataHolder.AxisTypeFloat)
@@ -1810,7 +1810,7 @@ class DiscreteSteppedPainter (FieldPainter):
     
 
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
-        Painter.__init__ (self)
+        super (DiscreteSteppedPainter, self).__init__ ()
 
         self.lineStyle = lineStyle
         self.connectors = connectors
@@ -1836,7 +1836,7 @@ class DiscreteSteppedPainter (FieldPainter):
 
     
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (DiscreteSteppedPainter, self).doPaint (ctxt, style)
 
         axis = self.field.xaxis
         if not isinstance (axis, DiscreteAxis):
@@ -1900,7 +1900,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
     
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
-        Painter.__init__ (self)
+        super (ContinuousSteppedPainter, self).init__ ()
 
         self.lineStyle = lineStyle
         self.connectors = connectors
@@ -1938,7 +1938,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
 
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (ContinuousSteppedPainter, self).doPaint (ctxt, style)
 
         xs, ys = self.data.getRawXY (self.cinfo)
         finalx = self.xform.mapX (self._calcMaxX (xs))
@@ -2106,7 +2106,7 @@ class AbsoluteFieldOverlay (FieldPainter):
 
 
     def __init__ (self, child=None, hAlign=0.0, vAlign=0.0):
-        Painter.__init__ (self)
+        super (AbsoluteFieldOverlay, self).__init__ ()
 
         self.setChild (child)
 
@@ -2254,7 +2254,7 @@ class XBand (FieldPainter):
 
     
     def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText='Band'):
-        Painter.__init__ (self)
+        super (XBand, self).__init__ ()
 
         self.stroke = stroke
         self.fill = fill
@@ -2275,7 +2275,7 @@ class XBand (FieldPainter):
 
     
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (XBand, self).doPaint (ctxt, style)
 
         mmin, mmax = self.xform.mapX (N.asarray ((self.xmin, self.xmax)))
         w = abs (mmax - mmin)
@@ -2300,7 +2300,7 @@ class VEnvelope (FieldPainter):
 
 
     def __init__ (self, keyText='VEnvelope', stroke=False, fill=True):
-        Painter.__init__ (self)
+        super (VEnvelope, self).__init__ ()
 
         self.stroke = stroke
         self.fill = fill
@@ -2327,7 +2327,7 @@ class VEnvelope (FieldPainter):
 
 
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (VEnvelope, self).doPaint (ctxt, style)
 
         ign, ign, x, ys = self.data.getMapped (self.cinfo, self.xform)
         x = x[0]
@@ -2365,7 +2365,7 @@ class Polygon (FieldPainter):
 
 
     def __init__ (self, keyText='Polygon', stroke=False, fill=True):
-        Painter.__init__ (self)
+        super (Polygon, self).__init__ ()
 
         self.stroke = stroke
         self.fill = fill
@@ -2389,7 +2389,7 @@ class Polygon (FieldPainter):
 
 
     def doPaint (self, ctxt, style):
-        FieldPainter.doPaint (self, ctxt, style)
+        super (Polygon, self).doPaint (ctxt, style)
 
         ign, ign, x, y = self.data.getMapped (self.cinfo, self.xform)
         x = x[0]
