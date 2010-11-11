@@ -1579,6 +1579,63 @@ class RectPlot (Painter):
             op.paint (ctxt, style)
 
 
+    def extractFrameCoords (self, ctxt, fx, fy):
+        """Given a Cairo context, return the coordinates of a location
+        in the plot frame in that context's coordinate system. The RectPlot
+        must have been configured for painting so that its coordinate system
+        on the context has been established. The transformation is done by
+        mapping from the plot's coordinate system to device coordinates and
+        back to the context's coordinate system.
+
+        The frame coordinates are defined such that (0,0) is the top left of
+        the plot frame, (1,0) is the top right, and (0,1) is the bottom left.
+
+        The intent of this function is to make it possible to draw zoom boxes
+        from one plot to another using a painter overlaid on the plots.
+        """
+
+        assert self.matrix is not None
+
+        ctxt.save ()
+        ctxt.set_matrix (self.matrix)
+        fx = fx * self.width + self.border[3]
+        fy = fy * self.height + self.border[0]
+        dx, dy = ctxt.user_to_device (fx, fy)
+        ctxt.restore ()
+        return ctxt.device_to_user (dx, dy)
+
+
+    def extractFieldCoords (self, ctxt, fx, fy, field=None):
+        """Given a Cairo context, return the coordinates of a location
+        in a field on the plot in that context's coordinate
+        system. The RectPlot must have been configured for painting so
+        that its coordinate system on the context has been
+        established. The transformation is done by mapping from the
+        plot's coordinate system to device coordinates and back to the
+        context's coordinate system.
+
+        The coordinate system is a function of the field's axes and
+        may not map to a value within the plot frame or even within
+        the area for which the context is defined.
+
+        If *field* is None, the field for which to compute the coordinates
+        defaults to the plot's defaultField.
+
+        Obviously, if you want to draw some data on the plot, you
+        should add a FieldPainter to it. The intent of this function
+        is to make it possible to draw zoom boxes from one plot to
+        another using a painter overlaid on the plots.
+        """
+
+        if field is None:
+            field = self.defaultField
+
+        xform = field.makeTransformer (1., 1., False)
+        fx = xform.mapX (fx)
+        fy = xform.mapY (fy)
+        return self.extractFrameCoords (ctxt, fx, fy)
+
+
 # Actual field painters.
 
 class FieldPainter (Painter):
