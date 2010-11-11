@@ -2096,12 +2096,16 @@ class SteppedBoundedPainter (FieldPainter):
 
 
     def __init__ (self, lineStyle=None, fillStyle=None, connectors=False,
+                  fillRegions=True, drawBoundLines=False, boundLineStyle=None,
                   keyText='Histogram'):
         super (SteppedBoundedPainter, self).__init__ ()
 
         self.lineStyle = lineStyle
         self.fillStyle = fillStyle
         self.connectors = connectors
+        self.fillRegions = fillRegions
+        self.drawBoundLines = drawBoundLines
+        self.boundLineStyle = boundLineStyle
         self.keyText = keyText
 
         self.data = RectDataHolder (DataHolder.AxisTypeFloat,
@@ -2137,47 +2141,21 @@ class SteppedBoundedPainter (FieldPainter):
         return GenericDataKeyPainter (self, True, False, True)
 
 
-    def doPaint (self, ctxt, style):
-        super (SteppedBoundedPainter, self).doPaint (ctxt, style)
+    def _paintLines (self, ctxt, xls, xrs, ys, connectors):
+        n = ys.size
 
-        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
-        n = allx.shape[1]
-
-        if n < 1:
-            return
-
-        xls, xrs = allx
-        ys, yups, ydns = ally
-
-        # Rectangular regions
-        style.applyDataRegion (ctxt, self.dsn)
-        style.apply (ctxt, self.fillStyle)
-
-        for i in xrange (n):
-            xl, xr = allx[:,i]
-            y, yup, ydn = ally[:,i]
-
-            ctxt.rectangle (xl, ydn, xr - xl, yup - ydn)
-            ctxt.fill ()
-
-        # Lines, a la regular histogram
-        style.applyDataLine (ctxt, self.dsn)
-        style.apply (ctxt, self.lineStyle)
-
-        if not self.connectors:
+        if not connectors:
             for i in xrange (n):
-                xl, xr = allx[:,i]
-                y = ally[0,i]
-
-                ctxt.move_to (xl, y)
-                ctxt.line_to (xr, y)
+                ctxt.move_to (xls[i], ys[i])
+                ctxt.line_to (xrs[i], ys[i])
                 ctxt.stroke ()
         else:
             prevxr = None
 
             for i in xrange (n):
-                xl, xr = allx[:,i]
-                y = ally[0,i]
+                xl = xls[i]
+                xr = xrs[i]
+                ys = ys[i]
 
                 if prevxr is not None and (prevxr - xl) / abs (xl) > 1e-6:
                     raise Exception ('Arguments must be sorted in X when using connectors '
@@ -2199,6 +2177,44 @@ class SteppedBoundedPainter (FieldPainter):
                 prevxr = xr
 
             ctxt.stroke ()
+
+
+    def doPaint (self, ctxt, style):
+        super (SteppedBoundedPainter, self).doPaint (ctxt, style)
+
+        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
+        n = allx.shape[1]
+
+        if n < 1:
+            return
+
+        xls, xrs = allx
+        ys, yups, ydns = ally
+
+        if self.fillRegions:
+            ctxt.save ()
+            style.applyDataRegion (ctxt, self.dsn)
+            style.apply (ctxt, self.fillStyle)
+
+            for i in xrange (n):
+                xl, xr = allx[:,i]
+                y, yup, ydn = ally[:,i]
+
+                ctxt.rectangle (xl, ydn, xr - xl, yup - ydn)
+                ctxt.fill ()
+
+            ctxt.restore ()
+
+        # Lines, a la regular histogram
+        ctxt.save ()
+        style.applyDataLine (ctxt, self.dsn)
+        style.apply (ctxt, self.lineStyle)
+        self._paintLines (ctxt, allx[0], allx[1], ally[0], self.connectors)
+        if self.drawBoundLines:
+            style.apply (ctxt, self.boundLineStyle)
+            self._paintLines (ctxt, allx[0], allx[1], ally[1], False)
+            self._paintLines (ctxt, allx[0], allx[1], ally[2], False)
+        ctxt.restore ()
 
 
 class AbsoluteFieldOverlay (FieldPainter):
