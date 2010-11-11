@@ -2004,7 +2004,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
     
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
-        super (ContinuousSteppedPainter, self).init__ ()
+        super (ContinuousSteppedPainter, self).__init__ ()
 
         self.lineStyle = lineStyle
         self.connectors = connectors
