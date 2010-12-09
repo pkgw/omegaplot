@@ -273,6 +273,7 @@ class DataHolder (object):
         
         self.dlen = l
         return merged
+
             
     def setInts (self, *args):
         """Set the integer data of this DataHolder.
@@ -282,7 +283,7 @@ class DataHolder (object):
         *args - An arbitrary number of ndarrays, handled as described
           below.
 
-        Returns: None.
+        Returns: self
 
         Sets the integer data of this DataHolder. Once the DataHolder has
         been created, the types of its axes have been fixed, and all of its
@@ -307,6 +308,8 @@ class DataHolder (object):
         """
         
         self.intdata = self._setGeneric (self.AxisTypeInt, _N.int, args)
+        return self
+
 
     def setFloats (self, *args):
         """Set the float data of this DataHolder.
@@ -316,7 +319,7 @@ class DataHolder (object):
         *args - An arbitrary number of ndarrays, handled as described
           in the documentation to setInts ().
 
-        Returns: None
+        Returns: self
 
         Sets the float data of this DataHolder. See the documentation
         for setInts() for a description of how this process works in general.
@@ -328,6 +331,8 @@ class DataHolder (object):
         """
         
         self.fltdata = self._setGeneric (self.AxisTypeFloat, _N.float, args)
+        return self
+
 
     def exportIface (self, other):
         """Export the data-setting interface of this object to another.
@@ -337,7 +342,7 @@ class DataHolder (object):
         other - An object that will have new data-management methods
           added to it.
 
-        Returns: None
+        Returns: self
 
         Sets new attributes on @other pointing to the data-management
         methods of this object. For the base DataHolder, those methods
@@ -353,6 +358,7 @@ class DataHolder (object):
         
         other.setInts = self.setInts
         other.setFloats = self.setFloats
+        return self
 
 
 # Painting and useful utilities for painting
