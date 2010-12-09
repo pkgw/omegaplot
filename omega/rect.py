@@ -982,12 +982,26 @@ class RectPlot (Painter):
             x, y = map (N.asarray, args[0:2])
             label = args[2]
         elif l == 2:
-            x, y = map (N.asarray, args)
+            x = N.asarray (args[0])
+
+            if x.ndim != 2 or x.shape[0] != 2:
+                y = N.asarray (args[1])
+            else:
+                # User has done 'addXY (data, label)', where data is 2xN.
+                y = x[1]
+                x = x[0]
+                label = args[1]
         elif l == 1:
             y = N.asarray (args[0])
-            x = N.linspace (0, len (y) - 1, len (y))
+
+            if y.ndim != 2 or y.shape[0] != 2:
+                x = N.linspace (0, len (y) - 1, len (y))
+            else:
+                # User has done 'addXY (data)' where data is 2xN
+                x = y[0]
+                y = y[1]
         else:
-            raise Exception ("Don't know how to handle magic addXY() args '%s'" % args)
+            raise Exception ("Don't know how to handle magic addXY() args '%s'" % (args, ))
 
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y)
@@ -1016,10 +1030,29 @@ class RectPlot (Painter):
         elif l == 3:
             x, y, dy = map (N.asarray, args)
         elif l == 2:
-            y, dy = map (N.asarray, args)
-            x = N.linspace (0, len (y) - 1, len (y))
+            y = N.asarray (args[0])
+
+            if y.ndim != 2 or y.shape[0] != 3:
+                dy = N.asarray (args[1])
+                x = N.linspace (0, len (y) - 1, len (y))
+            else:
+                # User has done 'addXYErr(data, label)' where data is 3xN
+                x = y[0]
+                dy = y[2]
+                y = y[1]
+                label = args[1]
+        elif l == 1:
+            d = N.asarray (args[0])
+
+            if d.ndim != 2 or d.shape[0] != 3:
+                # Could treat a 2xN array as l == 2 is done above ...
+                raise Exception ("A single array input to addXYErr() must be 3xN; got %s" %
+                                 (d.shape, ))
+            x = d[0]
+            y = d[1]
+            dy = d[2]
         else:
-            raise Exception ("Don't know how to handle magic addXYErr() args '%s'" % args)
+            raise Exception ("Don't know how to handle magic addXYErr() args '%s'" % (args, ))
 
         if pointStamp is None:
             pointStamp = _DTS (None)
