@@ -352,7 +352,7 @@ class LinearAxisPainter (BlankAxisPainter):
     avoidBounds = True # do not draw ticks at extremes of axes
     paintLabels = True # draw any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
-
+    everyNthMajor = 1 # draw every Nth major tick label
     
     def nudgeBounds (self):
         span = self.axis.max - self.axis.min
@@ -456,9 +456,15 @@ class LinearAxisPainter (BlankAxisPainter):
         # invocation of getSize.)
         
         labels = []
-        
+        majorCount = -1
+
         for (val, xformed, isMajor) in self.getTickLocations ():
-            if not isMajor and not self.labelMinorTicks: continue
+            if isMajor:
+                majorCount += 1
+            if not isMajor and not self.labelMinorTicks:
+                continue
+            if isMajor and (majorCount % self.everyNthMajor) != 0:
+                continue
 
             s = self.formatLabel (val)
 
