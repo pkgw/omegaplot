@@ -562,7 +562,7 @@ class CairoCache (object):
         self.cfg = cfg
         self.snips = [] # list of snippet strings
         self.refcounts = []
-        self.outputs = None
+        self.outputs = []
         self.renderers = []
 
     def addSnippet (self, snip):
@@ -647,7 +647,7 @@ class CairoCache (object):
         if self.refcounts[handle] > 0:
             return
         
-        if handle >= len (self.outputs):
+        if handle < len (self.outputs):
             # Was the snippet ever actually rendered?
             # Just delete the file for now and don't waste time regenerating the snippet
             try:
