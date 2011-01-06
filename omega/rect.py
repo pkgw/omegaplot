@@ -1443,6 +1443,23 @@ class RectPlot (Painter):
 
 
     def getMinimumSize (self, ctxt, style):
+        # Calling spaceExterior gets all of our axis painters to
+        # register their label markers with the text backend. Do this
+        # before getting the size of anything else so, if we're using
+        # the Latex backend, we can have as many markers registered as
+        # possible before actually doing the slow step of running
+        # latex, which will likely happen when getting the minimum
+        # size of our outer painters. We don't actually save the
+        # result here since we need a better starting guess based on the
+        # outerpainter sizes. If we're painting a scene containing more
+        # than one RectPlot, we'll still get multiple latex invocations,
+        # but this cuts down on them. A full solution requires some kind
+        # of "prepGetMinimumSize" that propagates down from toplevel to
+        # *all* axis painters to tell them to actually register their
+        # textpainters before minimum sizes are actually calculated.
+
+        self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
+
         # Get minimum size of plot field based on field painters.
 
         fsizes = N.zeros (6)
@@ -1464,7 +1481,7 @@ class RectPlot (Painter):
         fw = max (fw, minofw)
         fh = max (fh, minofh)
 
-        # Now do so for the axes. We use the current minimum field size
+        # Now actually do so for the axes. We use the current minimum field size
         # to guess how much the axis labels are going to overlap from one side
         # of the plot to adjacent sides. (Preview of coming attractions.)
 
