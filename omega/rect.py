@@ -2148,6 +2148,44 @@ class ContinuousSteppedPainter (FieldPainter):
         ctxt.stroke ()
 
 
+def _paintSteppedLines (ctxt, xls, xrs, ys, connectors):
+    n = ys.size
+
+    if not connectors:
+        for i in xrange (n):
+            ctxt.move_to (xls[i], ys[i])
+            ctxt.line_to (xrs[i], ys[i])
+            ctxt.stroke ()
+    else:
+        prevxr = None
+
+        for i in xrange (n):
+            xl = xls[i]
+            xr = xrs[i]
+            ys = ys[i]
+
+            if prevxr is not None and (prevxr - xl) / abs (xl) > 1e-6:
+                raise Exception ('Arguments must be sorted in X when using connectors '
+                                 '(%f, %f, %f)' % (prevxr, xl, xl - prevxr))
+
+            if prevxr is None:
+                ctxt.move_to (xl, y)
+            elif abs ((prevxr - xl) / xl) < 0.01:
+                # Connector line would be vertical like we'd hope,
+                # continue making the path
+                ctxt.line_to (xl, y)
+            else:
+                # We've jumped in the X domain, so we'll start a
+                # new line
+                ctxt.stroke ()
+                ctxt.move_to (xl, y)
+
+            ctxt.line_to (xr, y)
+            prevxr = xr
+
+        ctxt.stroke ()
+
+
 class SteppedBoundedPainter (FieldPainter):
     """X values: bin left edges, bin right edges
     Y values: measurement centers, upper bound. lower bound"""
@@ -2205,44 +2243,6 @@ class SteppedBoundedPainter (FieldPainter):
         return GenericDataKeyPainter (self, True, False, True)
 
 
-    def _paintLines (self, ctxt, xls, xrs, ys, connectors):
-        n = ys.size
-
-        if not connectors:
-            for i in xrange (n):
-                ctxt.move_to (xls[i], ys[i])
-                ctxt.line_to (xrs[i], ys[i])
-                ctxt.stroke ()
-        else:
-            prevxr = None
-
-            for i in xrange (n):
-                xl = xls[i]
-                xr = xrs[i]
-                ys = ys[i]
-
-                if prevxr is not None and (prevxr - xl) / abs (xl) > 1e-6:
-                    raise Exception ('Arguments must be sorted in X when using connectors '
-                                     '(%f, %f, %f)' % (prevxr, xl, xl - prevxr))
-
-                if prevxr is None:
-                    ctxt.move_to (xl, y)
-                elif abs ((prevxr - xl) / xl) < 0.01:
-                    # Connector line would be vertical like we'd hope,
-                    # continue making the path
-                    ctxt.line_to (xl, y)
-                else:
-                    # We've jumped in the X domain, so we'll start a
-                    # new line
-                    ctxt.stroke ()
-                    ctxt.move_to (xl, y)
-
-                ctxt.line_to (xr, y)
-                prevxr = xr
-
-            ctxt.stroke ()
-
-
     def doPaint (self, ctxt, style):
         super (SteppedBoundedPainter, self).doPaint (ctxt, style)
 
@@ -2273,11 +2273,144 @@ class SteppedBoundedPainter (FieldPainter):
         ctxt.save ()
         style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
-        self._paintLines (ctxt, allx[0], allx[1], ally[0], self.connectors)
+        _paintSteppedLines (ctxt, allx[0], allx[1], ally[0], self.connectors)
         if self.drawBoundLines:
             style.apply (ctxt, self.boundLineStyle)
-            self._paintLines (ctxt, allx[0], allx[1], ally[1], False)
-            self._paintLines (ctxt, allx[0], allx[1], ally[2], False)
+            _paintSteppedLines (ctxt, allx[0], allx[1], ally[1], False)
+            _paintSteppedLines (ctxt, allx[0], allx[1], ally[2], False)
+        ctxt.restore ()
+
+
+class SteppedUpperLimitPainter (FieldPainter):
+    # FIXME: should be more generic yadda yadda yadda
+    # FIXME: should have some kind of generic arrow-drawing support ...
+    # for now, hardcode everything.
+
+    """X values: bin left edges, bin right edges
+    Y values: upper limits"""
+
+    lineStyle = None
+    limitLineStyle = None
+    fillStyle = None
+    limitArrowScale = 8 # in largeScale
+    keyText = 'Upper Limits'
+    fillRegions = True
+    zeroLines = True
+    dsn = None
+    needsDataStyle = True
+
+
+    def __init__ (self, lineStyle=None, limitLineStyle=None,
+                  fillStyle=None, fillRegions=True,
+                  zeroLines=True, keyText='Upper Limits'):
+        super (SteppedUpperLimitPainter, self).__init__ ()
+
+        self.lineStyle = lineStyle
+        self.limitLineStyle = limitLineStyle
+        self.fillStyle = fillStyle
+        self.fillRegions = fillRegions
+        self.zeroLines = zeroLines
+        self.keyText = keyText
+
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 2, 1)
+
+
+    def getDataBounds (self):
+        imisc, fmisc, allx, ally = self.data.getAll ()
+        xls, xrs = allx
+        yuls = ally[0]
+
+        if len (xls) == 0:
+            return None, None, 0, None
+
+        xmin = min (xls.min (), xrs.min ())
+        xmax = max (xls.max (), xrs.max ())
+        ymin = yuls.min ()
+        ymax = yuls.max ()
+
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
+        if ymin <= 0:
+            raise ValueError ('Upper limits must all be positive')
+
+        return xmin, xmax, 0, ymax
+
+
+    def getKeyPainter (self):
+        if self.keyText is None:
+            return None
+        raise Exception ('Implement key painter!')
+
+
+    def doPaint (self, ctxt, style):
+        super (SteppedUpperLimitPainter, self).doPaint (ctxt, style)
+
+        imisc, fmisc, allx, ally = self.data.getMapped (self.cinfo, self.xform)
+        yzero = self.xform.mapY (0)
+        n = allx.shape[1]
+
+        if n < 1:
+            return
+
+        xls, xrs = allx
+        yuls = ally[0]
+
+        if self.fillRegions:
+            ctxt.save ()
+            style.applyDataRegion (ctxt, self.dsn)
+            style.apply (ctxt, self.fillStyle)
+
+            for i in xrange (n):
+                xl, xr = xls[i], xrs[i]
+                yul = yuls[i]
+
+                ctxt.rectangle (xl, yzero, xr - xl, yul - yzero)
+                ctxt.fill ()
+
+            ctxt.restore ()
+
+        # Zero lines, if desired
+        ctxt.save ()
+        style.applyDataLine (ctxt, self.dsn)
+        style.apply (ctxt, self.lineStyle)
+        if self.zeroLines:
+            _paintSteppedLines (ctxt, xls, xrs, yuls * 0 + yzero, False)
+
+        # Limit lines and arrows
+        style.apply (ctxt, self.limitLineStyle)
+        _paintSteppedLines (ctxt, xls, xrs, yuls, False)
+
+        maxlen = self.limitArrowScale * style.largeScale
+        hacklen = 2.5 * style.largeScale
+        hackdx = hacklen * 0.3
+        hackdy = hacklen * 0.95
+
+        for i in xrange (n):
+            xl, xr = xls[i], xrs[i]
+            yul = yuls[i]
+            xmid = 0.5 * (xl + xr)
+            alen = min (abs (yul - yzero), maxlen)
+            alen = max (alen - hackdy, 0)
+            tozerosign = N.sign (yzero - yul)
+            yend = yul + tozerosign * alen
+
+            if alen > 0:
+                # The arrowhead may consume all vertical space, in which case
+                # don't draw the line.
+                ctxt.move_to (xmid, yul)
+                ctxt.line_to (xmid, yend)
+                ctxt.stroke ()
+
+            yend += hackdy
+            ctxt.move_to (xmid, yend)
+            ctxt.line_to (xmid + hackdx, yend - hackdy * tozerosign)
+            ctxt.line_to (xmid - hackdx, yend - hackdy * tozerosign)
+            ctxt.close_path ()
+            ctxt.fill ()
+
         ctxt.restore ()
 
 
