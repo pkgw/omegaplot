@@ -941,8 +941,9 @@ class RectPlot (Painter):
             item.vAlign = self.defaultKeyOverlay.vAlign
 
         self.defaultKey.appendChild (item)
+        return item
 
-    
+
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
              dsn=None, field=None):
         # FIXME: don't rebound if the FP doesn't have any data.
@@ -1133,11 +1134,13 @@ class RectPlot (Painter):
 
         field.setBounds (*bounds)
         self.nudgeBounds (nudgex, nudgey)
+        return self
 
     
     def addOuterPainter (self, op, side, position):
         op.setParent (self)
         self.opainters.append ((op, side, position))
+        return self
 
 
     def _outerPainterIndex (self, op):
@@ -1150,6 +1153,7 @@ class RectPlot (Painter):
     def moveOuterPainter (self, op, side, position):
         idx = self._outerPainterIndex (self, op)
         self.opainters[idx] = (op, side, position)
+        return self
 
     
     def _lostChild (self, child):
@@ -1234,6 +1238,8 @@ class RectPlot (Painter):
             else:
                 self.rpainter = BlankAxisPainter ()
 
+        return self
+
 
     def setLinLogAxes (self, wantxlog, wantylog, xlogvalue=False, ylogvalue=False):
         df = self.defaultField
@@ -1301,6 +1307,7 @@ class RectPlot (Painter):
         self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter, ylogvalue)
         self.bpainter = fixpainter (wantxlog, df.xaxis, self.bpainter, xlogvalue)
         self.lpainter = fixpainter (wantylog, df.yaxis, self.lpainter, ylogvalue)
+        return self
 
     
     # X and Y axis label helpers
@@ -1310,6 +1317,7 @@ class RectPlot (Painter):
     
     def setBounds (self, xmin=None, xmax=None, ymin=None, ymax=None):
         self.defaultField.setBounds (xmin, xmax, ymin, ymax)
+        return self
 
 
     def nudgeBounds (self, nudgex=True, nudgey=True):
@@ -1319,8 +1327,9 @@ class RectPlot (Painter):
         if nudgey:
             self.lpainter.nudgeBounds ()
             self.rpainter.nudgeBounds ()
+        return self
 
-    
+
     def setSideLabel (self, side, val):
         if self.mainLabels[side] is not None:
             self._lostChild (self.mainLabels[side])
@@ -1349,15 +1358,18 @@ class RectPlot (Painter):
 
     def setXLabel (self, val):
         self.setSideLabel (self.SIDE_BOTTOM, val)
+        return self
 
         
     def setYLabel (self, val):
         self.setSideLabel (self.SIDE_LEFT, val)
+        return self
 
 
     def setLabels (self, xval, yval):
         self.setXLabel (xval)
         self.setYLabel (yval)
+        return self
 
 
     # Sizing and configuration
