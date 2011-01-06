@@ -980,6 +980,7 @@ class RectPlot (Painter):
 
         lines = _kwordDefaulted (kwargs, 'lines', bool, True)
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
+        stampStyle = _kwordDefaulted (kwargs, 'stampStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
 
         x, y, label = None, None, 'Data'
@@ -1011,7 +1012,10 @@ class RectPlot (Painter):
 
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
         dp.setFloats (x, y)
-        if lineStyle is not None: dp.lineStyle = lineStyle
+        if lineStyle is not None:
+            dp.lineStyle = lineStyle
+        if stampStyle is not None:
+            dp.stampStyle = stampStyle
         
         if isinstance (pointStamp, _DTS):
             pointStamp.setHolder (dp)
@@ -1026,6 +1030,7 @@ class RectPlot (Painter):
 
         lines = _kwordDefaulted (kwargs, 'lines', bool, True)
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
+        stampStyle = _kwordDefaulted (kwargs, 'stampStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
 
         x, y, dy, label = None, None, None, 'Data'
@@ -1066,7 +1071,10 @@ class RectPlot (Painter):
 
         dp = XYDataPainter (lines=lines, pointStamp=errStamp, keyText=label)
         dp.setFloats (x, y, y + dy, y - dy)
-        if lineStyle is not None: dp.lineStyle = lineStyle
+        if lineStyle is not None:
+            dp.lineStyle = lineStyle
+        if stampStyle is not None:
+            dp.stampStyle = stampStyle
         
         if isinstance (pointStamp, _DTS):
             pointStamp.setHolder (dp)
