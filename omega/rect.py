@@ -2305,6 +2305,7 @@ class SteppedUpperLimitPainter (FieldPainter):
     limitLineStyle = None
     fillStyle = None
     limitArrowScale = 8 # in largeScale
+    limitArrowheadSize = 2.5 # in largeScale
     keyText = 'Upper Limits'
     fillRegions = True
     zeroLines = True
@@ -2396,7 +2397,7 @@ class SteppedUpperLimitPainter (FieldPainter):
         _paintSteppedLines (ctxt, xls, xrs, yuls, False)
 
         maxlen = self.limitArrowScale * style.largeScale
-        hacklen = 2.5 * style.largeScale
+        hacklen = self.limitArrowheadSize * style.largeScale
         hackdx = hacklen * 0.3
         hackdy = hacklen * 0.95
 
