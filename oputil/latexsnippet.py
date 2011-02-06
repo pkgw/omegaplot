@@ -94,10 +94,15 @@ class RenderConfig (object):
     shutup = '>/dev/null'
     noinput = '</dev/null'
     dvips = 'dvips'
-    dvipsflags = '-q -f -E -D 600 -y 1500'
+    dvipsbaseflags = '-q -f -E -D 600'
+    dvipsrezflags = '-x 1440'
     pstoedit = 'pstoedit'
     multiext = '_%03d'
     supershutup = '2>&1'
+
+    @property
+    def dvipsflags (self):
+        return self.dvipsbaseflags + ' ' + self.dvipsrezflags
 
     _debug = False
 
@@ -136,6 +141,35 @@ class RenderConfig (object):
 '''
 
 defaultConfig = RenderConfig ()
+
+def setZoom (factor, thecfg=defaultConfig):
+    """Control the size of LaTeX snippets when rendered in a vector
+    format. A *factor* of 1.0 corresponds to the default size, and
+    other values scale linearly from the default.
+
+    The zooming affects the LaTeX "magnification factor", which
+    is a number between 10 and 100000. LaTeX's default magnification
+    is 1000. The default used in latexsnippet is 1440, which makes
+    more comfortably-sized text in most contexts. (The *factor*
+    argument is relative to this second value.)
+
+    Zooming is accomplished via the "-x" flag to dvips. There is
+    also a "-y" flag which sets the magnification relative to
+    whatever is set in the DVI file.
+
+    As a side note, the magnification factor and the device DPI
+    used by dvips interplay in the font selection. For large
+    magnifications there may be some value in changing the default
+    DPI value of 600. Changing the DPI seems to cause small changes
+    in the letter placement but it's not apparent which choice
+    gives the best results.
+    """
+
+    # NOTE: this function and the default value of dvipsrezflags
+    # should stay harmonized such that setZoom (1) is a noop from
+    # the default.
+
+    thecfg.dvipsrezflags = '-x %d' % int (factor * 1440)
 
 # Functions to perform various rendering steps
 

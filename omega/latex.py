@@ -6,8 +6,13 @@ from base import *
 from base import _TextPainterBase, _TextStamperBase
 import base
 
+setZoom = latexsnippet.setZoom
+
+def setDebug (debug):
+    latexsnippet.defaultConfig._debug = debug
+
 globalCache = latexsnippet.CairoCache ()
-#latexsnippet.defaultConfig._debug = True
+
 
 class LatexPainter (_TextPainterBase):
     hAlign = 0.0
