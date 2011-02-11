@@ -15,6 +15,48 @@ S = pango.SCALE
 def globalLayoutMutate (layout):
     pass
 
+
+def setFont (family=None, style=None, variant=None,
+             weight=None, stretch=None, size=None):
+    global globalLayoutMutate
+
+    def mutate (layout):
+        fd = layout.get_font_description ()
+        if fd is None:
+            fd = layout.get_context ().get_font_description ()
+
+        if family is not None:
+            fd.set_family (family)
+        if style is not None:
+            fd.set_style (style)
+        if variant is not None:
+            fd.set_variant (variant)
+        if weight is not None:
+            fd.set_weight (weight)
+        if stretch is not None:
+            fd.set_stretch (stretch)
+        if size is not None:
+            fd.set_size (size * S)
+
+        layout.set_font_description (fd)
+
+    globalLayoutMutate = mutate
+
+
+def _copyConstants ():
+    g = globals ()
+
+    for pfx in 'STYLE VARIANT WEIGHT STRETCH'.split ():
+        pfx += '_'
+
+        for item in dir (pango):
+            if item.startswith (pfx):
+                g[item] = getattr (pango, item)
+
+_copyConstants ()
+del _copyConstants
+
+
 class PangoPainter (base._TextPainterBase):
     hAlign = 0.0
     vAlign = 0.0
