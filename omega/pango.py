@@ -12,6 +12,9 @@ X, Y, W, H = range (4)
 S = pango.SCALE
 
 
+def globalLayoutMutate (layout):
+    pass
+
 class PangoPainter (base._TextPainterBase):
     hAlign = 0.0
     vAlign = 0.0
@@ -27,6 +30,7 @@ class PangoPainter (base._TextPainterBase):
     def getMinimumSize (self, ctxt, style):
         pcr = pangocairo.CairoContext (ctxt)
         layout = pcr.create_layout ()
+        globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1] # [1] -> use logical extents
         e = [v / S for v in e]
@@ -45,6 +49,7 @@ class PangoPainter (base._TextPainterBase):
         pcr = pangocairo.CairoContext (ctxt)
 
         layout = pcr.create_layout ()
+        globalLayoutMutate (layout)
         layout.set_markup (self.markup)
 
         pcr.save ()
@@ -63,6 +68,7 @@ class PangoStamper (base._TextStamperBase):
     def getSize (self, ctxt, style):
         pcr = pangocairo.CairoContext (ctxt)
         layout = pcr.create_layout ()
+        globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1]
         return e[W] / S, e[H] / S
@@ -72,6 +78,7 @@ class PangoStamper (base._TextStamperBase):
         pcr = pangocairo.CairoContext (ctxt)
 
         layout = pcr.create_layout ()
+        globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1]
 
