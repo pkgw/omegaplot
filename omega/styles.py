@@ -41,6 +41,18 @@ class Style (object):
 
 
     def _applyDictStyle (self, ctxt, item):
+        v = item.get ('dsline')
+        if v is not None:
+            self.applyDataLine (ctxt, v)
+
+        v = item.get ('dsregion')
+        if v is not None:
+            self.applyDataRegion (ctxt, v)
+
+        v = item.get ('dsstamp')
+        if v is not None:
+            self.applyDataStamp (ctxt, v)
+
         v = item.get ('color')
         if v is not None:
             ctxt.set_source_rgb (*self.getColor (v))
