@@ -156,8 +156,11 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
     try:
         values, edges = histogram (data, bins, range, normed, new=False)
     except TypeError:
-        # Pre-1.2 numpy.
+        # Pre-1.2 numpy, or post-1.4
         values, edges = histogram (data, bins, range, normed)
+
+        if edges.size > values.size:
+            edges = edges[:-1]
 
     fp = rect.ContinuousSteppedPainter (**kwargs)
     fp.setFloats (edges, values)
