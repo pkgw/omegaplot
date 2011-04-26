@@ -419,6 +419,13 @@ class LinearAxisPainter (BlankAxisPainter):
         coeff = int (N.ceil (self.axis.min / inc)) # coeff. of first tick
         val = coeff * inc # location of first tick
 
+        if val < self.axis.min:
+            # Rounding errors can cause val to be out-of-bounds by
+            # a miniscule amount. This only happens if it is on the
+            # exteme edge of the axis, so we know what value it
+            # ought to have: exactly axis.min.
+            val = self.axis.min
+
         # If we cross zero, floating-point rounding errors cause the
         # ticks to be placed at points like 6.3e-16. Detect this case
         # and round to 0. Do it in units of the axis bounds so that a
