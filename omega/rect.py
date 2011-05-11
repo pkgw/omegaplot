@@ -1,5 +1,6 @@
 # Rectangular plots.
 
+import cairo
 import numpy as N
 from base import *
 from base import (_TextPainterBase, _kwordDefaulted,
@@ -2829,4 +2830,105 @@ class GridContours (FieldPainter):
 
                 ctxt.stroke ()
 
+        ctxt.restore ()
+
+
+class ImagePainter (FieldPainter):
+    """The image coordinate system is as follows. The array returned
+    by allocate() is of shape (height, width). This initially sounds
+    funny, but makes sense if you think about it -- the index should
+    vary fastest along the image width. This indexing is analogous to
+    matrix notation in Numpy and math in general.
+
+    The image is positioned in terms of its top left and bottom right
+    corners. The top left corner is painted with pixel [0,0] of the
+    data array. The bottom right corner is pixel [H-1,W-1]. The bottom
+    left corner is pixel [H-1,0], etc.
+
+    The words "top", "left", etc, are then in reference to the
+    (ubiquitous) convention used by Cairo, with the origin at the
+    upper left, not the graph coordinate axes, which have the origin
+    at the lower left. Generally, leftx < rightx but topy >
+    bottomy. However, these relations may be inverted to reflect the
+    image in the ways that you'd expect. The positioning convention
+    above helps avoid ambiguity as to whether height is measured in
+    the figure domain (higher is more up) or graph domain
+    (higher is more down)
+
+    The coordinates passed to setLocation() are the very edges of the
+    image: the top left corner of the top left pixel, and the bottom
+    right corner of the bottom right pixel -- in other words, the
+    coordinates are not those of the relevant pixel centers.
+    """
+
+    style = None
+    needsDataStyle = False
+    dsn = None
+
+    leftx = rightx = None
+    topy = bottomy = None
+    pattern = None
+
+    _dtypes = {cairo.FORMAT_RGB24: N.uint32,
+               cairo.FORMAT_ARGB32: N.uint32,
+               cairo.FORMAT_A8: N.uint8}
+
+
+    def setLocation (self, leftx, rightx, topy, bottomy):
+        self.leftx = float (leftx)
+        self.rightx = float (rightx)
+        self.topy = float (topy)
+        self.bottomy = float (bottomy)
+        return self
+
+
+    def allocate (self, format, width, height):
+        """Returns an array of shape (height, width). See class docstring.
+        """
+
+        if format not in self._dtypes:
+            raise ValueError ('image format not supported')
+
+        dtype = self._dtypes[format]
+        dsize = dtype ().itemsize
+        bytestride = cairo.ImageSurface.format_stride_for_width (format, width)
+        if bytestride % dsize != 0:
+            raise ValueError ('unexpected stride value for format/width combination')
+        itemstride = bytestride // dsize
+
+        data = N.empty ((height, itemstride), dtype=dtype)
+        self.surface = cairo.ImageSurface.create_for_data (data, format, width,
+                                                           height, bytestride)
+        self.pattern = cairo.SurfacePattern (self.surface)
+        self.pattern.set_filter (cairo.FILTER_NEAREST)
+
+        if itemstride == width:
+            return data
+        return data[:,:width]
+
+
+    def getDataBounds (self):
+        return (min (self.leftx, self.rightx), max (self.leftx, self.rightx),
+                min (self.topy, self.bottomy), max (self.topy, self.bottomy))
+
+
+    def getKeyPainter (self):
+        return None
+
+
+    def doPaint (self, ctxt, style):
+        super (ImagePainter, self).doPaint (ctxt, style)
+
+        xl = self.xform.mapX (self.leftx)
+        xr = self.xform.mapX (self.rightx)
+        yt = self.xform.mapY (self.topy)
+        yb = self.xform.mapY (self.bottomy)
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+        ctxt.translate (xl, yt)
+        ctxt.scale ((xr - xl) / self.surface.get_width (),
+                    (yb - yt) / self.surface.get_height ())
+        ctxt.set_source (self.pattern)
+        ctxt.paint ()
         ctxt.restore ()
