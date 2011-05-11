@@ -185,6 +185,19 @@ def quickContours (data, rowcoords, colcoords, keyText='Contours',
     return rp
 
 
+def quickImage (format, data):
+    p = rect.RectPlot ()
+    ip = rect.ImagePainter ().wrap (format, data)
+    # take advantage of any futzing of data done by wrap():
+    width = ip.surface.get_width ()
+    height = ip.surface.get_height ()
+    # anchor coordinate system to pixel centers:
+    ip.setLocation (-0.5, width + 0.5, height + 0.5, -0.5)
+    p.add (ip, nudgex=False, nudgey=False)
+    # TODO: square up axes
+    return p
+
+
 # A function to easily make a demo plot to make testing of 
 # rendering features quick. The purpose of these is not
 # to demonstrate fancy plots, but just to give something

@@ -2907,6 +2907,29 @@ class ImagePainter (FieldPainter):
         return data[:,:width]
 
 
+    def wrap (self, format, data):
+        data = N.atleast_2d (data)
+
+        if data.ndim != 2:
+            raise ValueError ('input array must be 2D')
+        if format not in self._dtypes:
+            raise ValueError ('image format not supported')
+        if data.itemsize != self._dtypes[format] ().itemsize:
+            # FIXME: smarter test? want flexibility about e.g. int32 v. uint32
+            raise ValueError ('data itemsize does not match expectation for format')
+
+        height, width = data.shape
+        bytestride = cairo.ImageSurface.format_stride_for_width (format, width)
+        if data.strides[0] != bytestride:
+            raise ValueError ('stride of data array not correct for this format')
+
+        self.surface = cairo.ImageSurface.create_for_data (data, format, width,
+                                                           height, bytestride)
+        self.pattern = cairo.SurfacePattern (self.surface)
+        self.pattern.set_filter (cairo.FILTER_NEAREST)
+        return self
+
+
     def getDataBounds (self):
         return (min (self.leftx, self.rightx), max (self.leftx, self.rightx),
                 min (self.topy, self.bottomy), max (self.topy, self.bottomy))

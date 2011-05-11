@@ -17,6 +17,7 @@ import layout, rect, render, stamps, styles, util
 
 from layout import Overlay, Grid
 from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from util import quickXY, quickXYErr, quickHist, quickContours, quickPager, _demo
+from util import (quickXY, quickXYErr, quickHist, quickContours, quickImage,
+                  quickPager, _demo)
 from render import makePager, makeDisplayPager
 
