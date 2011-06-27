@@ -333,11 +333,6 @@ class LinearAxisPainter (BlankAxisPainter):
     
     def __init__ (self, axis):
         super (LinearAxisPainter, self).__init__ ()
-
-        if not isinstance (axis, LinearAxis):
-            raise Exception ('Giving linearAxisPainter a '
-                             'non-linearAxis axis')
-        
         self.axis = axis
 
 
@@ -535,11 +530,6 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     def __init__ (self, axis):
         super (LogarithmicAxisPainter, self).__init__ ()
-
-        if not isinstance (axis, LogarithmicAxis):
-            raise Exception ('Giving logarithmicAxisPainter a'
-                             'non-logarithmicAxis axis')
-        
         self.axis = axis
 
 
