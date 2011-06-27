@@ -116,7 +116,7 @@ class LogarithmicAxis (RectAxis):
         valid = values > 0
         vc = N.where (valid, values, 1)
 
-        if reverse:
+        if self.reverse:
             ret = (self.logmax - N.log10 (vc)) / (self.logmax - self.logmin)
         ret = (N.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
 
