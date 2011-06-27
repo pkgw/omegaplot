@@ -1,11 +1,10 @@
 # ACLOCAL_AMFLAGS = -I . --install
 ACLOCAL_AMFLAGS = -I .
 
-DIST_SUBDIRS = oputil omega demo doc
+DIST_SUBDIRS = oputil omega doc
 
-SUBDIRS = oputil omega demo
+SUBDIRS = oputil omega
 
 if BUILD_DOCS
 SUBDIRS += doc
 endif
-

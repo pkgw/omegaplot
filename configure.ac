@@ -112,7 +112,6 @@ AC_CONFIG_FILES([
 Makefile
 oputil/Makefile
 omega/Makefile
-demo/Makefile
 doc/Makefile
 ])
 

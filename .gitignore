@@ -16,8 +16,6 @@ configure
 install-sh
 missing
 py-compile
-demo/Makefile
-demo/Makefile.in
 doc/Makefile
 doc/Makefile.in
 doc/conf.py
