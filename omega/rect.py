@@ -45,6 +45,10 @@ class RectAxis (object):
     Implementations must have read-write attributes "min" and "max" which
     control the axis bounds."""
 
+    min = None
+    max = None
+    reverse = False
+
     def transform (self, values):
         """Return where the given values should reside on this axis, 0
         indicating all the way towards the physical minimum of the
@@ -54,6 +58,11 @@ class RectAxis (object):
     def inbounds (self, values):
         """Return True for each value that is within the bounds of this axis."""
         raise NotImplementedError ()
+
+    def normalize (self):
+        if self.min > self.max:
+            self.reverse = True
+            self.min, self.max = self.max, self.min
 
 
 class LinearAxis (RectAxis):
@@ -65,6 +74,8 @@ class LinearAxis (RectAxis):
 
     def transform (self, values):
         # The +0 forces floating-point evaluation.
+        if self.reverse:
+            return (self.max - (values + 0.0)) / (self.max - self.min)
         return (values + 0.0 - self.min) / (self.max - self.min)
 
     def inbounds (self, values):
@@ -77,6 +88,7 @@ class LogarithmicAxis (RectAxis):
     def __init__ (self, logmin=-3., logmax=3.):
         self.logmin = logmin
         self.logmax = logmax
+        self.reverse = False
 
     def getMin (self):
         return 10 ** self.logmin
@@ -104,7 +116,10 @@ class LogarithmicAxis (RectAxis):
         valid = values > 0
         vc = N.where (valid, values, 1)
 
+        if reverse:
+            ret = (self.logmax - N.log10 (vc)) / (self.logmax - self.logmin)
         ret = (N.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
+
         return N.where (valid, ret, -10)
 
     def inbounds (self, values):
@@ -131,6 +146,7 @@ class DiscreteAxis (RectAxis):
     def __init__ (self, min, max):
         self.min = float (min)
         self.max = float (max)
+        self.reverse = False
 
         assert self.min < self.max
 
@@ -144,9 +160,15 @@ class DiscreteAxis (RectAxis):
         # Coerce floating-point evaluation in either case.
         
         if self.padBoundaries:
-            ret = (values - self.min + 0.5) / (self.max + 1.0 - self.min)
+            if self.reverse:
+                ret = (self.max - (values + 0.5)) / (self.max + 1.0 - self.min)
+            else:
+                ret = (values - self.min + 0.5) / (self.max + 1.0 - self.min)
         else:
-            ret = (values - self.min + 0.0) / (self.max - self.min)
+            if self.reverse:
+                ret = (self.max - (values + 0.0)) / (self.max - self.min)
+            else:
+                ret = (values - self.min + 0.0) / (self.max - self.min)
 
         return ret
 
@@ -351,6 +373,7 @@ class LinearAxisPainter (BlankAxisPainter):
     everyNthMajor = 1 # draw every Nth major tick label
     
     def nudgeBounds (self):
+        self.axis.normalize ()
         span = self.axis.max - self.axis.min
 
         if span == 0:
@@ -363,21 +386,12 @@ class LinearAxisPainter (BlankAxisPainter):
             self.axis.max *= 1.05
             return
         
-        if span < 0.: raise ValueError ('Illegal axis range: min > max.')
-        
         mip = int (N.floor (N.log10 (span))) # major interval power
         step = 10 ** mip
 
-        #if span / step > 8:
-        #    # upgrade to bigger range
-        #    mip += 1
-        #    step *= 10
-        
         newmin = int (N.floor (self.axis.min / step)) * step
         newmax = int (N.ceil (self.axis.max / step)) * step
         
-        #print 'NB:', span, N.log10 (span), mip, step, newmin, newmax
-
         self.axis.min, self.axis.max = newmin, newmax
 
     
@@ -387,12 +401,8 @@ class LinearAxisPainter (BlankAxisPainter):
 
 
     def getTickLocations (self):
-        # Tick spacing variables
-        
+        self.axis.normalize ()
         span = self.axis.max - self.axis.min
-
-        if span <= 0.: raise ValueError ('Illegal axis range: min >= max.')
-        
         mip = int (N.floor (N.log10 (span))) # major interval power
 
         #print 'GTL:', span, N.log10 (span), mip
@@ -547,6 +557,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
 
     def nudgeBounds (self):
+        self.axis.normalize ()
         self.axis.logmin = N.floor (self.axis.logmin)
         self.axis.logmax = N.ceil (self.axis.logmax)
 
@@ -569,12 +580,12 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         if coeff == 1:
             return '$10^{%d}$' % exp
 
+        # FIXME: LaTeX-specific, duh.
         return r'$%d\cdot\!10^{%d}$' % (coeff, exp)
 
     
     def getTickLocations (self):
-        # Tick spacing variables
-
+        self.axis.normalize ()
         curpow = int (N.floor (self.axis.logmin))
         coeff = int (N.ceil (10. ** (self.axis.logmin - curpow)))
 
@@ -2130,11 +2141,15 @@ class ContinuousSteppedPainter (FieldPainter):
 
         prevx, prevy = xs[0], ys[0]
         ctxt.move_to (prevx, prevy)
+        cmpval = None
 
         if self.connectors:
             for i in xrange (1, xs.size):
                 x, y = xs[i], ys[i]
-                if x <= prevx:
+                c = cmp (x, prevx)
+                if cmpval is None:
+                    cmpval = c
+                elif c != cmpval:
                     raise Exception ('Arguments must be sorted in X')
                 
                 ctxt.line_to (x, prevy)
@@ -2144,7 +2159,10 @@ class ContinuousSteppedPainter (FieldPainter):
         else:
             for i in xrange (1, xs.size):
                 x, y = xs[i], ys[i]
-                if x <= prevx:
+                c = cmp (x, prevx)
+                if cmpval is None:
+                    cmpval = c
+                elif c != cmpval:
                     raise Exception ('Arguments must be sorted in X')
                 
                 ctxt.line_to (x, prevy)
