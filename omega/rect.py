@@ -401,10 +401,11 @@ class LinearAxisPainter (BlankAxisPainter):
         else:
             zeroclamp = None
 
+        values = []
+        isMajors = []
         while self.axis.inbounds (val):
-            v = self.axis.transform (val)
-            yield (val, v, coeff % self.minorTicks == 0)
-
+            values.append (val)
+            isMajors.append (coeff % self.minorTicks == 0)
             val += inc
             coeff += 1
 
@@ -414,6 +415,11 @@ class LinearAxisPainter (BlankAxisPainter):
                 val = 0.
             if coeff % self.minorTicks == 0:
                 val = int (round (val / 10.**mip)) * 10**mip
+
+        # In some cases there is a nontrivial efficiency gain
+        # from bunching up the transforms.
+        xformed = self.axis.transform (N.asarray (values))
+        return zip (values, xformed, isMajors)
 
 
     def getLabelInfos (self, ctxt, style):
@@ -546,17 +552,23 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         curpow = int (N.floor (self.axis.logmin))
         coeff = int (N.ceil (10. ** (self.axis.logmin - curpow)))
 
+        coeffs = []
+        curpows = []
+        isMajors = []
+
         while self.axis.inbounds (coeff*10.**curpow):
-            v = self.axis.transform (coeff*10.**curpow)
-            maj = coeff == 1
-            
-            yield (coeff, curpow, v, maj)
+            coeffs.append (coeff)
+            curpows.append (curpow)
+            isMajors.append (coeff == 1)
 
             if coeff == 9:
                 coeff = 1
                 curpow += 1
             else:
                 coeff += 1
+
+        xformed = self.axis.transform (N.asarray (coeffs) * 10.**N.asarray (curpows))
+        return zip (coeffs, curpows, xformed, isMajors)
 
 
     def getLabelInfos (self, ctxt, style):
