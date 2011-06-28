@@ -156,11 +156,6 @@ class PDFPager (Pager):
         self._rfunc = None
 
 
-# FIXME: add an EPS pager when pycairo wraps PSSurface.set_eps ().
-# Use a different default size than Letter paper and use no 
-# margins. And use a filename extension of '.eps'.
-
-
 class SVGPager (Pager):
     def __init__ (self, filename, imgsize_in_points, margins, style):
         w, h = imgsize_in_points
