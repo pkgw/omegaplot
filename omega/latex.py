@@ -62,11 +62,21 @@ class LatexStamper (_TextStamperBase):
         ctxt.set_source_rgb (*color)
         self.cache.getRenderer (self.handle).render (ctxt, True)
         ctxt.restore ()
+
     
 def _atexit ():
     globalCache.close ()
 
 atexit.register (_atexit)
 
-base._setTextBackend (LatexPainter, LatexStamper)
 
+_latexMappings = {
+    '%.0f': '$%.0f$',
+    '%.*f': '$%.*f$',
+    '10^%d': '$10^{%d}$',
+    '%d*10^%d': r'$%d\cdot\!10^{%d}$',
+}
+
+
+base._setTextBackend (LatexPainter, LatexStamper,
+                      lambda t: _latexMappings.get (t, t))

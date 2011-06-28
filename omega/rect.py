@@ -5,6 +5,7 @@ import numpy as N
 from base import *
 from base import (_TextPainterBase, _kwordDefaulted,
                   _kwordExtract, _checkKwordsConsumed)
+from base import textMarkup as TM
 from layout import RightRotationPainter
 
 
@@ -536,15 +537,12 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     def numFormat (self, coeff, exp):
         if exp >= 0 and exp < 3:
-            return '$%.0f$' % (coeff * 10.**exp)
+            return TM ('%.0f') % (coeff * 10.**exp)
         if exp > -3 and exp < 0:
-            return '$%.*f$' % (-exp, coeff * 10.**exp)
-
+            return TM ('%.*f') % (-exp, coeff * 10.**exp)
         if coeff == 1:
-            return '$10^{%d}$' % exp
-
-        # FIXME: LaTeX-specific, duh.
-        return r'$%d\cdot\!10^{%d}$' % (coeff, exp)
+            return TM ('10^%d') % exp
+        return TM ('%d*10^%d') % (coeff, exp)
 
     
     def getTickLocations (self):

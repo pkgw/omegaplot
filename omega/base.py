@@ -606,6 +606,7 @@ class _TextStamperBase (object):
         x, y = ctxt.get_current_point ()
         self.paintAt (ctxt, x, y, color)
 
+
 # Our simple default backend
 
 import cairo
@@ -657,6 +658,7 @@ class CairoTextStamper (_TextStamperBase):
 
 _textPainterClass = CairoTextPainter
 _textStamperClass = CairoTextStamper
+_textMarkupFunc = lambda t: t
 
 def TextPainter (text, **kwargs):
     return _textPainterClass (text, **kwargs)
@@ -664,19 +666,29 @@ def TextPainter (text, **kwargs):
 def TextStamper (text, **kwargs):
     return _textStamperClass (text, **kwargs)
 
-def _setTextBackend (painterClass, stamperClass):
-    global _textPainterClass, _textStamperClass
+def textMarkup (text, **kwargs):
+    # This is a little silly-seeming, but it lets code import the
+    # textMarkup name and still see changes to the text markup
+    # function if a new text backend is subsequently imported.
+    return _textMarkupFunc (text, **kwargs)
+
+
+def _setTextBackend (painterClass, stamperClass, markupFunc):
+    global _textPainterClass, _textStamperClass, _textMarkupFunc
     
     if not issubclass (painterClass, _TextPainterBase):
-        raise Exception ('Text backend class %s is not a TextPainterBase subclass' % \
-                         painterClass)
-
+        raise ValueError ('Text backend class %s is not a TextPainterBase subclass' %
+                          painterClass)
     if not issubclass (stamperClass, _TextStamperBase):
-        raise Exception ('Text backend class %s is not a TextStamperBase subclass' % \
-                         stamperClass)
+        raise ValueError ('Text backend class %s is not a TextStamperBase subclass' %
+                          stamperClass)
+    if not callable (markupFunc):
+        raise ValueError ('text markup function %r is not callable' % markupFunc)
 
     _textPainterClass = painterClass
     _textStamperClass = stamperClass
+    _textMarkupFunc = markupFunc
+
 
 # Generic painting of ImageSurfaces
 

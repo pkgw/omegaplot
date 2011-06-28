@@ -131,4 +131,12 @@ class PangoStamper (base._TextStamperBase):
         pcr.restore ()
 
 
-base._setTextBackend (PangoPainter, PangoStamper)
+_pangoMappings = {
+    # U+22C5 = math dot operator
+    '10^%d': '10<sup>%d</sup>',
+    '%d*10^%d': u'%d\u22c510<sup>%d</sup>',
+}
+
+
+base._setTextBackend (PangoPainter, PangoStamper,
+                      lambda t: _pangoMappings.get (t, t))
