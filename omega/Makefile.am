@@ -7,8 +7,10 @@ mypy_PYTHON = \
    latex.py \
    layout.py \
    pango.py \
+   pywcs.py \
    rect.py \
    render.py \
+   sphere.py \
    stamps.py \
    styles.py \
    util.py

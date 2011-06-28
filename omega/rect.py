@@ -363,8 +363,6 @@ class LinearAxisPainter (BlankAxisPainter):
         span = self.axis.max - self.axis.min
         mip = int (N.floor (N.log10 (span))) # major interval power
 
-        #print 'GTL:', span, N.log10 (span), mip
-        
         if N.log10 (span) - mip < self.autoBumpThreshold:
             # If we wouldn't have that many tickmarks, decrease MIP
             # to make the labels denser.
@@ -819,6 +817,18 @@ class RectPlot (Painter):
                       
     def setDefaultField (self, field):
         self.defaultField = field
+
+
+    def paintCoordinates (self, coordsys):
+        ax = coordsys.makeAxis (RectPlot.SIDE_TOP)
+        self.tpainter = ax.defaultPainter (ax)
+        ax = coordsys.makeAxis (RectPlot.SIDE_BOTTOM)
+        self.bpainter = ax.defaultPainter (ax)
+        ax = coordsys.makeAxis (RectPlot.SIDE_LEFT)
+        self.lpainter = ax.defaultPainter (ax)
+        ax = coordsys.makeAxis (RectPlot.SIDE_RIGHT)
+        self.rpainter = ax.defaultPainter (ax)
+        return self
 
 
     def addKeyItem (self, item):
@@ -2759,3 +2769,133 @@ class ImagePainter (FieldPainter):
         ctxt.set_source (self.pattern)
         ctxt.paint ()
         ctxt.restore ()
+
+
+# Transformed coordinate axes
+
+class RectCoordinates (object):
+    def __init__ (self, field_or_plot):
+        if hasattr (field_or_plot, 'defaultField'):
+            self.field = field_or_plot.defaultField
+        self.field = field_or_plot
+
+    def makeAxis (self, side):
+        return CoordinateAxis (self, side)
+
+    def lin2arb (self, linx, liny):
+        raise NotImplementedError ()
+
+    def arb2lin (self, arbx, arby):
+        raise NotImplementedError ()
+
+
+DELTA = 1e-6
+
+class CoordinateAxis (RectAxis):
+    defaultPainter = LinearAxisPainter
+
+    def __init__ (self, coordsys, side):
+        self.coordsys = coordsys
+        self.side = side
+
+
+    def normalize (self):
+        self.coordsys.field.xaxis.normalize ()
+        self.coordsys.field.yaxis.normalize ()
+
+        if self.min > self.max:
+            self.reverse = True
+
+
+    def _raw_min (self):
+        cs = self.coordsys
+
+        if self.side == RectPlot.SIDE_TOP:
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[0]
+        if self.side == RectPlot.SIDE_BOTTOM:
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[0]
+        if self.side == RectPlot.SIDE_LEFT:
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[1]
+        if self.side == RectPlot.SIDE_RIGHT:
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[1]
+        assert False, 'not reached'
+
+
+    @property
+    def min (self):
+        if self.reverse:
+            return self._raw_max ()
+        return self._raw_min ()
+
+
+    def _raw_max (self):
+        cs = self.coordsys
+
+        if self.side == RectPlot.SIDE_TOP:
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[0]
+        if self.side == RectPlot.SIDE_BOTTOM:
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[0]
+        if self.side == RectPlot.SIDE_LEFT:
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[1]
+        if self.side == RectPlot.SIDE_RIGHT:
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[1]
+        assert False, 'should not be reached'
+
+
+    @property
+    def max (self):
+        if self.reverse:
+            return self._raw_min ()
+        return self._raw_max ()
+
+
+    def transform (self, arbvalues):
+        arb = N.atleast_1d (arbvalues)
+        cs = self.coordsys
+
+        # The only predictable way to get from values in our
+        # arbitrary coordinate system that map onto the field
+        # is via the linear coordinate system, so we have to
+        # guess linear coordinate values that should correspond
+        # to the desired arbitrary values, then iterate towards
+        # a better mapping.
+
+        if self.side in (RectPlot.SIDE_TOP, RectPlot.SIDE_BOTTOM):
+            if self.side == RectPlot.SIDE_TOP:
+                yval = cs.field.yaxis.max
+            else:
+                yval = cs.field.yaxis.min
+
+            w = 0.5 * (cs.lin2arb (cs.field.xaxis.min, yval)[1] +
+                       cs.lin2arb (cs.field.xaxis.max, yval)[1])
+            lin = cs.arb2lin (arb, w)[0]
+            lin2arb = lambda lin: cs.lin2arb (lin, yval)[0]
+            norm = cs.field.xaxis.transform
+        elif self.side in (RectPlot.SIDE_LEFT, RectPlot.SIDE_RIGHT):
+            if self.side == RectPlot.SIDE_RIGHT:
+                xval = cs.field.xaxis.max
+            else:
+                xval = cs.field.xaxis.min
+
+            w = 0.5 * (cs.lin2arb (xval, cs.field.yaxis.min)[0] +
+                       cs.lin2arb (xval, cs.field.yaxis.max)[0])
+            lin = cs.arb2lin (w, arb)[1]
+            lin2arb = lambda lin: cs.lin2arb (xval, lin)[1]
+            norm = cs.field.yaxis.transform
+        else:
+            assert False, 'should not be reached'
+
+        for iternum in xrange (64):
+            err = arb - lin2arb (lin)
+
+            if not N.any (N.abs (err) / arb > 1e-6):
+                return norm (lin)
+
+            dlindarb = DELTA / (lin2arb (lin + DELTA) - lin2arb (lin))
+            lin += err * dlindarb
+
+        raise ValueError ('cannot converge on transformed values for %s' % arbvalues)
+
+
+    def inbounds (self, arbvalues):
+        return N.logical_and (arbvalues >= self.min, arbvalues <= self.max)

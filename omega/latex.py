@@ -1,3 +1,5 @@
+# -*- mode: python ; coding: utf-8 -*-
+
 import cairo
 from oputil import latexsnippet
 import atexit
@@ -75,6 +77,12 @@ _latexMappings = {
     '%.*f': '$%.*f$',
     '10^%d': '$10^{%d}$',
     '%d*10^%d': r'$%d\cdot\!10^{%d}$',
+    'UNIT_°': r'UNIT_$^\circ$',
+    'UNIT_′': r'UNIT_$\'$',
+    'UNIT_″': r'UNIT_$\'\'$',
+    'UNIT_h': r'UNIT_$^\textrm{h}$',
+    'UNIT_m': r'UNIT_\vphantom{$^\textrm{h}$}$^\textrm{m}$',
+    'UNIT_s': r'UNIT_$^\textrm{s}$',
 }
 
 

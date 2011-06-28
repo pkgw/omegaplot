@@ -135,6 +135,9 @@ _pangoMappings = {
     # U+22C5 = math dot operator
     '10^%d': '10<sup>%d</sup>',
     '%d*10^%d': u'%d\u22c510<sup>%d</sup>',
+    'UNIT_h': 'UNIT_<sup>h</sup>',
+    'UNIT_m': 'UNIT_<sup>m</sup>',
+    'UNIT_s': 'UNIT_<sup>s</sup>',
 }
 
 
