@@ -854,15 +854,17 @@ class RectPlot (Painter):
         self.defaultField = field
 
 
-    def paintCoordinates (self, coordsys):
+    def paintCoordinates (self, coordsys, labelRight=False, labelTop=True):
         ax = coordsys.makeAxis (RectPlot.SIDE_TOP)
         self.tpainter = ax.defaultPainter (ax)
+        self.tpainter.paintLabels = labelTop
         ax = coordsys.makeAxis (RectPlot.SIDE_BOTTOM)
         self.bpainter = ax.defaultPainter (ax)
         ax = coordsys.makeAxis (RectPlot.SIDE_LEFT)
         self.lpainter = ax.defaultPainter (ax)
         ax = coordsys.makeAxis (RectPlot.SIDE_RIGHT)
         self.rpainter = ax.defaultPainter (ax)
+        self.rpainter.paintLabels = labelRight
         return self
 
 
