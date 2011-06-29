@@ -23,7 +23,8 @@ _increments = [
 (1800, 2, LEVEL_UNIT), # 30 minutes
 (900, 4, LEVEL_UNIT), # 15 minutes
 (600, 6, LEVEL_UNIT), # 10 minutes
-(300, 12, LEVEL_UNIT), # 5 minutes
+(300, 12, LEVEL_UNIT), # 5 minutes, major every unit
+(300, 3, LEVEL_MIN), # 5 minutes, major every 15
 (60, 5, LEVEL_MIN), # 1 minute
 (30, 2, LEVEL_MIN), # 30 s
 (15, 4, LEVEL_MIN), # 15 s
