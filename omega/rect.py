@@ -2879,13 +2879,13 @@ class CoordinateAxis (RectAxis):
         cs = self.coordsys
 
         if self.side == RectPlot.SIDE_TOP:
-            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[0]
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[0][0]
         if self.side == RectPlot.SIDE_BOTTOM:
-            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[0]
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[0][0]
         if self.side == RectPlot.SIDE_LEFT:
-            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[1]
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.min)[1][0]
         if self.side == RectPlot.SIDE_RIGHT:
-            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[1]
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[1][0]
         assert False, 'not reached'
 
 
@@ -2900,13 +2900,13 @@ class CoordinateAxis (RectAxis):
         cs = self.coordsys
 
         if self.side == RectPlot.SIDE_TOP:
-            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[0]
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[0][0]
         if self.side == RectPlot.SIDE_BOTTOM:
-            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[0]
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.min)[0][0]
         if self.side == RectPlot.SIDE_LEFT:
-            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[1]
+            return cs.lin2arb (cs.field.xaxis.min, cs.field.yaxis.max)[1][0]
         if self.side == RectPlot.SIDE_RIGHT:
-            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[1]
+            return cs.lin2arb (cs.field.xaxis.max, cs.field.yaxis.max)[1][0]
         assert False, 'should not be reached'
 
 
