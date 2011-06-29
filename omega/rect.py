@@ -299,10 +299,28 @@ class AxisPaintHelper (object):
         elif self.side == RectPlot.SIDE_LEFT:
             ctxt.rel_move_to (-rw, -rh / 2)
 
-        
-    def spaceRectOut (self, rw, rh):
+
+    def setupAngledRect (self, ctxt, rw, rh):
+        x, y = ctxt.get_current_point ()
+        ctxt.translate (-x, -y)
+        ctxt.rotate (N.pi/4)
+
+        if self.side == RectPlot.SIDE_TOP:
+            ctxt.rel_move_to (-rw, -rh)
+        elif self.side == RectPlot.SIDE_RIGHT:
+            ctxt.rel_move_to (0, -rh)
+        elif self.side == RectPlot.SIDE_BOTTOM:
+            pass
+        elif self.side == RectPlot.SIDE_LEFT:
+            ctxt.rel_move_to (-rw, 0)
+
+
+    def spaceRectOut (self, rw, rh, angle=False):
         """Return the amount of exterior space orthogonal to the side we're on that
         is required for a rectangle aligned as described in relMoveRectOut."""
+
+        if angle:
+            return (rh + rw) * 0.707107
 
         if self.side == RectPlot.SIDE_TOP or self.side == RectPlot.SIDE_BOTTOM:
             return rh
@@ -318,23 +336,36 @@ class AxisPaintHelper (object):
         return rh
 
 
-    def spaceRectPos (self, pos, rw, rh):
+    def spaceRectPos (self, pos, rw, rh, angle=False):
         """Return the amount of space along the side we're on that is
         required for a rectangle at the given position beyond the edge of the
         plot field and behind it."""
 
+        if not angle:
+            if self.side in (RectPlot.SIDE_TOP, RectPlot.SIDE_BOTTOM):
+                fwbase = bhbase = rw / 2
+            else:
+                fwbase = bhbase = rh / 2
+        else:
+            if self.side in (RectPlot.SIDE_TOP, RectPlot.SIDE_RIGHT):
+                fwbase = rh * 0.707107
+                bhbase = rw * 0.707107
+            else:
+                fwbase = rw * 0.707107
+                bhbase = rh * 0.707107
+
         if self.side == RectPlot.SIDE_TOP:
-            forward = rw / 2 + (pos - 1) * self.w
-            behind = rw / 2 - pos * self.w
+            forward = fwbase + (pos - 1) * self.w
+            behind = bhbase - pos * self.w
         elif self.side == RectPlot.SIDE_RIGHT:
-            forward = rh / 2 - pos * self.h
-            behind = rh / 2 + (pos - 1) * self.h
+            forward = fwbase - pos * self.h
+            behind = bhbase + (pos - 1) * self.h
         elif self.side == RectPlot.SIDE_BOTTOM:
-            forward = rw / 2 - pos * self.w
-            behind = rw / 2 + (pos - 1) * self.w
+            forward = fwbase - pos * self.w
+            behind = bhbase + (pos - 1) * self.w
         elif self.side == RectPlot.SIDE_LEFT:
-            forward = rh / 2 + (pos - 1) * self.h
-            behind = rh / 2 - pos * self.h
+            forward = fwbase + (pos - 1) * self.h
+            behind = bhbase - pos * self.h
 
         forward = max (forward, 0)
         behind = max (behind, 0)

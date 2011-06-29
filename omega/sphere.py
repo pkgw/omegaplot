@@ -58,6 +58,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
     paintLabels = True
     labelSeparation = 2 # in smallScale
     labelMinorTicks = False
+    angleLabels = False
 
     def nudgeBounds (self):
         self.axis.normalize ()
@@ -194,8 +195,10 @@ class AngularAxisPainter (rect.BlankAxisPainter):
             if info.labelts is None:
                 continue
 
-            outside = max (outside, helper.spaceRectOut (info.labelw, info.labelh))
-            fw, bw = helper.spaceRectPos (info.xformed, info.labelw, info.labelh)
+            outside = max (outside, helper.spaceRectOut (info.labelw, info.labelh,
+                                                         angle=self.angleLabels))
+            fw, bw = helper.spaceRectPos (info.xformed, info.labelw, info.labelh,
+                                          angle=self.angleLabels)
             forward = max (forward, fw)
             backward = max (backward, bw)
 
@@ -232,5 +235,12 @@ class AngularAxisPainter (rect.BlankAxisPainter):
 
             helper.moveToAlong (ctxt, info.xformed)
             helper.relMoveOut (ctxt, self.labelSeparation * style.smallScale)
-            helper.relMoveRectOut (ctxt, info.labelw, info.labelh)
-            info.labelts.paintHere (ctxt, tc)
+
+            if self.angleLabels:
+                ctxt.save ()
+                helper.setupAngledRect (ctxt, info.labelw, info.labelh)
+                info.labelts.paintHere (ctxt, tc)
+                ctxt.restore ()
+            else:
+                helper.relMoveRectOut (ctxt, info.labelw, info.labelh)
+                info.labelts.paintHere (ctxt, tc)
