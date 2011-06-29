@@ -1499,6 +1499,16 @@ class RectPlot (Painter):
             border[i] = aspace + ospace
             #print i, axspace[i], obd[i][0:3], opad, border[i]
 
+        # If we have a desired aspect ratio, might need to bump
+        # up one of the dimensions of our minimum field size.
+
+        if self.fieldAspect is not None:
+            cur = float (fw) / fh
+            if cur > self.fieldAspect:
+                fh = fw / self.fieldAspect
+            elif cur < self.fieldAspect:
+                fw = fh / self.fieldAspect
+
         return fw, fh, border[0], border[1], border[2], border[3]
 
 
