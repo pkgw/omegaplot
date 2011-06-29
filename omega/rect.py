@@ -219,6 +219,41 @@ class AxisPaintHelper (object):
         self.paintTickIn (ctxt, w, h, loc, -len)
 
 
+    def paintNormalTickIn (self, ctxt, loc, angle, length):
+        # Not 100% confident that what we do is right, given the
+        # difference between the normalized coordinates [(0,1)x(0,1)]
+        # and the Cairo coordinates [(0,w)x(0,h)].
+
+        side = self.side
+
+        if side in (RectPlot.SIDE_TOP, RectPlot.SIDE_LEFT):
+            sign = 1
+        else:
+            sign = -1
+
+        if abs (angle) < N.pi/2:
+            a = angle + sign * N.pi/2
+        else:
+            a = angle - sign * N.pi/2
+
+        if side in (RectPlot.SIDE_LEFT, RectPlot.SIDE_RIGHT):
+            a -= N.pi/2
+
+        if side == RectPlot.SIDE_TOP:
+            ctxt.move_to (self.w * loc, 0)
+        elif side == RectPlot.SIDE_RIGHT:
+            ctxt.move_to (self.w, self.h * (1. - loc))
+        elif side == RectPlot.SIDE_BOTTOM:
+            ctxt.move_to (self.w * loc, self.h)
+        elif side == RectPlot.SIDE_LEFT:
+            ctxt.move_to (0, self.h * (1. - loc))
+
+        c = N.cos (a) * length
+        s = N.sin (a) * length
+        ctxt.rel_line_to (c, s)
+        ctxt.stroke ()
+
+
     def moveToAlong (self, ctxt, loc):
         """Move to the specified position along the axis"""
         if self.side == RectPlot.SIDE_TOP:
@@ -2849,7 +2884,7 @@ class CoordinateAxis (RectAxis):
         return self._raw_max ()
 
 
-    def transform (self, arbvalues):
+    def transformWithDirection (self, arbvalues):
         arb = N.atleast_1d (arbvalues)
         cs = self.coordsys
 
@@ -2871,6 +2906,13 @@ class CoordinateAxis (RectAxis):
             lin = cs.arb2lin (arb, w)[0]
             lin2arb = lambda lin: cs.lin2arb (lin, yval)[0]
             norm = cs.field.xaxis.transform
+            def dorthdnorm (lin):
+                # Y axis is inverted sense
+                do = cs.lin2arb (lin, yval + DELTA)[0] - \
+                    cs.lin2arb (lin, yval)[0]
+                dn = cs.field.yaxis.transform (yval - DELTA) - \
+                    cs.field.yaxis.transform (yval)
+                return do / dn
         elif self.side in (RectPlot.SIDE_LEFT, RectPlot.SIDE_RIGHT):
             if self.side == RectPlot.SIDE_RIGHT:
                 xval = cs.field.xaxis.max
@@ -2882,6 +2924,12 @@ class CoordinateAxis (RectAxis):
             lin = cs.arb2lin (w, arb)[1]
             lin2arb = lambda lin: cs.lin2arb (xval, lin)[1]
             norm = cs.field.yaxis.transform
+            def dorthdnorm (lin):
+                do = cs.lin2arb (xval + DELTA, lin)[1] - \
+                    cs.lin2arb (xval, lin)[1]
+                dn = cs.field.xaxis.transform (xval + DELTA) - \
+                    cs.field.xaxis.transform (xval)
+                return do / dn
         else:
             assert False, 'should not be reached'
 
@@ -2889,13 +2937,26 @@ class CoordinateAxis (RectAxis):
             err = arb - lin2arb (lin)
 
             if not N.any (N.abs (err) / arb > 1e-6):
-                return norm (lin)
+                break
 
             dlindarb = DELTA / (lin2arb (lin + DELTA) - lin2arb (lin))
             lin += err * dlindarb
+        else:
+            raise ValueError ('cannot converge on transformed values for %s' %
+                              arbvalues)
 
-        raise ValueError ('cannot converge on transformed values for %s' % arbvalues)
+        # Now, get the angle between the arbitrary coordinate system
+        # and the linear coordsys, expressed in the normalized coordinates.
+
+        darbdnorm = ((lin2arb (lin + DELTA) - lin2arb (lin)) /
+                     (norm (lin + DELTA) - norm (lin)))
+        dodn = dorthdnorm (lin)
+        return norm (lin), N.arctan2 (dodn, darbdnorm)
 
 
     def inbounds (self, arbvalues):
         return N.logical_and (arbvalues >= self.min, arbvalues <= self.max)
+
+
+    def transform (self, arbvalues):
+        return self.transformWithDirection (arbvalues)[0]

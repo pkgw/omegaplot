@@ -176,9 +176,10 @@ class AngularAxisPainter (rect.BlankAxisPainter):
         # of these operations are sometimes much faster when done
         # in batch.
 
-        xformed = self.axis.transform (N.asarray (axvalues))
-        for info, xf in zip (infos, xformed):
+        xformed, nangles = self.axis.transformWithDirection (N.asarray (axvalues))
+        for info, xf, nangle in zip (infos, xformed, nangles):
             info.xformed = xf
+            info.nangle = nangle
 
             if info.labelts is not None:
                 info.labelw, info.labelh = info.labelts.getSize (ctxt, style)
@@ -217,7 +218,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
                 length = self.minorTickScale * style.smallScale
 
             if not self.avoidBounds or (info.xformed != 0. and info.xformed != 1.):
-                helper.paintTickIn (ctxt, info.xformed, length)
+                helper.paintNormalTickIn (ctxt, info.xformed, info.nangle, length)
 
         if not self.paintLabels:
             return
