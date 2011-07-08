@@ -2855,7 +2855,8 @@ class RectCoordinates (object):
     def __init__ (self, field_or_plot):
         if hasattr (field_or_plot, 'defaultField'):
             self.field = field_or_plot.defaultField
-        self.field = field_or_plot
+        else:
+            self.field = field_or_plot
 
     def makeAxis (self, side):
         return CoordinateAxis (self, side)
