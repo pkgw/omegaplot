@@ -413,7 +413,8 @@ class ContextTooSmallError (StandardError): pass
 class Painter (object):
     mainStyle = None
     parentRef = None
-    
+    _toplevel_render_aspect = None
+
     from weakref import ref as _ref
     
     def __init__ (self):
@@ -477,6 +478,7 @@ class Painter (object):
     def doPaint (self, ctxt, style):
         raise NotImplementedError ()
 
+
     def renderBasic (self, ctxt, style, w, h):
         # Must init the context before calling getMinimumSize
         # in case we're using the Cairo text backend -- we need
@@ -486,18 +488,45 @@ class Painter (object):
         style.initContext (ctxt, w, h)
 
         szinfo = self.getMinimumSize (ctxt, style)
-        minw = szinfo[0] + szinfo[3] + szinfo[5]
-        minh = szinfo[1] + szinfo[2] + szinfo[4]
+        mainw = w - szinfo[3] - szinfo[5] # by default, fill as much as possible
+        mainh = h - szinfo[2] - szinfo[4]
 
-        if w < minw or h < minh:
-            raise ContextTooSmallError ('Context too small: got (%d, %d) ; need (%d, %d)' % \
-                                        (w, h, minw, minh))
+        if self._toplevel_render_aspect is not None:
+            # possibly shrink if trying to fix the main region aspect ratio
+            aspect = mainw / mainh
 
-        fullw = w - szinfo[3] - szinfo[5]
-        fullh = h - szinfo[2] - szinfo[4]
+            if aspect > self._toplevel_render_aspect:
+                # Too wide
+                mainw = mainh * self._toplevel_render_aspect
+            else:
+                mainh = mainw / self._toplevel_render_aspect
 
-        self.configurePainting (ctxt, style, fullw, fullh, *szinfo[2:])
+        needw = mainw + szinfo[3] + szinfo[5]
+        needh = mainh + szinfo[2] + szinfo[4]
+
+        if w < needw or h < needh:
+            raise ContextTooSmallError ('Context too small: got (%d, %d);'
+                                        ' need (%d, %d)' % \
+                                            (w, h, needw, needh))
+
+        # spend extra space on margins, trying to center the main plot
+        # area as much as possible. We've checked that there's enough
+        # space overall, so our tweaks should never cause any problems.
+
+        marginw = 0.5 * (w - mainw)
+        marginh = 0.5 * (h - mainh)
+        margins = [marginh, marginw, marginh, marginw]
+        minfo = szinfo[2:]
+
+        for i in xrange (4):
+            if margins[i] < minfo[i]:
+                delta = minfo[i] - margins[i]
+                margins[i] += delta
+                margins[(i + 2) % 4] -= delta
+
+        self.configurePainting (ctxt, style, mainw, mainh, *margins)
         self.paint (ctxt, style)
+
 
     def render (self, func):
         p = self._getParent ()
