@@ -7,6 +7,7 @@ mypy_PYTHON = \
    latex.py \
    layout.py \
    pango.py \
+   pyrapimage.py \
    pywcs.py \
    rect.py \
    render.py \
