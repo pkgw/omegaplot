@@ -1,7 +1,8 @@
 Omegaplot
 =========
 
-Omegaplot is a Python library for creating excellent plots. It offers:
+Omegaplot is an open-source Python library for creating excellent
+plots. It offers:
 
 * Drop-dead easy support for standard plotting needs with attractive
   results.
@@ -34,8 +35,51 @@ On the other hand, you can get personal support from Peter for just
 about any question via email. If you're at all interested, please
 get in touch.
 
-Copyright Notice
-================
+Installation
+============
+
+A standard './configure && make && sudo make install' should suffice.
+No unusual configure arguments are required (though the usual ones are
+of course allowed). Omegaplot requires the following packages:
+
+* Python (duh)
+* Numpy
+* Cairo and its Python bindings
+
+Omegaplot optionally integrates with several other modules and/or
+tools to provide various features:
+
+* GTK+ and its Python bindings -- live GUI plotting (highly recommended)
+
+* LaTeX -- can be used to provide arbitrarily complex label rendering.
+  Requires the programs "latex", "dvips", and "pstoedit" to be found
+  in the path, and the "preview" LaTeX package to be available. The
+  last of these is part of the GNU AUCTeX package, available from
+  http://www.gnu.org/software/auctex. It is available on Fedora
+  systems as the 'tetex-preview' RPM package.
+
+* Pango and its Python bindings -- good, fast text layout without
+  the complete featureset of LateX
+
+* IPython -- can render plots live in the background, subject to
+  some limitations; requires GTK+.
+
+* pyrap -- can be used to draw proper labels for spherical coordinate
+  systems stored in CASA images.
+
+* pywcs -- can be used to draw proper labels for spherical coordinate
+  systems stored in preexisting pywcs object.
+
+Licensing
+=========
+
+Omegaplot is free software, licensed under the GNU GPL version 3 or
+higher, with the exception of some insignificant files used in the
+build process. See the file COPYING for more information, including a
+copy of the license.
+
+Copyright Notice for This File
+==============================
 
 Copyright 2011 Peter Williams
 
