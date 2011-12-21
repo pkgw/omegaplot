@@ -27,5 +27,3 @@ SUBDIRS = oputil omega
 if BUILD_DOCS
 SUBDIRS += doc
 endif
-
-EXTRA_DIST = LICENSE

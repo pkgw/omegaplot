@@ -2,7 +2,6 @@
 *.pyc
 *.pyo
 BUILD*
-COPYING
 INSTALL
 Makefile
 Makefile.in
