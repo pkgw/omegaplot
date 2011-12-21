@@ -1,5 +1,11 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 ; mode: python -*-
 #
+# Copyright 2008 the Sphinx Team
+#
+# This file is a nearly-verbatim copy of one provided with Sphinx.
+# Sphinx is distributed under the 2-clause BSD license. See the file
+# LICENSE for more information.
+
 # OmegaPlot documentation build configuration file, created by
 # sphinx-quickstart on Thu Nov 27 13:45:05 2008.
 #
