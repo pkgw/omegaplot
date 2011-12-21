@@ -36,8 +36,8 @@ AM_CHECK_PYMOD(cairo,,,[
   AC_MSG_ERROR([The 'cairo' Python module is required])
 ])
 
-AM_CHECK_PYMOD(gtk,,,[
-  AC_MSG_ERROR([The 'gtk' Python module is required])
+AM_CHECK_PYMOD(gtk,,[gtkmsg=yes],[
+  gtkmsg="no; the 'gtk' Python module was not found"
 ])
 
 AM_CHECK_PYMOD(numpy,,,[
@@ -46,13 +46,13 @@ AM_CHECK_PYMOD(numpy,,,[
 
 dnl Checks for building documentation
 
-AC_PATH_PROG(SPHINXBUILD, sphinx-build, notfound)
-if test x"$SPHINXBUILD" != xnotfound ; then
+AC_PATH_PROG(SPHINXBUILD, sphinx-build, :)
+if test x"$SPHINXBUILD" != x: ; then
    BUILD_DOCS=true
+   docmsg=yes
 else
-   AC_MSG_WARN([The program 'sphinx-build' wasn't found on your
-system! Documentation will not be built.])
    BUILD_DOCS=false
+   docmsg="no; the program 'sphinx-build' was not found"
 fi
 
 AM_CONDITIONAL([BUILD_DOCS], $BUILD_DOCS)
@@ -71,56 +71,51 @@ AC_SUBST([MKDIR_P])
 dnl Configuration checks for latexsnippet -- need to make
 dnl sure that we have latex, dvips, pstoedit, and the preview package
 dnl installed.
+dnl TODO: should we embed these paths in latexsnippet.py?
 
-AC_PATH_PROG(LATEX, latex, notfound)
-if test x"$LATEX" != xnotfound ; then
+latexmsg=no
+
+AC_PATH_PROG(LATEX, latex, :)
+if test x"$LATEX" != x: ; then
    :
 else
-   AC_MSG_ERROR([The program 'latex' wasn't found on your system! It
-is necessary for the creation of text labels. Set the environment
-variable LATEX to the full path to the program if it is not in your
-default system \$PATH.])
+   latexmsg="$latexmsg; no 'latex' in \$PATH"
 fi
 
-AC_PATH_PROG(DVIPS, dvips, notfound)
-if test x"$DVIPS" != xnotfound ; then
+AC_PATH_PROG(DVIPS, dvips, :)
+if test x"$DVIPS" != x: ; then
    :
 else
-   AC_MSG_ERROR([The program 'dvips' wasn't found on your system! It
-is necessary for the creation of text labels. Set the environment
-variable DVIPS to the full path to the program if it is not in your
-default system \$PATH.])
+   latexmsg="$latexmsg; no 'dvips' in \$PATH"
 fi
 
-AC_PATH_PROG(PSTOEDIT, pstoedit, notfound)
-if test x"$PSTOEDIT" != xnotfound ; then
+AC_PATH_PROG(PSTOEDIT, pstoedit, :)
+if test x"$PSTOEDIT" != x: ; then
    :
 else
-   AC_MSG_ERROR([The program 'pstoedit' wasn't found on your system! It
-is necessary for the creation of text labels. Set the environment
-variable PSTOEDIT to the full path to the program if it is not in your
-default system \$PATH.])
+   latexmsg="$latexmsg; no 'dvips' in \$PATH"
 fi
 
-AC_MSG_CHECKING([for the LaTeX preview package])
-cat <<EOF >previewcheck.tex
+if test x"$LATEX" != x: ; then
+  AC_MSG_CHECKING([for the LaTeX preview package])
+  cat <<EOF >previewcheck.tex
 \documentclass{article}
 \usepackage{preview}
 \begin{document}
 \end{document}
 EOF
 
-if latex previewcheck.tex </dev/null 1>/dev/null 2>&1 ; then
-   rm -f previewcheck.tex previewcheck.log previewcheck.aux previewcheck.dvi
-   AC_MSG_RESULT([yes])
-else
-   rm -f previewcheck.tex previewcheck.log previewcheck.aux previewcheck.dvi
-   AC_MSG_RESULT([no])
-   AC_MSG_ERROR([Proper generation of typeset text labels requires the LaTeX
-`preview' package, which does not seem to be present on your system.
-It is part of the GNU AUCTeX package, available from
-http://www.gnu.org/software/auctex. It is available on Fedora Core 
-systems as the `tetex-preview' RPM package.])
+  if $LATEX previewcheck.tex </dev/null 1>/dev/null 2>&1 ; then
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+    latexmsg="$latexmsg; no 'preview' package found"
+  fi
+  rm -f previewcheck.tex previewcheck.log previewcheck.aux previewcheck.dvi
+fi
+
+if test x"$latexmsg" = xno ; then
+  latexmsg=yes
 fi
 
 dnl All done.
@@ -133,3 +128,10 @@ doc/Makefile
 ])
 
 AC_OUTPUT
+
+dnl Summary
+
+echo
+echo "Interactive display with GTK backend?:" $gtkmsg
+echo "Building documentation?              :" $docmsg
+echo "Support for LaTeX text labels?       :" $latexmsg
