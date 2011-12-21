@@ -54,7 +54,6 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 """
 
 import sys, os
-import cairo, gtk
 from os.path import basename, splitext, join, abspath, exists
 import tempfile
 
