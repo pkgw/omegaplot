@@ -1,7 +1,7 @@
-OmegaPlot
+Omegaplot
 =========
 
-OmegaPlot is a Python library for creating excellent plots. It offers:
+Omegaplot is a Python library for creating excellent plots. It offers:
 
 * Drop-dead easy support for standard plotting needs with attractive
   results.
@@ -25,7 +25,7 @@ to be accomplished:
 * Default styling that aims to be both attractive and legible, following
   a Tuftean design aesthetic.
 
-OmegaPlot has been written by Peter Williams, peter@newton.cx. It has
+Omegaplot has been written by Peter Williams, peter@newton.cx. It has
 been stable and useful for his purposes, but it is currently a
 homebrew project: there is no manual, examples are rare, and the API
 has its share of hacks and rough edges.
