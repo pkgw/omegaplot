@@ -1,9 +1,27 @@
 #!/usr/bin/env python
 
-"""Render snippets of LaTeX code into small PNG files.
+# Copyright 2011 Peter Williams
+#
+# This file is part of omegaplot.
+#
+# Omegaplot is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version.
+#
+# Omegaplot is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-Derived from htmlatex.py (http://www.meangrape.com/htmlatex/) by
-Jay Edwards, which in turn is "based on mt-math by A.M. Kuchling
+"""Render snippets of LaTeX code into compiled code that can render
+the graphics vectorially using Cairo.
+
+Vaguely derived from htmlatex.py (http://www.meangrape.com/htmlatex/)
+by Jay Edwards, which in turn is "based on mt-math by A.M. Kuchling
 (http://www.amk.ca/python/code/mt-math) which is based on eqhtml.py by
 Kjell Magne Fauske (http://fauskes.net/nb/htmleqII/eqhtml.py)."
 
