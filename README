@@ -1,1 +1,43 @@
-OmegaPlot is the last plotting library you'll ever need.
+OmegaPlot
+=========
+
+OmegaPlot is a Python library for creating excellent plots. It offers:
+
+* Drop-dead easy support for standard plotting needs with attractive
+  results.
+* Output of those plots to the screen, PDF, EPS, and PNG with
+  optimal quality and identical rendering for each.
+* Support for better-than-publication-quality, professional-level
+  features such as full vectorized rendering of arbitrary equations,
+  angled axis ticks on spherical projections, etc.
+
+Here are a few of the key technical features that allow these goals
+to be accomplished:
+
+* A clean, modular, object-oriented API for creating and combining plots,
+  with good separation between plot structure and styling.
+* Rendering with the Cairo toolkit to allow fully vectorized drawing
+  of plots to multiple backends with ideal bitmapping and performance
+  and no code changes.
+* Optional support for text rendering through LaTeX, with full
+  vectorization of the output, and Pango, with simple high-quality
+  typesetting and textual information embedded in PDF output.
+* Default styling that aims to be both attractive and legible, following
+  a Tuftean design aesthetic.
+
+OmegaPlot has been written by Peter Williams, peter@newton.cx. It has
+been stable and useful for his purposes, but it is currently a
+homebrew project: there is no manual, examples are rare, and the API
+has its share of hacks and rough edges.
+
+On the other hand, you can get personal support from Peter for just
+about any question via email. If you're at all interested, please
+get in touch.
+
+Copyright Notice
+================
+
+Copyright 2011 Peter Williams
+
+This file is free documentation; the copyright holder gives unlimited
+permission to copy, distribute, and modify it.

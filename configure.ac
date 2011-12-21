@@ -1,3 +1,20 @@
+dnl Copyright 2011 Peter Williams
+dnl
+dnl This file is part of omegaplot.
+dnl
+dnl Omegaplot is free software: you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published
+dnl by the Free Software Foundation, either version 3 of the License,
+dnl or (at your option) any later version.
+dnl
+dnl Omegaplot is distributed in the hope that it will be useful, but
+dnl WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+dnl General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
+
 dnl General initialization
 
 AC_INIT([OmegaPlot], [0.1], [peter@newton.cx])
@@ -9,7 +26,7 @@ AM_MAINTAINER_MODE
 dnl Both of these are used in doc/conf.py.in
 
 AC_SUBST([OMEGA_SHORTVERSION],[0.1])
-AC_SUBST([OMEGA_COPYRIGHT],["2008, Peter Williams"])
+AC_SUBST([OMEGA_COPYRIGHT],["2011, Peter Williams"])
 
 dnl Python and dependent modules
 
@@ -99,7 +116,7 @@ if latex previewcheck.tex </dev/null 1>/dev/null 2>&1 ; then
 else
    rm -f previewcheck.tex previewcheck.log previewcheck.aux previewcheck.dvi
    AC_MSG_RESULT([no])
-   AC_MSG_ERROR([Proper generation of text labels requires the LaTeX
+   AC_MSG_ERROR([Proper generation of typeset text labels requires the LaTeX
 `preview' package, which does not seem to be present on your system.
 It is part of the GNU AUCTeX package, available from
 http://www.gnu.org/software/auctex. It is available on Fedora Core 
