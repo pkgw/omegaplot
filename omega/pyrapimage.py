@@ -63,6 +63,12 @@ If you have a pyrap image, you get these via::
             axis.defaultPainter = _makeRAPainter
         elif axtype == 'Declination':
             axis.defaultPainter = _makeLonPainter
+        elif axtype == 'Longitude':
+            axis.defaultPainter = _makeLonPainter
+        elif axtype == 'Latitude':
+            axis.defaultPainter = _makeLatPainter
+        elif axtype == 'Hour Angle':
+            axis.defaultPainter = _makeRAPainter
         else:
             raise Exception ('Don\'t know what to do with axis of '
                              'type ' + axtype)
