@@ -51,6 +51,8 @@ _increments = [
 ]
 
 _separators = {
+    # It may not be obvious, but the ' and " below are Unicode prime
+    # and double-prime characters, not typewrite quotes.
     DISPLAY_DMS: ('UNIT_°', 'UNIT_′', 'UNIT_″'),
     DISPLAY_HMS: ('UNIT_h', 'UNIT_m', 'UNIT_s'),
 }
@@ -140,7 +142,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
 
                 unit = int (N.floor (effsecval / 3600))
                 mnt = int (N.floor (effsecval / 60 - unit * 60.))
-                sec = effsecval - unit / 3600 - mnt / 60
+                sec = effsecval - unit * 3600 - mnt * 60
                 info._breakdown = [sign, unit, mnt, sec]
 
                 if lastunit is None or unit != lastunit:
