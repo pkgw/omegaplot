@@ -53,7 +53,7 @@ def setFont (family=None, style=None, variant=None,
         if stretch is not None:
             fd.set_stretch (stretch)
         if size is not None:
-            fd.set_size (size * S)
+            fd.set_size (int (round (size * S)))
 
         layout.set_font_description (fd)
 
