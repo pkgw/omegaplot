@@ -505,25 +505,28 @@ class Painter (object):
         style.initContext (ctxt, w, h)
 
         szinfo = self.getMinimumSize (ctxt, style)
-        mainw = w - szinfo[3] - szinfo[5] # by default, fill as much as possible
-        mainh = h - szinfo[2] - szinfo[4]
+        mainw = max (w - szinfo[3] - szinfo[5], 0) # fill as much as possible
+        mainh = max (h - szinfo[2] - szinfo[4], 0) # by default
 
         if self._toplevel_render_aspect is not None:
             # possibly shrink if trying to fix the main region aspect ratio
-            aspect = mainw / mainh
-
-            if aspect > self._toplevel_render_aspect:
-                # Too wide
-                mainw = mainh * self._toplevel_render_aspect
-            else:
+            if mainh <= 0:
                 mainh = mainw / self._toplevel_render_aspect
+            else:
+                aspect = mainw / mainh
+
+                if aspect > self._toplevel_render_aspect:
+                    # Too wide
+                    mainw = mainh * self._toplevel_render_aspect
+                else:
+                    mainh = mainw / self._toplevel_render_aspect
 
         needw = mainw + szinfo[3] + szinfo[5]
         needh = mainh + szinfo[2] + szinfo[4]
 
         if w < needw or h < needh:
-            raise ContextTooSmallError ('Context too small: got (%d, %d);'
-                                        ' need (%d, %d)' % \
+            raise ContextTooSmallError ('Context too small: got (%s, %s);'
+                                        ' need (%s, %s)' % \
                                             (w, h, needw, needh))
 
         # spend extra space on margins, trying to center the main plot
