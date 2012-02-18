@@ -47,6 +47,7 @@ If you have a pyrap image, you get these via::
 
         super (PyrapImageCoordinates, self).__init__ (field_or_plot)
         self.image = image
+        self.refworld = self.image.toworld (N.zeros (self.image.ndim ()))
 
 
     def makeAxis (self, side):
@@ -112,16 +113,7 @@ If you have a pyrap image, you get these via::
         arbx = N.atleast_1d (arbx)
         arby = N.atleast_1d (arby)
 
-        # along with all of the other bad stuff we're assuming, this
-        # function also assumes that it doesn't affect our results to
-        # set the physical coordinates all to ones. The reason we're
-        # using ones is that a Stokes coordinate of zero is illegal
-        # ... Good times.
-
         assert arbx.ndim == 1, 'can only handle 1d case right now'
-
-        # Deal with vectorization that Numpy makes implicit:
-        # e.g., arbx.size = n, arby.size = 1
 
         if arbx.size == 1:
             arbxval = arbx[0]
@@ -134,7 +126,7 @@ If you have a pyrap image, you get these via::
             arby.fill (arbyval)
 
         result = N.empty ((2, arbx.size))
-        coords = N.ones (self.image.ndim ())
+        coords = N.array (self.refworld)
 
         for i in xrange (arbx.size):
             coords[-1] = arbx[i] # x is last coord
