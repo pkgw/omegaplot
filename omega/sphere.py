@@ -36,7 +36,8 @@ LEVEL_SEC = 4
 
 _increments = [
 # minor tick incr in seconds, major per minor, label detail level
-(3600, 4, LEVEL_UNIT), # whole hour / degree
+(3600, 5, LEVEL_UNIT), # whole hour / degree
+(1800, 4, LEVEL_UNIT), # 30 minutes, major every 2 hrs/degs
 (1800, 2, LEVEL_UNIT), # 30 minutes
 (900, 4, LEVEL_UNIT), # 15 minutes
 (600, 6, LEVEL_UNIT), # 10 minutes
