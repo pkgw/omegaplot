@@ -102,7 +102,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
 
         for secincr, majorperminor, detaillev in _increments:
             axincr = secincr / self.vscale / 3600
-            if axspan / axincr > max (8, 2 * majorperminor):
+            if axspan / axincr > max (8, 3 * majorperminor):
                 break
         else:
             raise Exception ('TODO: fraction-of-arcsec labels')
