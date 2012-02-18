@@ -48,6 +48,115 @@ If you have a pyrap image, you get these via::
         super (PyrapImageCoordinates, self).__init__ (field_or_plot)
         self.image = image
         self.refworld = self.image.toworld (N.zeros (self.image.ndim ()))
+        self._sniff_discontinuities ()
+
+
+    def _sniff_discontinuities (self):
+        """Check for discontinuities in the world coordinates as a
+function of pixel coordinates in the image area. We must postprocess
+the world coordinates to hide these so that all the code above us can
+keep on making assumptions that ought to be totally reasonable.
+
+The "inspiration" for this is the fact that WCSLIB wraps longitudes to
+be within [0, 360], so there's a discontinuity if your image crosses
+zero longitude. In order to be able to check this we enforce that the
+X axis must be mostly aligned with the longitude axis.
+
+There will also be problems if you try to image latitudes that hit +/-
+90 degrees. The generalization of that issue is the world coordinates
+must vary monotonically with the pixel coordinates. But for now I'm
+just dealing with the particular longitude wraparound issue.
+"""
+        s = N.asarray (self.image.shape ())
+        p = N.zeros (s.size)
+        delta = 1e-6
+        toworld = self.image.toworld
+
+        # For now, all we do is check for discontinuities along the
+        # x/longitude axes. We run along both the top and the bottom
+        # of the image in case the coordinate systems behave
+        # substantially differently there.
+
+        delta_w = 0
+
+        for ypix in 0, s[-2] - 1:
+            if delta_w != 0:
+                break # found a discontinuity the first time
+
+            p[-2] = ypix
+            p[-1] = 0
+            expected_w = None
+
+            while p[-1] < s[-1]: # make our way across the image ...
+                w1 = toworld (p)
+                w1[-1] += delta_w
+
+                if expected_w is not None and \
+                        abs ((w1[-1] - expected_w) / w1[-1]) > 0.5:
+                    # The world coordinate changed a LOT more than
+                    # it should have. Looks like we found a discontinuity.
+                    if abs (abs (w1[-1] - expected_w) - 6.28) > 0.1:
+                        raise Exception ('expected a 2pi delta at discontinuity')
+                    if delta_w != 0:
+                        raise Exception ('can\'t handle more than one discontinuity')
+
+                    if w1[-1] - expected_w > 0:
+                        delta_w = -2 * N.pi
+                    else:
+                        delta_w = 2 * N.pi
+
+                    w1[-1] += delta_w # correct for next set of checks
+
+                # How many pixels should we move to get a "smallish"
+                # fractional change in the longitude coordinate? But
+                # clamp the move to be between 1 and 50 pixels, and
+                # make sure that we're mostly moving along the
+                # longitude axis (because we're not checking for
+                # latitude discontinuities, under the assumption that
+                # latitude doesn't change much).
+
+                p[-1] += delta
+                w2 = toworld (p)
+                w2[-1] += delta_w
+                dlondp = (w2[-1] - w1[-1]) / delta
+                dlatdp = (w2[-2] - w1[-2]) / delta
+
+                if abs (dlatdp) > 0.3 * abs (dlondp):
+                    raise Exception ('X axis does not (always) track the '
+                                     'longitude axis closely')
+
+                dp = min (max (abs (0.05 * w1[-1] / dlondp), 1), 50)
+                expected_w = w2[-1] + dp * dlondp
+                p[-1] += dp
+
+        if delta_w == 0:
+            lon_correct = lambda x: x
+        else:
+            # We found a discontinuity. Set up to correct it. We need
+            # to leave a little guard band around w1 (the world coordinate
+            # in question at pixel 0) to allow the coordinate routines to
+            # sensibly explore the areas just beyond the defined image.
+            # That's the half pi offset below.
+
+            p[-1] = 0
+            w1 = toworld (p)[-1]
+            p[-1] = s[-1] - 1
+            w2 = toworld (p)[-1] + delta_w
+
+            if w1 > w2:
+                # Usual astronomical convention: world coordinate
+                # decreases as pixel coord increases.
+                def lon_correct (x):
+                    if x > w1 + 0.5 * N.pi:
+                        return x + delta_w
+                    return x
+            else:
+                def lon_correct (x):
+                    if x < w1 - 0.5 * N.pi:
+                        return x + delta_w
+                    return x
+
+        self._lon_correct = lon_correct
 
 
     def makeAxis (self, side):
@@ -103,7 +212,7 @@ If you have a pyrap image, you get these via::
             coords[-1] = linx[i] # longitude is last coord
             coords[-2] = liny[i]
             r = self.image.toworld (coords)
-            result[0,i] = r[-1] # longitude -> x
+            result[0,i] = self._lon_correct (r[-1]) # longitude -> x
             result[1,i] = r[-2] # latitude -> y
 
         return result
