@@ -62,7 +62,7 @@ If you have a pyrap image, you get these via::
         if axtype == 'Right Ascension':
             axis.defaultPainter = _makeRAPainter
         elif axtype == 'Declination':
-            axis.defaultPainter = _makeLonPainter
+            axis.defaultPainter = _makeLatPainter
         elif axtype == 'Longitude':
             axis.defaultPainter = _makeLonPainter
         elif axtype == 'Latitude':
