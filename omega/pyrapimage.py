@@ -100,11 +100,11 @@ If you have a pyrap image, you get these via::
         coords = N.zeros (self.image.ndim ())
 
         for i in xrange (linx.size):
-            coords[-1] = linx[i] # RA is last coord
+            coords[-1] = linx[i] # longitude is last coord
             coords[-2] = liny[i]
             r = self.image.toworld (coords)
-            result[0,i] = r[-1] # RA -> x
-            result[1,i] = r[-2] # dec -> y
+            result[0,i] = r[-1] # longitude -> x
+            result[1,i] = r[-2] # latitude -> y
 
         return result
 
@@ -132,7 +132,7 @@ If you have a pyrap image, you get these via::
             coords[-1] = arbx[i] # x is last coord
             coords[-2] = arby[i]
             r = self.image.topixel (coords)
-            result[0,i] = r[-1] # x -> ra
-            result[1,i] = r[-2] # y -> dec
+            result[0,i] = r[-1] # x -> longitude
+            result[1,i] = r[-2] # y -> latitude
 
         return result
