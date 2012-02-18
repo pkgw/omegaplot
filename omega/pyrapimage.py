@@ -26,15 +26,15 @@ from omega import rect, sphere
 
 def _makeRAPainter (axis):
     return sphere.AngularAxisPainter (axis, 12./N.pi,
-                                      sphere.DISPLAY_HMS, sphere.WRAP_POS)
+                                      sphere.DISPLAY_HMS, sphere.WRAP_POS_HR)
 
 def _makeLatPainter (axis):
     return sphere.AngularAxisPainter (axis, 180./N.pi,
-                                      sphere.DISPLAY_DMS, sphere.WRAP_ZCEN)
+                                      sphere.DISPLAY_DMS, sphere.WRAP_LAT)
 
 def _makeLonPainter (axis):
     return sphere.AngularAxisPainter (axis, 180./N.pi,
-                                      sphere.DISPLAY_DMS, sphere.WRAP_POS)
+                                      sphere.DISPLAY_DMS, sphere.WRAP_POS_DEG)
 
 
 class PyrapImageCoordinates (rect.RectCoordinates):

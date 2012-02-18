@@ -27,8 +27,11 @@ from omega import rect, TextStamper, textMarkup as TM
 DISPLAY_DMS = 0
 DISPLAY_HMS = 1
 
-WRAP_POS = 0 # make all values positive
-WRAP_ZCEN = 1 # center on zero & display negative values
+WRAP_POS_DEG = 0 # range 0 to 360
+WRAP_POS_HR = 1 # range 0 to 24
+WRAP_ZCEN_DEG = 2 # range -180 to 180
+WRAP_ZCEN_HR = 3 # range -12 to 12
+WRAP_LAT = 4 # wrap like a latitude should
 
 LEVEL_UNIT = 0
 LEVEL_MIN = 2
@@ -53,10 +56,60 @@ _increments = [
 
 _separators = {
     # It may not be obvious, but the ' and " below are Unicode prime
-    # and double-prime characters, not typewrite quotes.
+    # and double-prime characters, not typewriter quotes.
     DISPLAY_DMS: ('UNIT_°', 'UNIT_′', 'UNIT_″'),
     DISPLAY_HMS: ('UNIT_h', 'UNIT_m', 'UNIT_s'),
 }
+
+def _wrap_pos_deg (sec):
+    while sec >= 1296000: # 360 * 3600
+        sec -= 1296000
+    while sec < 0:
+        sec += 1296000
+    return sec
+
+
+def _wrap_pos_hr (sec):
+    while sec >= 86400: # 24 * 3600
+        sec -= 86400
+    while sec < 0:
+        sec += 86400
+    return sec
+
+
+def _wrap_zcen_deg (sec):
+    while sec < -648000: # 180 * 3600
+        sec += 1296000
+    while sec > 648000:
+        sec -= 1296000
+    return sec
+
+
+def _wrap_zcen_hr (sec):
+    while sec < -43200: # 12 * 3600
+        sec += 86400
+    while sec > 43200:
+        sec -= 86400
+    return sec
+
+
+def _wrap_lat (sec):
+    while abs (sec) > 324000: # 90 * 3600
+        if sec > 0:
+            sec = 324000 - sec
+        else:
+            sec = -324000 + sec
+    return sec
+
+
+_wrappers = {
+    WRAP_POS_DEG: _wrap_pos_deg,
+    WRAP_POS_HR: _wrap_pos_hr,
+    WRAP_ZCEN_DEG: _wrap_zcen_deg,
+    WRAP_ZCEN_HR: _wrap_zcen_hr,
+    WRAP_LAT: _wrap_lat,
+}
+
 
 class AxisInfoHolder (object):
     # xformed, isMajor, labelw, labelh, labelts
@@ -135,7 +188,13 @@ class AngularAxisPainter (rect.BlankAxisPainter):
 
             if info._label:
                 sign = ''
-                effsecval = secval
+
+                # Wrap and round. TODO: if we implement sub-second
+                # precision, making the rounding level configurable
+                # from _increments, and honor it below with a %.*d.
+
+                effsecval = _wrappers[self.wraptype] (secval)
+                effsecval = round (effsecval, 0)
 
                 if effsecval < 0:
                     sign = '-'
@@ -143,7 +202,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
 
                 unit = int (N.floor (effsecval / 3600))
                 mnt = int (N.floor (effsecval / 60 - unit * 60.))
-                sec = effsecval - unit * 3600 - mnt * 60
+                sec = max (effsecval - unit * 3600 - mnt * 60, 0)
                 info._breakdown = [sign, unit, mnt, sec]
 
                 if lastunit is None or unit != lastunit:
