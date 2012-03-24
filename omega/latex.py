@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# Copyright 2011 Peter Williams
+# Copyright 2011, 2012 Peter Williams
 #
 # This file is part of omegaplot.
 #
