@@ -37,7 +37,7 @@ class LatexPainter (_TextPainterBase):
     hAlign = 0.0
     vAlign = 0.0
     style = None
-    
+
     def __init__ (self, snippet, cache=globalCache, hAlign=0.0, vAlign=0.0):
         self.cache = cache
         self.handle = self.cache.addSnippet (snippet)
@@ -54,7 +54,7 @@ class LatexPainter (_TextPainterBase):
         r = self.cache.getRenderer (self.handle)
         self.dx = self.hAlign * (w - r.bbw)
         self.dy = self.vAlign * (h - r.bbh)
-        
+
     def doPaint (self, ctxt, style):
         ctxt.save ()
         style.apply (ctxt, self.style)
@@ -62,7 +62,7 @@ class LatexPainter (_TextPainterBase):
         ctxt.translate (self.border[3] + self.dx, self.border[0] + self.dy)
         self.cache.getRenderer (self.handle).render (ctxt, True)
         ctxt.restore ()
-        
+
     def __del__ (self):
         self.cache.expire (self.handle)
 
@@ -82,7 +82,7 @@ class LatexStamper (_TextStamperBase):
         self.cache.getRenderer (self.handle).render (ctxt, True)
         ctxt.restore ()
 
-    
+
 def _atexit ():
     globalCache.close ()
 

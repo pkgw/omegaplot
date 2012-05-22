@@ -61,7 +61,7 @@ import tempfile
 class RenderConfig (object):
     """A simple structure containing parameters used by the
     renderSnippets function.
-    
+
     Variables:
 
     texprogram -- The tex program to run; defaults to 'latex'. It is NOT
@@ -73,7 +73,7 @@ class RenderConfig (object):
 
     pngprogram -- The program to convert DVI files to PNG. Defaults to
       'dvipng'. It is NOT checked whether this program is present.
-  
+
     pngflags -- Flags to pass to pngprogram. Defaults to
       '-T tight -D 100 -z 9 -bg Transparent'.
 
@@ -82,7 +82,7 @@ class RenderConfig (object):
 
     noinput -- Flags appended to a command-line to prevent a program from
       accepting input. Defaults to '</dev/null'.
-    
+
     preamble -- The very first text written to the LaTeX file that is
       processed. Defaults to some sensible \usepackage commands.
 
@@ -141,9 +141,9 @@ class RenderConfig (object):
     # DVIPNG will then give bad results. The preview package adds fake 0-size
     # images in the corners of such LaTeX groups, so that the correct bounding
     # boxes will be calculated by DVI processing programs.
-    
+
     preamble = r'''
-\documentclass[12pt]{article} 
+\documentclass[12pt]{article}
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
@@ -153,8 +153,8 @@ class RenderConfig (object):
 
     midamble = r'''
 \usepackage{preview}
-\pagestyle{empty} 
-\begin{document} 
+\pagestyle{empty}
+\begin{document}
 '''
 
 defaultConfig = RenderConfig ()
@@ -197,7 +197,7 @@ def _run (shellcmd, cfg):
     ret = os.system (shellcmd)
 
     assert ret == 0, ('Command returned %d: ' % ret) + shellcmd
-    
+
 def _recklessUnlink (name, cfg):
     if cfg._debug: return
 
@@ -207,7 +207,7 @@ def _recklessUnlink (name, cfg):
 def _recklessMultiUnlink (count, tmpl, cfg):
     if cfg._debug: return
 
-    if count == 1: 
+    if count == 1:
         _recklessUnlink (tmpl)
     else:
         for i in xrange (0, count):
@@ -216,18 +216,18 @@ def _recklessMultiUnlink (count, tmpl, cfg):
 def _makeDvi (snips, texbase, header, cfg):
     if cfg._debug: shutflag = ''
     else: shutflag = cfg.shutup
-    
+
     texfile = texbase + '.tex'
 
     # Write out the TeX file
-    
+
     f = file (texfile, 'w')
     f.write (cfg.preamble)
     if header is not None: f.write (header)
     f.write (cfg.midamble)
 
     first = True
-    
+
     for snip in snips:
         f.write ('\n')
         if not first: f.write ('\\newpage\n')
@@ -315,7 +315,7 @@ def _getBBox (epsfile):
 
     assert x1 is not None, 'Couldn\'t find EPS file bounding box'
     return x1, y2, x2 - x1, y2 - y1
-    
+
 def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
     if cfg._debug: shutflag = ''
     else: shutflag = cfg.shutup + ' ' + cfg.supershutup
@@ -326,7 +326,7 @@ def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
 
     if count == 1:
         if not checkExists or not exists (sktmpl):
-            _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0], 
+            _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0],
                                                           sktmpl, shutflag), cfg)
         skfiles = [sktmpl]
         bboxes = [_getBBox (epsfiles[0])]
@@ -336,7 +336,7 @@ def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
         for i in xrange (0, count):
             fout = sktmpl % i
             if not checkExists or not exists (fout):
-                _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i], 
+                _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i],
                                                               fout, shutflag), cfg)
             skfiles.append (fout)
             bboxes.append (_getBBox (epsfiles[i]))
@@ -361,7 +361,7 @@ def _render_eps (snips, outbase, header, cfg):
     finally:
         _recklessUnlink (dvifile, cfg)
 
-    
+
 def _render_png (snips, outbase, header, cfg):
     count = len (snips)
 
@@ -382,7 +382,7 @@ def _render_svg (snips, outbase, header, cfg):
     else: svgtmpl = outbase + '.svg'
 
     dvifile = _makeDvi (snips, outbase, header, cfg)
-    
+
     try:
         epss = [] # in case makesvgs dies
         epss, svgs = _makeSvgs (dvifile, outbase, svgtmpl, count, cfg)
@@ -517,7 +517,7 @@ def _makeScrLocals (ctxt):
         d[rest] = _scr_makeDoer (val, ctxt)
 
     return d
-    
+
 class SkencilCairoRenderer (object):
     def __init__ (self, filename, bbx, bby, bbw, bbh):
         self.bbx = bbx
@@ -552,7 +552,7 @@ class CairoCache (object):
 
     All the work of rendering the snippets is farmed out to the
     renderSnippets routine.
-    
+
     Methods:
 
     __init__ -- Creates the object; optional arguments of the directory
@@ -585,10 +585,10 @@ class CairoCache (object):
     outbase -- The outbase parameter passed to renderSnippets. Should
       not be needed outside of the class implementation.
     """
-    
+
     texbase = 'tex'
     outbase = 'out'
-    
+
     def __init__ (self, cdir=None, header=None, cfg=defaultConfig):
         """Create a SnippetCache object.
         Arguments:
@@ -602,9 +602,9 @@ class CairoCache (object):
 
         cfg (optional, defaults to defaultConfig) -- A RendererConfig
           instance that is handed off to renderSnippets.
-        
+
         """
-        
+
         if not cdir:
             cdir = tempfile.mkdtemp ('latexsnippetcache')
 
@@ -631,11 +631,11 @@ class CairoCache (object):
         Returns: A handle object. Current implementation makes that
         object an integer, but this should not be relied upon.
         """
-        
+
         # A much simpler hash might be better. I dunno. And the
         # lookup in the flat array is definitely not going to be
         # fast. But this will work for the time being.
-        
+
         snip = str (snip).strip ()
 
         try:
@@ -644,7 +644,7 @@ class CairoCache (object):
             return idx
         except ValueError:
             pass
-        
+
         self.snips.append (snip)
         self.refcounts.append (1)
         return len (self.snips) - 1
@@ -656,9 +656,9 @@ class CairoCache (object):
         Arguments: None
         Returns: None
         """
-        
+
         pwd = abspath (os.curdir)
-        
+
         try:
             os.chdir (self.cdir)
             sks, self.bbs = renderSnippets (self.snips, self.outbase, 'sk',
@@ -697,7 +697,7 @@ class CairoCache (object):
 
         if self.refcounts[handle] > 0:
             return
-        
+
         if handle < len (self.outputs):
             # Was the snippet ever actually rendered?
             # Just delete the file for now and don't waste time regenerating the snippet
@@ -705,7 +705,7 @@ class CairoCache (object):
                 os.remove (self.outputs[handle])
             except:
                 pass
-            
+
             self.renderers[handle] = None
 
         self.snips[handle] = _expiredString
@@ -722,9 +722,9 @@ class CairoCache (object):
 
         Returns: The text associated with that handle
         """
-        
+
         return self.snips[handle]
-    
+
     def getRenderer (self, handle):
         """Returns the absolute path of the output file containing the
         rendered form of the snippet associated with the handle. If the
@@ -748,7 +748,7 @@ class CairoCache (object):
             print 's', self.snips[handle]
             print 'o', self.outputs[handle]
             raise Exception ()
-        
+
         return self.renderers[handle]
 
     def close (self):
@@ -761,14 +761,14 @@ class CairoCache (object):
         """
 
         if self.cfg._debug: return
-        
+
         for f in os.listdir (self.cdir):
             os.remove (join (self.cdir, f))
         os.rmdir (self.cdir)
 
     def __del__ (self):
         """Calls close() if possible."""
-        
+
         if hasattr (self, 'cdir') and os and hasattr (os, 'path'):
             self.close ()
 

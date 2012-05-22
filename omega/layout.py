@@ -56,7 +56,7 @@ class Overlay (Painter):
             p.configurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
 
         ctxt.restore ()
-        
+
     def doPaint (self, ctxt, style):
         if self.bgStyle:
             ctxt.save ()
@@ -64,7 +64,7 @@ class Overlay (Painter):
             ctxt.rectangle (0, 0, self.fullw, self.fullh)
             ctxt.fill ()
             ctxt.restore ()
-            
+
         for p in self.painters:
             p.paint (ctxt, style)
 
@@ -82,7 +82,7 @@ class Grid (Painter):
         self.nw = int (nw)
         self.nh = int (nh)
         self._elements = N.empty ((nh, nw), N.object)
-        
+
         for r in xrange (self.nh):
             for c in xrange (self.nw):
                 self[r,c] = NullPainter ()
@@ -96,7 +96,7 @@ class Grid (Painter):
     hPadSize = 1 # size of interior horz. padding in style.smallScale
     vPadSize = 1 # as above for interior vertical padding
 
-    
+
     def _mapIndex (self, idx):
         try:
             asint = int (idx)
@@ -115,7 +115,7 @@ class Grid (Painter):
     def __setitem__ (self, idx, value):
         midx = self._mapIndex (idx)
         prev = self._elements[midx]
-        
+
         if prev is value: return
 
         # HACK: check that 'value' isn't already in us, somewhere.
@@ -132,10 +132,10 @@ class Grid (Painter):
         # if value is already in _elements and is being
         # moved to an earlier position, _lostChild doesn't
         # remove the wrong entry.
-        
+
         if value is None: value = NullPainter ()
         value.setParent (self)
-        
+
         self._elements[midx] = value
 
 
@@ -154,9 +154,9 @@ class Grid (Painter):
                 v[r,c] = self._elements[r,c].getMinimumSize (ctxt, style)
 
         # Simple, totally uniform borders and sizes.
-        
+
         self.maxes = maxes = v.max (0).max (0)
-        
+
         minw = self.nw * maxes[0]
         minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
         minh = self.nh * maxes[1]
@@ -190,7 +190,7 @@ class Grid (Painter):
 
         ctxt.save ()
         ctxt.translate (hb, vb)
-        
+
         for r in xrange (self.nh):
             for c in xrange (self.nw):
                 dx = c * fullcw
@@ -218,7 +218,7 @@ class RightRotationPainter (Painter):
 
     rotation = 0
     child = None
-    
+
     def __init__ (self, child):
         Painter.__init__ (self)
         self.setChild (child)
@@ -228,17 +228,17 @@ class RightRotationPainter (Painter):
             self.child.setParent (None)
 
         if child is None: child = NullPainter ()
-        
+
         child.setParent (self)
         self.child = child
 
     def _lostChild (self, child):
         self.child = NullPainter ()
         self.child.setParent (self)
-    
+
     def setRotation (self, value):
         self.rotation = value
-        
+
     def _rotateSize (self, rot, w, h, bt, br, bb, bl):
         if rot == self.ROT_NONE:
             return w, h, bt, br, bb, bl
@@ -284,7 +284,7 @@ class RightRotationPainter (Painter):
         self.child.configurePainting (ctxt, style, *sz)
 
         ctxt.restore ()
-        
+
     def doPaint (self, ctxt, style):
         self.child.paint (ctxt, style)
 
@@ -299,7 +299,7 @@ class LinearBox (Painter):
         self.size = int (size)
 
         self._elements = [None] * self.size
-        
+
         for i in xrange (0, self.size):
             np = NullPainter ()
             self._elements[i] = (np, 1.0, 0.0, 0.0, 0.0)
@@ -310,13 +310,13 @@ class LinearBox (Painter):
     majBorderSize = 2 # size of major axis border in style.smallScale
     minBorderSize = 2 # as above for minor axis border
     padSize = 1 # as above for interior padding along major axis
-    
+
     def __getitem__ (self, idx):
         return self._elements[idx][0]
 
     def __setitem__ (self, idx, value):
         prevptr, prevwt, prevb1, prevmaj, prevb2 = self._elements[idx]
-        
+
         if prevptr is value: return
 
         # This will recurse to our own _lostChild
@@ -326,20 +326,20 @@ class LinearBox (Painter):
         # if value is already in _elements and is being
         # moved to an earlier position, _lostChild doesn't
         # remove the wrong entry.
-        
+
         if value is None: value = NullPainter ()
         value.setParent (self)
-        
+
         self._elements[idx] = (value, prevwt, prevb1, prevmaj, prevb2)
 
     def appendChild (self, child, weight=1.0):
         if child is None: child = NullPainter ()
         child.setParent (self)
-        
+
         self._elements.append ((None, weight, 0.0, 0.0, 0.0))
         self.size += 1
         self[self.size - 1] = child
-    
+
     def _lostChild (self, child):
         for i in xrange (0, self.size):
             (ptr, wt, tmp, tmp, tmp) = self._elements[i]
@@ -375,7 +375,7 @@ class LinearBox (Painter):
 
             # Along the major direction, we don't equalize borders at all, so the
             # effective size of each child includes its borders...
-            
+
             cfull = cbmaj1 + cmaj + cbmaj2
             cbmaj1eff = cbmaj1
             cbmaj2eff = cbmaj2
@@ -438,7 +438,7 @@ class LinearBox (Painter):
 
         majspace = major - (self.size - 1) * pad + bmaj1 + bmaj2 - 2 * bmaj
         totwt = 0.0
-        
+
         for i in xrange (self.size):
             e = self._elements[i]
             wt = e[1]
@@ -451,7 +451,7 @@ class LinearBox (Painter):
 
         ctxt.save ()
         self._boxTranslate (ctxt, bmaj, bmin)
-        
+
         for i in xrange (self.size):
             ptr, wt, cbmaj1, cmaj, cbmaj2 = self._elements[i]
 
@@ -462,7 +462,7 @@ class LinearBox (Painter):
                     cfullmaj = majspace * wt / totwt
                 else:
                     cfullmaj = 0
-            
+
                 cfullmaj = max (cfullmaj, cbmaj1 + cmaj + cbmaj2)
                 assert cfullmaj <= majspace, 'Not enough room in vbox!'
 

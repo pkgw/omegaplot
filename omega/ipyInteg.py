@@ -39,7 +39,7 @@ except ImportError:
 
 def _checkGTKThreads ():
     import threading
-    
+
     for t in threading.enumerate ():
         if isinstance (t, IPython.Shell.IPShellGTK):
             return t.gtk_mainloop
@@ -49,7 +49,7 @@ def _checkGTKThreads ():
 if inIPython:
     usingThreads = isinstance (_ipsh, IPython.Shell.MTInteractiveShell)
 
-    if usingThreads: 
+    if usingThreads:
         _real_gtk_mainloop = _checkGTKThreads ()
     else:
         _real_gtk_mainloop = None

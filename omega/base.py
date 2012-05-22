@@ -88,20 +88,20 @@ class DataHolder (object):
     slice the data the way it absolutely must be sliced: into an
     ndarray of ints and one of floats.
     """
-    
+
     AxisTypeInt = 0
     AxisTypeFloat = 1
 
     AxisMiscInt = 0
     AxisMiscFloat = 1
-    
+
     axistypes = (AxisTypeInt, AxisTypeFloat) # tuple of AxisType* values
 
     allocations = None
     intdata = None
     fltdata = None
     dlen = 0
-    
+
     def register (self, *widths):
         """Register a consumer with this DataHolder.
 
@@ -124,7 +124,7 @@ class DataHolder (object):
 
         if self.intdata is not None or self.fltdata is not None:
             raise Exception ("Can't register new consumer now.")
-        
+
         if self.allocations is None:
             self.allocations = [0] * len (self.axistypes)
 
@@ -132,7 +132,7 @@ class DataHolder (object):
             raise Exception ("Consumer expects different number of axes")
 
         offsets = ()
-        
+
         for i in xrange (0, len (widths)):
             offsets += (self.allocations[i], )
             self.allocations[i] += widths[i]
@@ -142,7 +142,7 @@ class DataHolder (object):
     def _checkLengths (self):
         if self.intdata is None and self.fltdata is None:
             raise Exception ('No data yet!')
-        
+
         if self.intdata is not None and \
            self.intdata.shape[1] != self.dlen:
             raise Exception ('Disagreeing int and float data lengths')
@@ -167,13 +167,13 @@ class DataHolder (object):
           dimension of the same size, though. The type of each ndarray
           is the type associated with its axis: N.int or N.float.
         """
-        
+
         offsets, widths = cinfo
         intofs = fltofs = 0
         ret = ()
 
         self._checkLengths ()
-        
+
         for i in xrange (0, len (widths)):
             type, ofs, w = self.axistypes[i], offsets[i], widths[i]
 
@@ -193,7 +193,7 @@ class DataHolder (object):
                 intofs += self.allocations[i]
             elif type == self.AxisTypeFloat:
                 fltofs += self.allocations[i]
-                
+
         return ret
 
     def getAll (self):
@@ -206,12 +206,12 @@ class DataHolder (object):
           in the documentation to get(), but containing the data for all
           registered consumers.
         """
-        
+
         intofs = fltofs = 0
         ret = ()
 
         self._checkLengths ()
-        
+
         for i in xrange (0, len (self.allocations)):
             type, w = self.axistypes[i], self.allocations[i]
 
@@ -231,7 +231,7 @@ class DataHolder (object):
                 intofs += w
             elif type == self.AxisTypeFloat:
                 fltofs += w
-                
+
         return ret
 
     def totalWidth (self):
@@ -241,9 +241,9 @@ class DataHolder (object):
 
         Returns: The total number of columns in this DataHolder.
         """
-        
+
         return reduce (lambda x, y: x + y, self.allocations)
-    
+
     def _allocMerged (self, type, dtype, len):
         totw = 0
 
@@ -251,13 +251,13 @@ class DataHolder (object):
             if atype == type: totw += w
 
         return _N.ndarray ((totw, len), dtype=dtype)
-        
+
     def _setGeneric (self, type, dtype, arrays):
         arrays = [_N.asarray (x) for x in arrays]
         mergedofs = 0
         l = -1
         naxes = len (self.axistypes)
-        
+
         for i in xrange (0, len (arrays)):
             a = arrays[i]
 
@@ -268,10 +268,10 @@ class DataHolder (object):
 
             if type == self.AxisTypeInt and a.dtype.kind != 'i':
                 raise Exception ('Need to pass ints to for int data')
-            
+
             w = a.shape[0]
             dataofs = 0
-            
+
             if l < 0:
                 l = a.shape[1]
                 merged = self._allocMerged (type, dtype, l)
@@ -281,17 +281,17 @@ class DataHolder (object):
 
             if mergedofs + w > totw:
                 raise Exception ('More input data than expected')
-            
+
             merged[mergedofs:mergedofs+w,:] = a
             mergedofs += w
 
         if mergedofs != totw:
             raise Exception ('Less input data than required')
-        
+
         self.dlen = l
         return merged
 
-            
+
     def setInts (self, *args):
         """Set the integer data of this DataHolder.
 
@@ -323,7 +323,7 @@ class DataHolder (object):
         The datatypes of the argument ndarrays need not be exactly N.int, but
         they must be integer-type and compatible with N.int.
         """
-        
+
         self.intdata = self._setGeneric (self.AxisTypeInt, _N.int, args)
         return self
 
@@ -346,7 +346,7 @@ class DataHolder (object):
         Integer arrays passed to this function will be upcast to
         floating-point arrays.
         """
-        
+
         self.fltdata = self._setGeneric (self.AxisTypeFloat, _N.float, args)
         return self
 
@@ -372,7 +372,7 @@ class DataHolder (object):
         \"painter.data.setInts ()\" all the time. This function helps
         that problem a bit.
         """
-        
+
         other.setInts = self.setInts
         other.setFloats = self.setFloats
         return self
@@ -383,9 +383,9 @@ class DataHolder (object):
 class ToplevelPaintParent (object):
     _painter = None
     _painterRef = None
-    
+
     from weakref import ref as _ref
-    
+
     def __init__ (self, weakRef):
         self._weakRef = bool (weakRef)
 
@@ -402,13 +402,13 @@ class ToplevelPaintParent (object):
             return None
 
         return p
-    
+
     def setPainter (self, painter):
         pCur = self.getPainter ()
-        
+
         if pCur is not None:
             pCur.setParent (None)
-        
+
         if painter is not None:
             painter.setParent (self)
 
@@ -433,7 +433,7 @@ class Painter (object):
     _toplevel_render_aspect = None
 
     from weakref import ref as _ref
-    
+
     def __init__ (self):
         self.matrix = None
 
@@ -447,10 +447,10 @@ class Painter (object):
             return None
 
         return p
-    
+
     def setParent (self, parent):
         p = self._getParent ()
-        
+
         if p is not None:
                 p._lostChild (self)
 
@@ -458,9 +458,9 @@ class Painter (object):
             self.parentRef = None
         else:
             self.parentRef = self._ref (parent)
-        
+
         self.matrix = None
-        
+
     def getMinimumSize (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
@@ -471,10 +471,10 @@ class Painter (object):
 
     def configurePainting (self, ctxt, style, w, h, btop, brt, bbot, bleft):
         p = self._getParent ()
-        
+
         if p is None:
             raise Exception ('Cannot configure parentless painter')
-        
+
         self.matrix = ctxt.get_matrix ()
         self.width = w
         self.height = h
@@ -550,18 +550,18 @@ class Painter (object):
 
     def render (self, func):
         p = self._getParent ()
-        
+
         if p is not None:
             raise Exception ("Can't render in-use Painter")
 
         # We have to hold a ref to tpp in this function because setParent
         # only references it weakly! That shit is bananas.
-        
+
         tpp = ToplevelPaintParent (False)
         self.setParent (tpp)
         func (self.renderBasic)
         self.setParent (None)
-    
+
 
     def sendTo (self, pager):
         pager.send (self)
@@ -573,7 +573,7 @@ class Painter (object):
         showPainter (self, ident, **kwargs)
         return self
 
-    
+
     def save (self, filename, **kwargs):
         from render import savePainter
         savePainter (self, filename, **kwargs)
@@ -585,7 +585,7 @@ class Painter (object):
         dumpPainter (self, **kwargs)
         return self
 
-    
+
 class NullPainter (Painter):
     def doPaint (self, ctxt, style): pass
 
@@ -609,7 +609,7 @@ class DebugPainter (Painter):
 
     def doPaint (self, ctxt, style):
         style.apply (ctxt, self.lineStyle)
-        
+
         ctxt.move_to (0, 0)
         ctxt.line_to (self.fullw, self.fullh)
         ctxt.stroke ()
@@ -671,7 +671,7 @@ class CairoTextPainter (_TextPainterBase):
 
         if hAlign is not None: self.hAlign = hAlign
         if vAlign is not None: self.vAlign = vAlign
-        
+
     def getMinimumSize (self, ctxt, style):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
@@ -724,7 +724,7 @@ def textMarkup (text, **kwargs):
 
 def _setTextBackend (painterClass, stamperClass, markupFunc):
     global _textPainterClass, _textStamperClass, _textMarkupFunc
-    
+
     if not issubclass (painterClass, _TextPainterBase):
         raise ValueError ('Text backend class %s is not a TextPainterBase subclass' %
                           painterClass)
@@ -750,7 +750,7 @@ class _ImagePainterBase (Painter):
 
         if not isinstance (surf, cairo.ImageSurface):
             raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
-        
+
         return surf.get_width (), surf.get_height (), 0, 0, 0, 0
 
     def doPaint (self, ctxt, style):
@@ -785,7 +785,7 @@ def _kwordDefaulted (kwargs, name, coerce, default):
         val = coerce (kwargs[name])
     else:
         val = kwargs[name]
-    
+
     del kwargs[name]
     return val
 

@@ -20,12 +20,12 @@ r"""
 .. sectionauthor:: Peter Williams <peter@newton.cx>
 
 Various functions that don't fit in other modules particularly
-well. This is not to imply that these functions aren't important -- 
+well. This is not to imply that these functions aren't important --
 :func:`quickXY`, for instance, is quite useful.
 """
 
 from base import _kwordDefaulted
-    
+
 # Quick display of plots
 
 import rect
@@ -38,10 +38,10 @@ def quickXY (*args, **kwargs):
                Y coordinate data. In the latter case, the X coordinates
                are defaulted to 0, 1, 2, *etc.* Must be one-dimensional.
                This is converted to an array via :func:`numpy.asarray`,
-               so any sequence is acceptable, not just a 
+               so any sequence is acceptable, not just a
                :class:`numpy.ndarray`.
 :type opt_y: 1D array-like
-:param opt_y: The Y coordinate data. Defaults to :const:`None`, which 
+:param opt_y: The Y coordinate data. Defaults to :const:`None`, which
               indicates that *y_or_x* actually specifies the Y coordinate
               data. Must be one-dimensional and the same size as *y_or_x*.
               Same processing semantics as *y_or_x*.
@@ -49,9 +49,9 @@ def quickXY (*args, **kwargs):
 :param label: The text used in the key of the newly-created plot. Defaults
               to 'Data'.
 :type xmin: float
-:param xmin: The lower X bound of the plot. Defaults to :const:`None`, 
+:param xmin: The lower X bound of the plot. Defaults to :const:`None`,
              which
-             indicates that the lower X bound should be chosen 
+             indicates that the lower X bound should be chosen
              automatically. See XXXFIXME for a description of the
              automatic range-finding algorithm.
 :type xmax: float
@@ -70,7 +70,7 @@ def quickXY (*args, **kwargs):
 :param ylog: Whether the Y axis should be rendered logarithmically.
              Defaults to :const:`False`.
 :type lines: bool
-:param lines: Whether to connect the data points with lines. If 
+:param lines: Whether to connect the data points with lines. If
               :const:`False`, the data points are instead marked
               with circles. Defaults to :const:`True`. (This argument
               is handled in :meth:`omega.rect.RectPlot.addXY`)
@@ -82,42 +82,42 @@ def quickXY (*args, **kwargs):
 :type pointStamp: :class:`omega.Stamp`
 :param pointStamp: A :class:`omega.Stamp` used to draw the data points.
                    Defaults to :const:`None`, which indicates that
-                   no stamp will be used, unless *lines* is 
+                   no stamp will be used, unless *lines* is
                    :const:`False`, in which case a default stamp is chosen.
-                   (This argument is handled in 
+                   (This argument is handled in
                    :meth:`omega.rect.RectPlot.addXY`)
 :type autokey: bool
 :param autokey: If :const:`True`, automatically add an item to the
                 new plot's key containing the text in *label*. Defaults to
-                :const:`True`. (This argument is handled in 
+                :const:`True`. (This argument is handled in
                 :meth:`omega.rect.RectPlot.add`)
 :type rebound: bool
 :param rebound: If :const:`True`, recompute the bounds of the plot
-                after adding the data to it with 
-                :meth:`omega.rect.RectPlot.rebound`. Otherwise, 
+                after adding the data to it with
+                :meth:`omega.rect.RectPlot.rebound`. Otherwise,
                 use the default plot bounds. Defaults to :const:`True`.
-                (This argument is handled in 
+                (This argument is handled in
                 :meth:`omega.rect.RectPlot.add`)
 :type nudgex: bool
-:param nudgex: If :const:`True` and *rebound* is :const:`True`, nudge the 
+:param nudgex: If :const:`True` and *rebound* is :const:`True`, nudge the
                X bounds of the plot to rounded numbers appropriate to,
-               and larger than, the range of the data. (This argument is 
+               and larger than, the range of the data. (This argument is
                handled in :meth:`omega.rect.RectPlot.add`)
 :type nudgey: bool
-:param nudgey: Analogous to *nudgex* for the Y bounds. (This argument is 
+:param nudgey: Analogous to *nudgex* for the Y bounds. (This argument is
                handled in :meth:`omega.rect.RectPlot.add`)
 :rtype: :class:`omega.rect.RectPlot`
 :return: A rectangular plot object with sensible defaults containing
          a single :class:`omega.rect.XYDataPainter` showing the
          input data.
 
-The returned plot object is a newly-created :class:`omega.plot.RectPlot` 
-object that has its :meth:`omega.plot.RectPlot.addXY` procedure 
+The returned plot object is a newly-created :class:`omega.plot.RectPlot`
+object that has its :meth:`omega.plot.RectPlot.addXY` procedure
 called to add a :class:`omega.rectXYDataPainter` displaying the
 specified data. With the exception of *xmin*, *xmax*, *ymin*, and *ymax*,
 all arguments to this function are passed verbatim to
 :meth:`omega.plot.RectPlot.addXY`, so any argument accepted by that
-function is accepted by this function. 
+function is accepted by this function.
 
 This function can be used to very quickly display some data. For instance,
 if you're working at an interactive prompt, the following code will create
@@ -133,7 +133,7 @@ and display a plot object::
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
     xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
     ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
-    
+
     rp = rect.RectPlot ()
     rp.addXY (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
@@ -141,7 +141,7 @@ and display a plot object::
 
     if xlog or ylog:
         rp.rebound ()
-    
+
     return rp
 
 def quickXYErr (*args, **kwargs):
@@ -151,7 +151,7 @@ def quickXYErr (*args, **kwargs):
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
     xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
     ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
-    
+
     rp = rect.RectPlot ()
     rp.addXYErr (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
@@ -159,7 +159,7 @@ def quickXYErr (*args, **kwargs):
 
     if xlog or ylog:
         rp.rebound ()
-    
+
     return rp
 
 def quickHist (data, bins=10, range=None, normed=False, **kwargs):
@@ -181,7 +181,7 @@ def quickHist (data, bins=10, range=None, normed=False, **kwargs):
 
     fp = rect.ContinuousSteppedPainter (**kwargs)
     fp.setFloats (edges, values)
-    
+
     rp = rect.RectPlot ()
     rp.add (fp)
     rp.setBounds (xmin, xmax, ymin, ymax)
@@ -215,7 +215,7 @@ def quickImage (format, data):
     return p
 
 
-# A function to easily make a demo plot to make testing of 
+# A function to easily make a demo plot to make testing of
 # rendering features quick. The purpose of these is not
 # to demonstrate fancy plots, but just to give something
 # quick to render.
@@ -285,7 +285,7 @@ def _makeDumpPager (**kwargs):
 
 def dumpPainter (painter, **kwargs):
     global _dumpPager
-    
+
     if _dumpPager is None:
         _dumpPager = _makeDumpPager (**kwargs)
 

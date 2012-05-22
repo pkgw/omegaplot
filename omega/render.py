@@ -88,7 +88,7 @@ class PSPager (Pager):
             # surf.dsc_comment ('%%IncludeFeature: *PageSize Letter')
             # FIXME: is there some DSC comment to indicate the page
             # margins?
-            
+
             if landscape:
                 surf.dsc_comment ('%%PageOrientation: Landscape')
 
@@ -98,7 +98,7 @@ class PSPager (Pager):
                 ctxt.translate (h/2, w/2)
                 ctxt.rotate (-pi/2)
                 ctxt.translate (-w/2, -h/2)
-            
+
             ctxt.translate (margins[3], margins[0])
 
             weff = w - (margins[1] + margins[3])
@@ -249,7 +249,7 @@ class PNGPager (Pager):
 class GridPager (Pager):
     # This accumulates multiple plots into a grid and sends
     # them to a sub-pager in batches.
-    
+
     def __init__ (self, spager, nw, nh, nper=0):
         from layout import Grid
 
@@ -334,14 +334,14 @@ class GridPager (Pager):
 class MultiFilePager (Pager):
     # Turns some sub-pager, that writes to a file, into a
     # reusable pager that writes to a new file on each
-    # reuse. The new filename is varied by a simple 
+    # reuse. The new filename is varied by a simple
     # sequence number.
     #
     # This makes the most sense to use with a subpager
     # that can't actually page. But it is not an error
     # to use this with a subpager that can page.
 
-    def __init__ (self, filetmpl, subclass, size, margins, style, 
+    def __init__ (self, filetmpl, subclass, size, margins, style,
                   n0=1, incr=None, format=None):
         if not issubclass (subclass, Pager):
             raise ValueError ('subclass')
@@ -393,7 +393,7 @@ class MultiFilePager (Pager):
         self.spager = None
 
 
-class ReusingPager (Pager):    
+class ReusingPager (Pager):
     # Turns a sub-pager that's reusable into a pager that can page.
     # This makes the most sense to use with a sub-pager that can't
     # page. But it is not an error to use this with a subpager that
@@ -451,7 +451,7 @@ def getFilePagerInfo (filename, type=None, dims=None, margins=None, style=None):
     return None
 
 
-def makePager (filename, type=None, dims=None, margins=None, 
+def makePager (filename, type=None, dims=None, margins=None,
                style=None, mustPage=False, nw=1, nh=1, nper=0, **kwargs):
     """Create a Pager object for rendering painters.
 
@@ -469,7 +469,7 @@ def makePager (filename, type=None, dims=None, margins=None,
     Any extra keyword arguments are passed to the appropriate render-function
     constructor function.
     """
- 
+
     doGrid = nw > 1 or nh > 1
 
     tup = getFilePagerInfo (filename, type, dims, margins, style)
@@ -483,14 +483,14 @@ def makePager (filename, type=None, dims=None, margins=None,
         # We must return something that can actually page, but what we
         # got can't. Go to Plan B: layer in multifile and reusable
         # shims. This means that the output filenames are not what
-        # was asked for, but that's part of the contract of 
+        # was asked for, but that's part of the contract of
         # mustPage=True
         from os.path import splitext
         base, ext = splitext (filename)
         tmpl = base + '%03d' + ext
         pager = MultiFilePager (tmpl, klass, dims, margins, style)
         pager = ReusingPager (pager)
-    
+
     if doGrid:
         pager = GridPager (pager, nw, nh, nper)
 
@@ -525,7 +525,7 @@ def setDisplayPagerClass (klass):
 def _loadDisplayBackend ():
     # If we ever have multiple backends, we should try them
     # sequentially, etc.
-    
+
     import gtkInteg
     import omega
 
@@ -535,7 +535,7 @@ def _loadDisplayBackend ():
 def makeDisplayPager (nw=1, nh=1, nper=0, mustPage=True, **kwargs):
     # We ignore mustPage, since that's always true for
     # the display pager.
-    
+
     if _displayPagerClass is None:
         _loadDisplayBackend ()
 
@@ -556,7 +556,7 @@ def getShowPager (ident=None, **kwargs):
     # something up on the screen, and it wouldn't know
     # when would be the right time to call the "done"
     # method.
-    
+
     global _lastUsedIdent
 
     if ident is None:

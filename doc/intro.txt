@@ -28,26 +28,26 @@ An Introduction to |omega|
 <http://www.python.org/>`_ programming language. It aspires to the
 following key goals:
 
-* Producing attractive, accessible, publication-quality output. 
+* Producing attractive, accessible, publication-quality output.
 * Presenting a clean, usable API to users.
 
 The rendering backend of OmegaPlot is the `Cairo
 <http://www.cairographics.org/>`_ graphics library, via the
-`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot 
+`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot
 stores and accesses data using the `NumPy <http://numpy.scipy.org/>`_
 package.
 
 Features currently supported by OmegaPlot include:
 
 * Interactive plotting with rendering via the `GTK+
-  <http://www.gtk.org/>`_ toolkit. Special integration with the 
+  <http://www.gtk.org/>`_ toolkit. Special integration with the
   `IPython <http://ipython.scipy.org/>`_ interactive shell is included.
 * Paginated output to PostScript, PDF, SVG, and PNG files. Generally,
   any output target supported by Cairo can easily be used by OmegaPlot.
 * Sophisticated rectangular (X, Y) plots.
 * Arbitrary layout of multiple plots in grids, stacks, and so on.
 * Optional vector-based text and equation rendering via LaTeX, for
-  plots that require fancy equatons with publication-quality 
+  plots that require fancy equatons with publication-quality
   typesetting.
 
 
@@ -57,18 +57,18 @@ Seriously? **Another** Plotting Package?
 It's a valid question. The author's answer refers to the two
 key goals of |omega|:
 
-* Many of the plotting packages that he has seen produce 
+* Many of the plotting packages that he has seen produce
   fairly unattractive output. This judgment is, of course,
   highly subjective. The author's preferences run towards
-  a clean, quiet, Tufte-influenced [#tufte]_ aesthetic. Many 
-  packages seem to use overly thick lines, grids, and other 
-  so-called "chartjunk" that clutter up graphics and make them 
+  a clean, quiet, Tufte-influenced [#tufte]_ aesthetic. Many
+  packages seem to use overly thick lines, grids, and other
+  so-called "chartjunk" that clutter up graphics and make them
   unappealing.
 * Essentially *all* of the plotting packages that the author
   has looked at have unattractive programming interfaces.
-  Not only is this judgment also subjective, it's also not a 
+  Not only is this judgment also subjective, it's also not a
   big deal to many people. But this programmer thinks that APIs
-  matter more than is commonly appreciated and that his 
+  matter more than is commonly appreciated and that his
   design is, frankly, better than the others that he has seen.
 
 There's also the matter that these days, writing a plotting package is
@@ -80,10 +80,10 @@ he needs them and not find himself spending *too* much time on a side
 project. Of course, here he is writing documentation, so things have
 probably gotten out of hand. Don't tell his adviser.
 
-For the sake of completeness, here are some of the other 
+For the sake of completeness, here are some of the other
 `Python`_ plotting packages. Apologies for any omissions.
 
-* matplotlib 
+* matplotlib
 * more ...
 
 The Design
@@ -134,25 +134,25 @@ some data item that can self-visualize::
      pg.done ()
 
   >>> sample.plot ().show () # Examine this particular sample
-  >>> sample.plot ().save ('forlater.ps')  
+  >>> sample.plot ().save ('forlater.ps')
   >>> # science happens here
 
 About the Name
 --------------
 
 This package is called |omega| because it's the *last* plotting
-package you'll ever need. Get it? 
+package you'll ever need. Get it?
 
 I'm not actually that full of myself, but I think "omega" is a catchy name
 that's relatively short and doesn't seem to have already been taken
-in the `Python`_ world. 
+in the `Python`_ world.
 
 .. [#tufte] That is, Edward Tufte, author of "The Visual Display
    of Quantitative Information" and several other books. Tufte
    has his flaws and bugbears --- for instance, he appears to
    completely ignore questions of accessibility --- but his
    general approach to graphic design is, in this programmer's
-   opinion, a good one. It is also a vastly underrepresented 
+   opinion, a good one. It is also a vastly underrepresented
    one, but that's another issue.
 .. FIXME book reference above.
 

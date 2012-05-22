@@ -45,7 +45,7 @@ class RStamp (Stamp):
     def setData (self, data):
         if self.data is not None:
             raise Exception ('Cannot reuse RStamp instance.')
-        
+
         self.data = data
         # when overriding: possibly register data columns
         # and stash cinfo
@@ -57,7 +57,7 @@ class RStamp (Stamp):
         data = self._getSampleValues (style, x, y)
         data = [_N.atleast_1d (q) for q in data]
 
-        self._paintData (ctxt, style, _N.atleast_1d (x), 
+        self._paintData (ctxt, style, _N.atleast_1d (x),
                          _N.atleast_1d (y), data)
 
 
@@ -85,7 +85,7 @@ class RStamp (Stamp):
 
 
     def _getDataValues (self, style, xform):
-        # Implement similalry to _getSampleValues. 
+        # Implement similalry to _getSampleValues.
         # It's expected that data values will
         # come from self.data.getMapped (cinfo, xform)
         # for some cinfo
@@ -96,7 +96,7 @@ class PrimaryRStamp (RStamp):
     # A primary RStamp is one that actually draws a plot
     # symbol. It has builtin properties "size" and "rot"
     # that can be used to control how the symbol is plotted.
-    # Both can be either specified to be a constant or 
+    # Both can be either specified to be a constant or
     # be stored in the dataholder.
 
     def __init__ (self, size=None, rot=0):
@@ -180,7 +180,7 @@ def symUpTriangle (ctxt, style, size, fill):
     else: go = ctxt.stroke
 
     s = size * style.smallScale
-        
+
     ctxt.move_to (0, -0.666666 * s)
     ctxt.rel_line_to (s/2, s)
     ctxt.rel_line_to (-s, 0)
@@ -192,7 +192,7 @@ def symDownTriangle (ctxt, style, size, fill):
     else: go = ctxt.stroke
 
     s = size * style.smallScale
-        
+
     ctxt.move_to (0, s * 0.666666)
     ctxt.rel_line_to (-s/2, -s)
     ctxt.rel_line_to (s, 0)
@@ -204,7 +204,7 @@ def symDiamond (ctxt, style, size, fill):
     else: go = ctxt.stroke
 
     s2 = size * style.smallScale / 2
-        
+
     ctxt.move_to (0, -s2)
     ctxt.rel_line_to (s2, s2)
     ctxt.rel_line_to (-s2, s2)
@@ -214,7 +214,7 @@ def symDiamond (ctxt, style, size, fill):
 
 def symBox (ctxt, style, size, fill):
     s = size * style.smallScale / _math.sqrt (2)
-        
+
     ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
 
     if fill: ctxt.fill ()
@@ -222,17 +222,17 @@ def symBox (ctxt, style, size, fill):
 
 def symX (ctxt, style, size):
     s = size * style.smallScale / _math.sqrt (2)
-        
+
     ctxt.move_to (-0.5 * s, -0.5 * s)
     ctxt.rel_line_to (s, s)
     ctxt.stroke ()
     ctxt.move_to (-0.5 * s, 0.5 * s)
     ctxt.rel_line_to (s, -s)
     ctxt.stroke ()
-        
+
 def symPlus (ctxt, style, size):
     s = size * style.smallScale
-        
+
     ctxt.move_to (-0.5 * s, 0)
     ctxt.rel_line_to (s, 0)
     ctxt.stroke ()
@@ -269,7 +269,7 @@ class DownTriangle (PrimaryRStamp):
 
     def _paintOne (self, ctxt, style, size):
         symDownTriangle (ctxt, style, size, self.fill)
-    
+
 
 class Diamond (PrimaryRStamp):
     def __init__ (self, fill=True, **kwargs):
@@ -294,7 +294,7 @@ class Box (PrimaryRStamp):
 
     def _paintOne (self, ctxt, style, size):
         symBox (ctxt, style, size, self.fill)
-    
+
 
 class X (PrimaryRStamp):
     # size gives the length the X in style.smallScale; corrected by
@@ -302,14 +302,14 @@ class X (PrimaryRStamp):
 
     def _paintOne (self, ctxt, style, size):
         symX (ctxt, style, size)
-    
+
 
 class Plus (PrimaryRStamp):
     # size gives the side length of the plus in style.smallScale
 
     def _paintOne (self, ctxt, style, size):
         symPlus (ctxt, style, size)
-    
+
 
 # This special PrimaryRStamp plots a symbol that's a function of
 # a style number used for data themes. This allows us to abstract
@@ -319,7 +319,7 @@ class DataThemedStamp (PrimaryRStamp):
     def __init__ (self, snholder, size=None, rot=0):
         super (DataThemedStamp, self).__init__ (size, rot)
         self.setHolder (snholder)
-        
+
     def setHolder (self, snholder):
         self.snholder = snholder
 
@@ -364,7 +364,7 @@ class WithYErrorBars (RStamp):
             ctxt.line_to (x[i], y2[i])
             ctxt.stroke ()
 
-    
+
     def _getSampleValues (self, style, x, y):
         subd = self.substamp._getSampleValues (style, x, y)
 
@@ -378,7 +378,7 @@ class WithYErrorBars (RStamp):
         imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
         return (y[0], y[1]) + subd
 
-        
+
 class WithXErrorBars (RStamp):
     def __init__ (self, substamp):
         self.substamp = substamp
@@ -407,7 +407,7 @@ class WithXErrorBars (RStamp):
             ctxt.line_to (x2[i], y[i])
             ctxt.stroke ()
 
-    
+
     def _getSampleValues (self, style, x, y):
         subd = self.substamp._getSampleValues (style, x, y)
 

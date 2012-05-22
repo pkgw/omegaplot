@@ -17,13 +17,13 @@
 
 r"""
 .. This docstring is read and processed by Sphinx to create the full
-   OmegaPlot documentation. It should be readable as-is but the 
+   OmegaPlot documentation. It should be readable as-is but the
    processed documentation is much nicer.
 
 .. sectionauthor:: Peter Williams <peter@newton.cx>
 
 This is API reference documentation for the :mod:`omega` module. For a
-general introduction to OmegaPlot, please see the 
+general introduction to OmegaPlot, please see the
 :ref:`full documentation <index>`.
 """
 

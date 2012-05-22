@@ -85,7 +85,7 @@ class Style (object):
 
     def getColor (self, color):
         if isinstance (color, tuple): return color
-        
+
         return getattr (self.colors, color)
 
 
@@ -253,7 +253,7 @@ class DataTheme (object):
 
     def getSymbolFunc (self, n):
         raise NotImplementedError ()
-        
+
 
 
 def _wf (func, fill):
@@ -284,7 +284,7 @@ class MonochromeDataTheme (DataTheme):
 
     def applyLine (self, style, ctxt, dsn):
         if dsn is None: return
-        
+
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
 
@@ -309,7 +309,7 @@ class MonochromeDataTheme (DataTheme):
         # No variation based on data style number here.
         ctxt.set_source_rgb (*style.colors.foreground)
         ctxt.set_line_width (style.sizes.thickLine)
-        
+
 
     _symFuncs = [_wf (stamps.symCircle, True),
                  _wf (stamps.symUpTriangle, True),
@@ -324,19 +324,19 @@ class MonochromeDataTheme (DataTheme):
                  _wf (stamps.symDiamond, False),
                  _wf (stamps.symDownTriangle, False)]
 
-    
+
     def getSymbolFunc (self, dsn):
         dsn = dsn % len (self._symFuncs)
-        
+
         return self._symFuncs[dsn]
-    
-        
+
+
 class ColorDataTheme (DataTheme):
     """This theme disambiguates data from different
     sources by drawing lines in different colors. When using
-    this theme, you should keep in mind that 1) many 
+    this theme, you should keep in mind that 1) many
     people are colorblind in various ways and 2) many
-    people print out color figures on black-and-white 
+    people print out color figures on black-and-white
     printers."""
 
 
@@ -371,8 +371,8 @@ class ColorDataTheme (DataTheme):
         return MonochromeDataTheme._symFuncs[symnum]
 
 
-# Higher-level styling for various graphical elements based 
-# on their roles. This builds upon the lower-level sizes and 
+# Higher-level styling for various graphical elements based
+# on their roles. This builds upon the lower-level sizes and
 # colors that the style defines.
 
 class Roles (object):

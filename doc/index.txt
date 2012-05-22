@@ -25,10 +25,10 @@ OmegaPlot Tutorial and Reference
 
 Welcome to the |omega| tutorial and reference documentation.
 If you're just learning about |omega|, how about getting started
-with the :ref:`introduction <intro>`? 
+with the :ref:`introduction <intro>`?
 
 This documentation describes OmegaPlot version |version|, implementing
-version |release| of the API. It was generated on |today|. 
+version |release| of the API. It was generated on |today|.
 The documentation is created using `Sphinx <http://sphinx.pocoo.org/>`_.
 
 Contents

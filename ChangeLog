@@ -19,7 +19,7 @@ preserved for consultation if it happens to be of use.
 
 	* omega/stamps.py (Box.doPaint): Make stamps bigger by default; collect
 	the default value of the size parameter in one variable.
-	
+
 2007-06-29  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (LiveDisplay.linger): Make this a timeout since the
@@ -28,7 +28,7 @@ preserved for consultation if it happens to be of use.
 2007-06-28  Peter Williams  <peter@newton.cx>
 
 	* omega/gtkUtil.py (LiveDisplay.linger): New function: block the caller
-	until the LiveDisplay has been destroyed by the user. Useful for 
+	until the LiveDisplay has been destroyed by the user. Useful for
 	semi-interactive programs not run from IPython.
 
 2007-04-16  Peter Williams  <peter@newton.cx>
@@ -48,12 +48,12 @@ preserved for consultation if it happens to be of use.
 
 2007-03-22  Peter Williams  <peter@newton.cx>
 
-	* omega/util.py (dump): Continue moving to a more 
+	* omega/util.py (dump): Continue moving to a more
 	pipeline-centric model.
 
 2007-03-22  Peter Williams  <peter@newton.cx>
 
-	* omega/__init__.py (RSP): Add a shortcut for 
+	* omega/__init__.py (RSP): Add a shortcut for
 	util.makeRectSkeletonPipeline.
 
 	* omega/rect.py (LogarithmicAxis.getMin): Add 'min' and 'max'
@@ -62,17 +62,17 @@ preserved for consultation if it happens to be of use.
 	to reset the variables from integers every decade, to avoid
 	rounding errors (which of course are likely to be a big deal if
 	we're working a large logarithmic range).
-	(RectPlot.quickAdd): New utility function that calls 
-	util.addQuickRectDataPainter. Kind of ugly since it requires a 
+	(RectPlot.quickAdd): New utility function that calls
+	util.addQuickRectDataPainter. Kind of ugly since it requires a
 	pipeline object.
 
-	* omega/util.py (PaintPipeline.generateSourceId): Add a little 
+	* omega/util.py (PaintPipeline.generateSourceId): Add a little
 	function to automatically generate string names for sources.
 	(makeRectSkeletonPipeline): Just create a RectPlot, a Bag,
 	and a BlackOnWhiteBitmap style and stuff them into a pipeline.
 	(makeQuickSource): Break out the code that generates a data
 	source into here.
-	(makeQuickRectDataPainter): And break out code to make a 
+	(makeQuickRectDataPainter): And break out code to make a
 	RectDataPainter here.
 	(addQuickRectDataPainter): New function to create a quick RDP
 	and add it to an existing RectPlot.
@@ -84,7 +84,7 @@ preserved for consultation if it happens to be of use.
 	* omega/rect.py (LogarithmicAxis.__init__): Implement a logical
 	logarithmic axis. Right now the log base is fixed at 10.
 	(LinearAxisPainter.getLabelInfos): Oops, honor self.labelMinorTicks.
-	(LogarithmicAxisPainter.__init__): New painter for 
+	(LogarithmicAxisPainter.__init__): New painter for
 	LogarithmicAxis. Lots of redundant code with LinearAxisPainter.
 	(RectPlot.toggleLinLogAxes): Utility; changes the x and/or y axes
 	to linear or logarithmic scales, according to the arguments. Also
@@ -142,12 +142,12 @@ preserved for consultation if it happens to be of use.
 
 	* omega/latex.py: Move all the LaTeX code into this module, and call
 	base._setTextBackend after everything is initialized. So to enable
-	LaTeX text rendering, just import this module. 
+	LaTeX text rendering, just import this module.
 	(LatexPainter): Derive from _TextPainterBase now.
 	(LatexStamper): Analogous.
 
 	* omega/layout.py (RightRotationPainter.__init__): Move the code
-	that did image right-angle rotation into a separate class so that 
+	that did image right-angle rotation into a separate class so that
 	we can use it for any Painter we wish.
 
 	* omega/images.py: Remove, now unnecessary.
@@ -157,7 +157,7 @@ preserved for consultation if it happens to be of use.
 	* omega/rect.py (LinearAxisPainter.getLabelInfos): Now we can create
 	a generic TextStamper and not always have to use the (slow) LatexStamper.
 	(RectPlot.setSideLabel): Improve the rotation hack. If we're creating our
-	own Painter object and it's on the side, wrap it in a RightRotationPainter 
+	own Painter object and it's on the side, wrap it in a RightRotationPainter
 	here...
 	(RectPlot._calcOuterExtents): ... and here, if it is a RRP and the aspect
 	ratio is too high, apply the rotation.
@@ -169,7 +169,7 @@ preserved for consultation if it happens to be of use.
 
 	* demo/sinc.py: Give short labels to the lower graph so we can check if
 	the conditional axis label rotation is working.
-	
+
 2007-02-24  Peter Williams  <peter@newton.cx>
 
 	* omega/images.py (ImagePainter.getSurf): Make this abstract and let
@@ -226,12 +226,12 @@ preserved for consultation if it happens to be of use.
 
 	* omega/rect.py (RectPlot.__init__): Add support for 'outer
 	painters', which are aligned outside of the plot field and axes
-	quasi-radially. This is some complicated-ass code that will 
+	quasi-radially. This is some complicated-ass code that will
 	basically only be used for drawing X and Y axis labels. But it
 	is pretty general. Also add some code to make it easy to add
 	X and Y labels.
 
-	* demo/opaint.py: Add a new test/demo of RectPlot outer painter 
+	* demo/opaint.py: Add a new test/demo of RectPlot outer painter
 	positioning and allocation.
 
 	* demo/sinc.py: Add some axis labels. Looks ugly since axis
@@ -260,7 +260,7 @@ preserved for consultation if it happens to be of use.
 	(renderSnippets): Use it here. LaTeX was hanging on a system without
 	the 'preview' package because it asks the user to type in a new name.
 
-	* configure.ac: Add checks for latex, dvipng, and the preview 
+	* configure.ac: Add checks for latex, dvipng, and the preview
 	LaTeX package. Would have prevented the above issue.
 
 2007-02-15  Peter Williams  <peter@newton.cx>
@@ -277,7 +277,7 @@ preserved for consultation if it happens to be of use.
 	things look better on my machine. Woohoo!
 
 	* demo/stamps.py: Renamed from stampDemo ; down with redundancy.
-	
+
 	* demo/image.py: Quick test of LaTeX image painters.
 
 	* demo/Makefile.am: Update this.
@@ -285,11 +285,11 @@ preserved for consultation if it happens to be of use.
 2007-02-15  Peter Williams  <peter@newton.cx>
 
 	* latexsnippet/latexsnippet.py: New useful module, generates PNG files
-	from LaTeX snippets. Lots and lots of docstrings. Based off of 
+	from LaTeX snippets. Lots and lots of docstrings. Based off of
 	htmlatex from http://www.meangrape.com/htmlatex/, although honestly it
 	is pretty vastly modified from that.
 
-	* demo/stampDemo.py (StampPainter.doPaint): Oops forgot to fix this to 
+	* demo/stampDemo.py (StampPainter.doPaint): Oops forgot to fix this to
 	new old stamp API.
 
 	* latexsnippet/Makefile.am: Support file.
@@ -441,7 +441,7 @@ preserved for consultation if it happens to be of use.
 	(LargePngFile.__init__): Utility class that creates a 1024x768 PNG.
 	(dump): Adapt to the new API. Should probably dump the 'surfgen' name
 	now.
-	
+
 	* omega/base.py (RectDataPainter.transform): Change this to accept
 	two arguments, not a tuple.
 	(RectDataPainter.doChunkPaint): Fix algorithm to work if we have
@@ -476,7 +476,7 @@ preserved for consultation if it happens to be of use.
 
 2007-02-07  Peter Williams  <peter@newton.cx>
 
-	* demo/discrete.py (sources): 
+	* demo/discrete.py (sources):
 	* omega/base.py (EnumeratedDiscreteAxis.__init__): Break out from
 	a more generic DiscreteAxis, so we can have discrete axes with large
 	numbers of indices that are programmatically mapped (eg, the whole
@@ -511,7 +511,7 @@ preserved for consultation if it happens to be of use.
 	axis painters to smart values for great justice.
 	(RectDataPainter.__init__): If the argument is a RectDataPainter,
 	emulate its axes and bag.
-	(RectDataPainter.setBounds): Convenience function to set the bounds 
+	(RectDataPainter.setBounds): Convenience function to set the bounds
 	of the logical axes all at once.
 
 	* omega/bag.py (Bag.exposeSink): Allow several sinks to be exposed
@@ -537,7 +537,7 @@ preserved for consultation if it happens to be of use.
 	field; if it is set, tweak the parameters to set the aspect ratio
 	of the plot field to a fixed value.
 	(LinearAxisPainter.paint): Check for floating-point rounding issues
-	near 0. when choosing tick locations, and make it possible to 
+	near 0. when choosing tick locations, and make it possible to
 	turn on labeling of all ticks, not just major ticks.
 
 	* demo/lissajou.py (rp): Set fieldAspect to be 1.0 here.
@@ -554,11 +554,11 @@ preserved for consultation if it happens to be of use.
 2007-01-30  Peter Williams  <peter@newton.cx>
 
 	* omega/base.py: Have Axis objects have a coordSpec field that
-	tells what kind of data item their coordinate is, so that 
+	tells what kind of data item their coordinate is, so that
 	datapainters can synthesize their sinkSpec arguments correctly.
 	(BandPainter): New kind of field painter, paints a (x, ylow, yhigh)
 	band.
-	
+
 	* omega/styles.py (BitmapStyle.apply_genericBand): New placeholdery
 	style for BandPainter.
 
@@ -571,7 +571,7 @@ preserved for consultation if it happens to be of use.
 	(Function.__init__): Allow the return type of the function to be
 	specified.
 	(ParametricFunction.__init__): Same
-	
+
 2007-01-30  Peter Williams  <peter@newton.cx>
 
 	* omega/base.py (LinearAxis.transform): Add a vital float cast
@@ -596,7 +596,7 @@ preserved for consultation if it happens to be of use.
 	call (that is delayed until the iterator is iterated over.)
 	(Function.__iter__): Use OneFuncIterator, fix comment.
 	(ParametricFunction.__iter__): Same.
-	
+
 2007-01-29  Peter Williams  <peter@newton.cx>
 
 	* omega/bag.py (Bag.linkTo): Enforce source and sink compatiblity
@@ -624,7 +624,7 @@ preserved for consultation if it happens to be of use.
 	onto bitmaps.
 	(WhiteOnBlackBitmap): Analogous!
 
-	* omega/base.py (LinearAxisPainter.paint): Only label major ticks. 
+	* omega/base.py (LinearAxisPainter.paint): Only label major ticks.
 	Labeling minor ticks isn't too useful and generates a lot of visual
 	noise.
 
@@ -648,7 +648,7 @@ preserved for consultation if it happens to be of use.
 	* omega/sources.py (ParametricFunction): New class, like the Function source
 	but the function yields (x,y) pairs, not just y values.
 	(LinearIterator): Utility class.
-	
+
 	* omega/gtkUtil.py (OmegaArea.setPainter): Set the painter's parent to
 	self so that it configures
 	(OmegaArea.removeChild): Noop function to make self._painter happy. Should
@@ -693,12 +693,12 @@ preserved for consultation if it happens to be of use.
 2007-01-21  Peter Williams  <peter@newton.cx>
 
 	* omega: Move files into here, so 'import omega' from the toplevel
-	works if PYTHONPATH includes '.'. 
+	works if PYTHONPATH includes '.'.
 
 	* demo/Makefile.am: Add this too.
-	
+
 	* Makefile.am, configure.ac: Tweaks for the above.
-	
+
 2007-01-21  Peter Williams  <peter@newton.cx>
 
 	* bag.py (Bag.linkTo): Add basic 'linking' support, which allows
@@ -726,7 +726,7 @@ preserved for consultation if it happens to be of use.
 2007-01-20  Peter Williams  <peter@newton.cx>
 
 	* stamps.py: New file, contains a bunch of generic
-	stamps (formerly PointPainters). 
+	stamps (formerly PointPainters).
 
 	* demo/stampDemo.py: New file, demos the stamps.
 

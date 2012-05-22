@@ -43,5 +43,5 @@
    .. data:: dumpTemplate
 
 .. ~synopsis~ Miscellaneous utility functions.
-   This should go under the automodule when I install a 
+   This should go under the automodule when I install a
    newer version of Sphinx.
