@@ -879,7 +879,7 @@ class RectPlot (Painter):
 
         if emulate is None:
             self.defaultField = RectField ()
-            self.magicAxisPainters ('lb')
+            self.magicAxisPainters ('lbTR')
         else:
             self.defaultField = emulate.defaultField
             self.bpainter = emulate.bpainter
@@ -1158,45 +1158,64 @@ class RectPlot (Painter):
 
     def magicAxisPainters (self, spec):
         """Magically set the AxisPainter variables to smart
-        values. More precisely, the if certain sides are specified in
-        the 'spec' argument, those sides are painted in a sensible default
-        style; those sides not specified in the argument are made blank
-        (that is, they are painted with a baseline only).
+values. More precisely, the if certain sides are specified in the
+'spec' argument, those sides are painted in a sensible default style;
+those sides not specified in the argument are made blank (that is,
+they are painted with a baseline only).
 
-        If 'spec' contains the letter 'h' (as in 'horizontal'), both
-        the bottom and top sides of the field are set to the same
-        sensible default. If it contains 'v' (as in 'vertical'), both
-        the left and right sides of the field are set to the same
-        sensible default. If it contains the letter 'b', the bottom
-        side is painted with a sensible default, and similarly for the
-        letters 't' (top), 'r' (right), and 'l' (left). Note that a spec
-        of 'bt' is NOT equivalent to 'h': the former will create two
-        AxisPainter instances, while the latter will only create one and
-        share it between the two sides. The same goes for 'lr' versus 'h'.
-        Once again, any side NOT set by one of the above mechanisms is
-        set to be painted with a BlankAxisPainter instance.
+If 'spec' contains the letter 'h' (as in 'horizontal'), both the
+bottom and top sides of the field are set to the same sensible
+default. If it contains 'v' (as in 'vertical'), both the left and
+right sides of the field are set to the same sensible default. If it
+contains the letter 'b', the bottom side is painted with a sensible
+default, and similarly for the letters 't' (top), 'r' (right), and 'l'
+(left). Note that a spec of 'bt' is NOT equivalent to 'h': the former
+will create two AxisPainter instances, while the latter will only
+create one and share it between the two sides. The same goes for 'lr'
+versus 'h'.  Once again, any side NOT set by one of the above
+mechanisms is set to be painted with a BlankAxisPainter instance.
 
-        To be more specific, the 'sensible default' is whatever class
-        is pointed to by the defaultPainter attributes of the axes of
-        the defaultField member of the RectPlot. This class is
-        instantiated with the logical axis as the only argument to
-        __init__.
+If any of the above letters are capitalized, the axis painter is
+created as described above, but its 'paintLabels' property is set to
+False, which causes the textual labels not to be painted. (Tick marks
+still are painted, though.)
 
-        Examples:
+To be more specific, the 'sensible default' is whatever class is
+pointed to by the defaultPainter attributes of the axes of the
+defaultField member of the RectPlot. This class is instantiated with
+the logical axis as the only argument to __init__.
 
-           rp.magicAxisPainters ('lb') will give a classical plot
-           in which the left and bottom sides of the field are marked with axes.
+Examples:
 
-           rp.magicAxisPainters ('hv') will give an IDL-style plot
-           in which all sides of the field are marked with axes.
+  rp.magicAxisPainters ('lbTR') is probably what you want: all sides
+  have tick marks, and the bottom and left sides have labels.
 
-           rp.magicAxisPainters ('r') will give an unusual plot in which
-           only the right side is labeled with axes.
-        """
+  rp.magicAxisPainters ('hv') will give an IDL-style plot
+  in which all sides of the field are marked with axes.
 
-        def make (axis): return axis.defaultPainter (axis)
-        def makex (): return make (self.defaultField.xaxis)
-        def makey (): return make (self.defaultField.yaxis)
+  rp.magicAxisPainters ('r') will give an unusual plot in which
+  only the right side is labeled with axes.
+"""
+
+        make = lambda axis: axis.defaultPainter (axis)
+        makex = lambda: make (self.defaultField.xaxis)
+        makey = lambda: make (self.defaultField.yaxis)
+
+        # If capital letters are present, remember that some
+        # label-painting should be turned off, and convert to
+        # lower-case so the next stage doesn't need to worry about
+        # this stuff. If 'H' and 'V' are given the last relevant
+        # index, the code will work out right.
+
+        paintlabels = [True] * 4
+        plinfo = dict (H=3, V=2, T=0, R=1, B=2, L=3)
+
+        for letter, index in plinfo.iteritems ():
+            if letter in spec:
+                paintlabels[index] = False
+                spec = spec.replace (letter, letter.lower ())
+
+        # Set the painters
 
         if 'h' in spec:
             self.bpainter = makex ()
@@ -1225,6 +1244,13 @@ class RectPlot (Painter):
                 self.rpainter = makey ()
             else:
                 self.rpainter = BlankAxisPainter ()
+
+        # Apply the label painting stuff
+
+        self.tpainter.paintLabels = paintlabels[0]
+        self.rpainter.paintLabels = paintlabels[1]
+        self.bpainter.paintLabels = paintlabels[2]
+        self.lpainter.paintLabels = paintlabels[3]
 
         return self
 
@@ -1277,19 +1303,22 @@ class RectPlot (Painter):
         elif not wantylog and yislog:
             df.yaxis = linify (df.yaxis)
 
-        # Now update any axispainters that need it.
-        # Make the logic more restrictive in case the
-        # user has some custom axes.
+        # Now update any axispainters that need it.  Make the logic
+        # more restrictive in case the user has some custom axes.
 
         def fixpainter (wantlog, axis, painter, logvalue):
             if wantlog and isinstance (painter, LinearAxisPainter):
                 if logvalue:
-                    return LogValueAxisPainter (axis)
+                    newpainter = LogValueAxisPainter (axis)
                 else:
-                    return LogarithmicAxisPainter (axis)
+                    newpainter = LogarithmicAxisPainter (axis)
             elif not wantlog and isinstance (painter, LogarithmicAxisPainter):
-                return LinearAxisPainter (axis)
-            return painter
+                newpainter = LinearAxisPainter (axis)
+            else:
+                return painter
+
+            newpainter.paintLabels = painter.paintLabels
+            return newpainter
 
         self.tpainter = fixpainter (wantxlog, df.xaxis, self.tpainter, xlogvalue)
         self.rpainter = fixpainter (wantylog, df.yaxis, self.rpainter, ylogvalue)
