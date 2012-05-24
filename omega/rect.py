@@ -903,6 +903,9 @@ class RectPlot (Painter):
 
 
     def paintCoordinates (self, coordsys, labelRight=False, labelTop=True):
+        if coordsys.field is None:
+            coordsys.field = self.defaultField
+
         ax = coordsys.makeAxis (RectPlot.SIDE_TOP)
         self.tpainter = ax.defaultPainter (ax)
         self.tpainter.paintLabels = labelTop
