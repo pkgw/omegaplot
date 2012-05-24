@@ -31,6 +31,7 @@ mypy_PYTHON = \
    pywcs.py \
    rect.py \
    render.py \
+   sinproj.py \
    sphere.py \
    stamps.py \
    styles.py \
