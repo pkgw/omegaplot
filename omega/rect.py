@@ -138,7 +138,11 @@ class LogarithmicAxis (RectAxis):
             ret = (self.logmax - N.log10 (vc)) / (self.logmax - self.logmin)
         ret = (N.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
 
-        return N.where (valid, ret, -10)
+        # For zero or negative values, return something very small and
+        # smaller than the smallest valid value, to preserve ordering
+        # of the data -- this is relevant for histogram-type plots
+        # with out-of-bounds values on log axes.
+        return N.where (valid, ret, min (-10, ret.min () - 1))
 
     def inbounds (self, values):
         valid = values > 0
