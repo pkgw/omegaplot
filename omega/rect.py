@@ -2087,7 +2087,8 @@ class ContinuousSteppedPainter (FieldPainter):
                 if cmpval is None:
                     cmpval = c
                 elif c != cmpval and c != 0:
-                    raise Exception ('arguments must be sorted in X')
+                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
+                                     % (prevx, x, cmpval, c))
 
                 ctxt.line_to (x, prevy)
                 ctxt.line_to (x, y)
@@ -2100,7 +2101,8 @@ class ContinuousSteppedPainter (FieldPainter):
                 if cmpval is None:
                     cmpval = c
                 elif c != cmpval and c != 0:
-                    raise Exception ('arguments must be sorted in X')
+                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
+                                     % (prevx, x, cmpval, c))
 
                 ctxt.line_to (x, prevy)
                 ctxt.stroke ()
