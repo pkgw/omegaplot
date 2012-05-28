@@ -2084,7 +2084,7 @@ class ContinuousSteppedPainter (FieldPainter):
             for i in xrange (1, xs.size):
                 x, y = xs[i], ys[i]
                 c = cmp (x, prevx)
-                if cmpval is None:
+                if cmpval is None and c != 0:
                     cmpval = c
                 elif c != cmpval and c != 0:
                     raise Exception ('arguments must be sorted in X (%s %s %s %s)'
@@ -2098,7 +2098,7 @@ class ContinuousSteppedPainter (FieldPainter):
             for i in xrange (1, xs.size):
                 x, y = xs[i], ys[i]
                 c = cmp (x, prevx)
-                if cmpval is None:
+                if cmpval is None and c != 0:
                     cmpval = c
                 elif c != cmpval and c != 0:
                     raise Exception ('arguments must be sorted in X (%s %s %s %s)'
