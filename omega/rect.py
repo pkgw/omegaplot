@@ -131,6 +131,11 @@ class LogarithmicAxis (RectAxis):
     max = property (getMax, setMax)
 
     def transform (self, values):
+        if values.size == 0:
+            # Need to catch this since otherwise the ret.min() below
+            # will cause an error.
+            return N.zeros_like (values)
+
         valid = values > 0
         vc = N.where (valid, values, 1)
 
