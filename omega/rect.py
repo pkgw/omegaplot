@@ -17,6 +17,7 @@
 
 # Rectangular plots.
 
+from __future__ import division
 import cairo
 import numpy as N
 from base import *
