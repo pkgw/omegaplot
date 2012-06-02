@@ -19,7 +19,7 @@
 
 from __future__ import division
 import cairo
-import numpy as N
+import numpy as np
 from base import *
 from base import (_TextPainterBase, _kwordDefaulted,
                   _kwordExtract, _checkKwordsConsumed)
@@ -98,7 +98,7 @@ class LinearAxis (RectAxis):
         return (values + 0.0 - self.min) / (self.max - self.min)
 
     def inbounds (self, values):
-        return N.logical_and (values >= self.min, values <= self.max)
+        return np.logical_and (values >= self.min, values <= self.max)
 
 
 class LogarithmicAxis (RectAxis):
@@ -114,7 +114,7 @@ class LogarithmicAxis (RectAxis):
 
     def setMin (self, value):
         if value > 0:
-            self.logmin = N.log10 (value)
+            self.logmin = np.log10 (value)
         else:
             self.logmin = -8
 
@@ -125,7 +125,7 @@ class LogarithmicAxis (RectAxis):
 
     def setMax (self, value):
         if value > 0:
-            self.logmax = N.log10 (value)
+            self.logmax = np.log10 (value)
         else:
             self.logmax = -8
 
@@ -135,27 +135,27 @@ class LogarithmicAxis (RectAxis):
         if values.size == 0:
             # Need to catch this since otherwise the ret.min() below
             # will cause an error.
-            return N.zeros_like (values)
+            return np.zeros_like (values)
 
         valid = values > 0
-        vc = N.where (valid, values, 1)
+        vc = np.where (valid, values, 1)
 
         if self.reverse:
-            ret = (self.logmax - N.log10 (vc)) / (self.logmax - self.logmin)
-        ret = (N.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
+            ret = (self.logmax - np.log10 (vc)) / (self.logmax - self.logmin)
+        ret = (np.log10 (vc) - self.logmin) / (self.logmax - self.logmin)
 
         # For zero or negative values, return something very small and
         # smaller than the smallest valid value, to preserve ordering
         # of the data -- this is relevant for histogram-type plots
         # with out-of-bounds values on log axes.
-        return N.where (valid, ret, min (-10, ret.min () - 1))
+        return np.where (valid, ret, min (-10, ret.min () - 1))
 
     def inbounds (self, values):
         valid = values > 0
-        vc = N.where (valid, values, 1)
-        lv = N.log10 (vc)
+        vc = np.where (valid, values, 1)
+        lv = np.log10 (vc)
 
-        return N.logical_and (valid, N.logical_and (lv >= self.logmin, lv <= self.logmax))
+        return np.logical_and (valid, np.logical_and (lv >= self.logmin, lv <= self.logmax))
 
 
 # Axis Painters
@@ -258,13 +258,13 @@ class AxisPaintHelper (object):
         else:
             sign = -1
 
-        if abs (angle) < N.pi/2:
-            a = angle + sign * N.pi/2
+        if abs (angle) < np.pi/2:
+            a = angle + sign * np.pi/2
         else:
-            a = angle - sign * N.pi/2
+            a = angle - sign * np.pi/2
 
         if side in (RectPlot.SIDE_LEFT, RectPlot.SIDE_RIGHT):
-            a -= N.pi/2
+            a -= np.pi/2
 
         if side == RectPlot.SIDE_TOP:
             ctxt.move_to (self.w * loc, 0)
@@ -275,8 +275,8 @@ class AxisPaintHelper (object):
         elif side == RectPlot.SIDE_LEFT:
             ctxt.move_to (0, self.h * (1. - loc))
 
-        c = N.cos (a) * length
-        s = N.sin (a) * length
+        c = np.cos (a) * length
+        s = np.sin (a) * length
         ctxt.rel_line_to (c, s)
         ctxt.stroke ()
 
@@ -330,7 +330,7 @@ class AxisPaintHelper (object):
     def setupAngledRect (self, ctxt, rw, rh):
         x, y = ctxt.get_current_point ()
         ctxt.translate (-x, -y)
-        ctxt.rotate (N.pi/4)
+        ctxt.rotate (np.pi/4)
 
         if self.side == RectPlot.SIDE_TOP:
             ctxt.rel_move_to (-rw, -rh)
@@ -437,11 +437,11 @@ class LinearAxisPainter (BlankAxisPainter):
             self.axis.max *= 1.05
             return
 
-        mip = int (N.floor (N.log10 (span))) # major interval power
+        mip = int (np.floor (np.log10 (span))) # major interval power
         step = 10 ** mip
 
-        newmin = int (N.floor (self.axis.min / step)) * step
-        newmax = int (N.ceil (self.axis.max / step)) * step
+        newmin = int (np.floor (self.axis.min / step)) * step
+        newmax = int (np.ceil (self.axis.max / step)) * step
 
         self.axis.min, self.axis.max = newmin, newmax
 
@@ -454,9 +454,9 @@ class LinearAxisPainter (BlankAxisPainter):
     def getTickLocations (self):
         self.axis.normalize ()
         span = self.axis.max - self.axis.min
-        mip = int (N.floor (N.log10 (span))) # major interval power
+        mip = int (np.floor (np.log10 (span))) # major interval power
 
-        if N.log10 (span) - mip < self.autoBumpThreshold:
+        if np.log10 (span) - mip < self.autoBumpThreshold:
             # If we wouldn't have that many tickmarks, decrease MIP
             # to make the labels denser.
             mip -= 1
@@ -471,7 +471,7 @@ class LinearAxisPainter (BlankAxisPainter):
         # which have nice round values.
 
         inc = 10. ** mip / self.minorTicks # incr. between minor ticks
-        coeff = int (N.ceil (self.axis.min / inc)) # coeff. of first tick
+        coeff = int (np.ceil (self.axis.min / inc)) # coeff. of first tick
         val = coeff * inc # location of first tick
 
         if val < self.axis.min:
@@ -510,7 +510,7 @@ class LinearAxisPainter (BlankAxisPainter):
 
         # In some cases there is a nontrivial efficiency gain
         # from bunching up the transforms.
-        xformed = self.axis.transform (N.asarray (values))
+        xformed = self.axis.transform (np.asarray (values))
         return zip (values, xformed, isMajors)
 
 
@@ -613,14 +613,14 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     def nudgeBounds (self):
         self.axis.normalize ()
-        self.axis.logmin = N.floor (self.axis.logmin)
-        self.axis.logmax = N.ceil (self.axis.logmax)
+        self.axis.logmin = np.floor (self.axis.logmin)
+        self.axis.logmax = np.ceil (self.axis.logmax)
 
 
     def formatLabel (self, coeff, exp):
         if callable (self.numFormat): return self.numFormat (coeff, exp)
 
-        if self.formatLogValue: val = exp + N.log10 (coeff)
+        if self.formatLogValue: val = exp + np.log10 (coeff)
         else: val = coeff * 10.**exp
 
         return self.numFormat % (val)
@@ -638,8 +638,8 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
     def getTickLocations (self):
         self.axis.normalize ()
-        curpow = int (N.floor (self.axis.logmin))
-        coeff = int (N.ceil (10. ** (self.axis.logmin - curpow)))
+        curpow = int (np.floor (self.axis.logmin))
+        coeff = int (np.ceil (10. ** (self.axis.logmin - curpow)))
 
         coeffs = []
         curpows = []
@@ -656,7 +656,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
             else:
                 coeff += 1
 
-        xformed = self.axis.transform (N.asarray (coeffs) * 10.**N.asarray (curpows))
+        xformed = self.axis.transform (np.asarray (coeffs) * 10.**np.asarray (curpows))
         return zip (coeffs, curpows, xformed, isMajors)
 
 
@@ -827,13 +827,13 @@ class RectField (object):
 
         def _mapX_weakClamp (self, val):
             raw = self.field.xaxis.transform (val)
-            N.clip (raw, -1.0, 2.0)
+            np.clip (raw, -1.0, 2.0)
 
             return raw * self.width
 
         def _mapY_weakClamp (self, val):
             raw = 1. - self.field.yaxis.transform (val)
-            N.clip (raw, -1.0, 2.0)
+            np.clip (raw, -1.0, 2.0)
 
             return raw * self.height
 
@@ -988,23 +988,23 @@ class RectPlot (Painter):
         x, y, label = None, None, 'Data'
 
         if l == 3:
-            x, y = map (N.asarray, args[0:2])
+            x, y = map (np.asarray, args[0:2])
             label = args[2]
         elif l == 2:
-            x = N.asarray (args[0])
+            x = np.asarray (args[0])
 
             if x.ndim != 2 or x.shape[0] != 2:
-                y = N.asarray (args[1])
+                y = np.asarray (args[1])
             else:
-                # User has done 'addXY (data, label)', where data is 2xN.
+                # User has done 'addXY (data, label)', where data is 2xnp.
                 y = x[1]
                 x = x[0]
                 label = args[1]
         elif l == 1:
-            y = N.asarray (args[0])
+            y = np.asarray (args[0])
 
             if y.ndim != 2 or y.shape[0] != 2:
-                x = N.linspace (0, len (y) - 1, len (y))
+                x = np.linspace (0, len (y) - 1, len (y))
             else:
                 # User has done 'addXY (data)' where data is 2xN
                 x = y[0]
@@ -1038,16 +1038,16 @@ class RectPlot (Painter):
         x, y, dy, label = None, None, None, 'Data'
 
         if l == 4:
-            x, y, dy = map (N.asarray, args[0:3])
+            x, y, dy = map (np.asarray, args[0:3])
             label = args[3]
         elif l == 3:
-            x, y, dy = map (N.asarray, args)
+            x, y, dy = map (np.asarray, args)
         elif l == 2:
-            y = N.asarray (args[0])
+            y = np.asarray (args[0])
 
             if y.ndim != 2 or y.shape[0] != 3:
-                dy = N.asarray (args[1])
-                x = N.linspace (0, len (y) - 1, len (y))
+                dy = np.asarray (args[1])
+                x = np.linspace (0, len (y) - 1, len (y))
             else:
                 # User has done 'addXYErr(data, label)' where data is 3xN
                 x = y[0]
@@ -1055,7 +1055,7 @@ class RectPlot (Painter):
                 y = y[1]
                 label = args[1]
         elif l == 1:
-            d = N.asarray (args[0])
+            d = np.asarray (args[0])
 
             if d.ndim != 2 or d.shape[0] != 3:
                 # Could treat a 2xN array as l == 2 is done above ...
@@ -1290,7 +1290,7 @@ Examples:
             if axis.min <= 0.:
                 logmin = -8 # FIXME: arbitrary magic number.
             else:
-                logmin = N.log10 (axis.min)
+                logmin = np.log10 (axis.min)
 
             # Axes may be running large to small ... not sure if this
             # code will work, but it has a better chance of working than
@@ -1299,7 +1299,7 @@ Examples:
             if axis.max <= 0.:
                 logmax = -8
             else:
-                logmax = N.log10 (axis.max)
+                logmax = np.log10 (axis.max)
 
             return LogarithmicAxis (logmin, logmax)
 
@@ -1429,8 +1429,8 @@ Examples:
         # For each side of the plot, we record the maximum border and
         # interior sizes both along and away from that side.
 
-        d = N.zeros ((4, 6))
-        work = N.zeros (6)
+        d = np.zeros ((4, 6))
+        work = np.zeros (6)
 
         for (op, side, pos) in self.opainters:
             any[side] = True
@@ -1471,7 +1471,7 @@ Examples:
 
             # Now accumulate that information in the table for this side
 
-            d[side] = N.maximum (d[side], work)
+            d[side] = np.maximum (d[side], work)
 
         # The minimum sizes of the outer painters along their axes also constrain
         # the sizes of the main plot field.
@@ -1504,10 +1504,10 @@ Examples:
 
         # Get minimum size of plot field based on field painters.
 
-        fsizes = N.zeros (6)
+        fsizes = np.zeros (6)
 
         for fp in self.fpainters:
-            fsizes = N.maximum (fsizes, fp.getMinimumSize (ctxt, style))
+            fsizes = np.maximum (fsizes, fp.getMinimumSize (ctxt, style))
 
         fw = fsizes[0] + fsizes[3] + fsizes[5]
         fh = fsizes[1] + fsizes[2] + fsizes[4]
@@ -2368,7 +2368,7 @@ class SteppedUpperLimitPainter (FieldPainter):
             xmid = 0.5 * (xl + xr)
             alen = min (abs (yul - yzero), maxlen)
             alen = max (alen - hackdy, 0)
-            tozerosign = N.sign (yzero - yul)
+            tozerosign = np.sign (yzero - yul)
             yend = yul + tozerosign * alen
 
             if alen > 0:
@@ -2569,7 +2569,7 @@ class XBand (FieldPainter):
     def doPaint (self, ctxt, style):
         super (XBand, self).doPaint (ctxt, style)
 
-        mmin, mmax = self.xform.mapX (N.asarray ((self.xmin, self.xmax)))
+        mmin, mmax = self.xform.mapX (np.asarray ((self.xmin, self.xmax)))
         w = abs (mmax - mmin)
         x = min (mmin, mmax)
 
@@ -2607,7 +2607,7 @@ class VEnvelope (FieldPainter):
     def getDataBounds (self):
         ign, ign, x, ys = self.data.get (self.cinfo)
 
-        if N.any (ys[0] > ys[1]):
+        if np.any (ys[0] > ys[1]):
             raise RuntimeError ('First y column must always be less than second y column.')
 
         return x.min (), x.max (), ys[0].min (), ys[0].max ()
@@ -2822,9 +2822,9 @@ class ImagePainter (FieldPainter):
     topy = bottomy = None
     pattern = None
 
-    _dtypes = {cairo.FORMAT_RGB24: N.uint32,
-               cairo.FORMAT_ARGB32: N.uint32,
-               cairo.FORMAT_A8: N.uint8}
+    _dtypes = {cairo.FORMAT_RGB24: np.uint32,
+               cairo.FORMAT_ARGB32: np.uint32,
+               cairo.FORMAT_A8: np.uint8}
 
 
     def setLocation (self, leftx, rightx, topy, bottomy):
@@ -2849,7 +2849,7 @@ class ImagePainter (FieldPainter):
             raise ValueError ('unexpected stride value for format/width combination')
         itemstride = bytestride // dsize
 
-        data = N.empty ((height, itemstride), dtype=dtype)
+        data = np.empty ((height, itemstride), dtype=dtype)
         self.surface = cairo.ImageSurface.create_for_data (data, format, width,
                                                            height, bytestride)
         self.pattern = cairo.SurfacePattern (self.surface)
@@ -2861,7 +2861,7 @@ class ImagePainter (FieldPainter):
 
 
     def wrap (self, format, data):
-        data = N.atleast_2d (data)
+        data = np.atleast_2d (data)
 
         if data.ndim != 2:
             raise ValueError ('input array must be 2D')
@@ -2990,7 +2990,7 @@ class CoordinateAxis (RectAxis):
 
 
     def transformWithDirection (self, arbvalues):
-        arb = N.atleast_1d (arbvalues)
+        arb = np.atleast_1d (arbvalues)
         cs = self.coordsys
 
         # The only predictable way to get from values in our
@@ -3041,7 +3041,7 @@ class CoordinateAxis (RectAxis):
         for iternum in xrange (64):
             err = arb - lin2arb (lin)
 
-            if not N.any (N.abs (err) / arb > 1e-6):
+            if not np.any (np.abs (err) / arb > 1e-6):
                 break
 
             dlindarb = DELTA / (lin2arb (lin + DELTA) - lin2arb (lin))
@@ -3056,11 +3056,11 @@ class CoordinateAxis (RectAxis):
         darbdnorm = ((lin2arb (lin + DELTA) - lin2arb (lin)) /
                      (norm (lin + DELTA) - norm (lin)))
         dodn = dorthdnorm (lin)
-        return norm (lin), N.arctan2 (dodn, darbdnorm)
+        return norm (lin), np.arctan2 (dodn, darbdnorm)
 
 
     def inbounds (self, arbvalues):
-        return N.logical_and (arbvalues >= self.min, arbvalues <= self.max)
+        return np.logical_and (arbvalues >= self.min, arbvalues <= self.max)
 
 
     def transform (self, arbvalues):
