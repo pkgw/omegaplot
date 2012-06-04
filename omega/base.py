@@ -17,7 +17,7 @@
 
 # Basic classes of OmegaPlot.
 
-import numpy as _N
+import numpy as np
 
 class DataHolder (object):
     """Stores a set of data inputs.
@@ -179,7 +179,7 @@ class DataHolder (object):
 
             if w == 0:
                 #print 'axis %d: none allocated' % i
-                ret += (_N.ndarray ((0,self.dlen)), )
+                ret += (np.ndarray ((0,self.dlen)), )
             elif type == self.AxisTypeInt:
                 #print 'axis %d: int, range %d-%d' % (i, intofs+ofs,
                 #                                     intofs+ofs+w)
@@ -217,7 +217,7 @@ class DataHolder (object):
 
             if w == 0:
                 #print 'axis %d: none allocated' % i
-                ret += (_N.ndarray ((0,self.dlen)), )
+                ret += (np.ndarray ((0,self.dlen)), )
             elif type == self.AxisTypeInt:
                 #print 'axis %d: int, all range %d-%d' % (i, intofs,
                 #                                     intofs+w)
@@ -250,10 +250,10 @@ class DataHolder (object):
         for atype, w in zip (self.axistypes, self.allocations):
             if atype == type: totw += w
 
-        return _N.ndarray ((totw, len), dtype=dtype)
+        return np.ndarray ((totw, len), dtype=dtype)
 
     def _setGeneric (self, type, dtype, arrays):
-        arrays = [_N.asarray (x) for x in arrays]
+        arrays = [np.asarray (x) for x in arrays]
         mergedofs = 0
         l = -1
         naxes = len (self.axistypes)
@@ -262,7 +262,7 @@ class DataHolder (object):
             a = arrays[i]
 
             if a.ndim == 1:
-                a = a[_N.newaxis,:]
+                a = a[np.newaxis,:]
             elif a.ndim != 2:
                 raise Exception ('Expect 1- or 2-D arrays only')
 
@@ -324,7 +324,7 @@ class DataHolder (object):
         they must be integer-type and compatible with N.int.
         """
 
-        self.intdata = self._setGeneric (self.AxisTypeInt, _N.int, args)
+        self.intdata = self._setGeneric (self.AxisTypeInt, np.int, args)
         return self
 
 
@@ -347,7 +347,7 @@ class DataHolder (object):
         floating-point arrays.
         """
 
-        self.fltdata = self._setGeneric (self.AxisTypeFloat, _N.float, args)
+        self.fltdata = self._setGeneric (self.AxisTypeFloat, np.float, args)
         return self
 
 
