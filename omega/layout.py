@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from math import pi
 from base import LayoutInfo, Painter, NullPainter
-import numpy as N
+import numpy as np
 
 
 class Overlay (Painter):
@@ -33,10 +32,10 @@ class Overlay (Painter):
     bgStyle = None # style ref
 
     def getLayoutInfo (self, ctxt, style):
-        sz = N.zeros (6)
+        sz = np.zeros (6)
 
         for p in self.painters:
-            sz = N.maximum (sz, p.getLayoutInfo (ctxt, style).asBoxInfo ())
+            sz = np.maximum (sz, p.getLayoutInfo (ctxt, style).asBoxInfo ())
 
         sz[3:6:2] += self.hBorderSize * style.smallScale
         sz[2:6:2] += self.vBorderSize * style.smallScale
@@ -81,7 +80,7 @@ class Grid (Painter):
         super (Grid, self).__init__ ()
         self.nw = int (nw)
         self.nh = int (nh)
-        self._elements = N.empty ((nh, nw), N.object)
+        self._elements = np.empty ((nh, nw), np.object)
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
@@ -140,14 +139,14 @@ class Grid (Painter):
 
 
     def _lostChild (self, child):
-        wh = N.where (self._elements == child)
+        wh = np.where (self._elements == child)
         p = NullPainter ()
         self._elements[wh] = p
         p.setParent (self)
 
 
     def getLayoutInfo (self, ctxt, style):
-        v = N.empty ((self.nh, self.nw, 6))
+        v = np.empty ((self.nh, self.nw, 6))
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
@@ -266,13 +265,13 @@ class RightRotationPainter (Painter):
         fw, fh = self.fullw, self.fullh
 
         if self.rotation == self.ROT_CW90:
-            ctxt.rotate (pi / 2)
+            ctxt.rotate (np.pi / 2)
             ctxt.translate (0, -fw)
         elif self.rotation == self.ROT_180:
-            ctxt.rotate (pi)
+            ctxt.rotate (np.pi)
             ctxt.translate (-fw, -fh)
         elif self.rotation == self.ROT_CCW90:
-            ctxt.rotate (-pi / 2)
+            ctxt.rotate (-np.pi / 2)
             ctxt.translate (-fh, 0)
 
         # Reverse the effects of the rotation on the boundaries
