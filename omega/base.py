@@ -468,7 +468,7 @@ class Painter (object):
         self.matrix = None
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
         # need ctxt for measuring text, unless another way is found.
@@ -507,14 +507,14 @@ class Painter (object):
 
 
     def renderBasic (self, ctxt, style, w, h):
-        # Must init the context before calling getMinimumSize
+        # Must init the context before calling getLayoutInfo
         # in case we're using the Cairo text backend -- we need
         # the font size to be set correctly. Hacky; should go away
         # with better support for multiple text backends.
 
         style.initContext (ctxt, w, h)
 
-        szinfo = self.getMinimumSize (ctxt, style)
+        szinfo = self.getLayoutInfo (ctxt, style)
         mainw = max (w - szinfo[3] - szinfo[5], 0) # fill as much as possible
         mainh = max (h - szinfo[2] - szinfo[4], 0) # by default
 
@@ -612,7 +612,7 @@ class DebugPainter (Painter):
     bLeft = 0
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         s = style.smallScale
         return (self.minWidth * s, self.minHeight * s, self.bTop * s, self.bRight * s,
                 self.bBottom * s, self.bLeft * s)
@@ -686,7 +686,7 @@ class CairoTextPainter (_TextPainterBase):
         if vAlign is not None: self.vAlign = vAlign
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
@@ -768,7 +768,7 @@ class _ImagePainterBase (Painter):
         raise NotImplementedError ()
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         surf = self.getSurf (style)
 
         if not isinstance (surf, cairo.ImageSurface):

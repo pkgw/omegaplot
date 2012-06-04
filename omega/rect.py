@@ -667,7 +667,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         # Create the TextStamper objects all at once, so that if we
         # are using the LaTeX backend, we can generate them images all
         # in one go. (That will happen upon the first invocation of
-        # getMinimumSize.)
+        # getLayoutInfo.)
 
         labels = []
 
@@ -1434,7 +1434,7 @@ Examples:
 
         for (op, side, pos) in self.opainters:
             any[side] = True
-            sz = op.getMinimumSize (ctxt, style)
+            sz = op.getLayoutInfo (ctxt, style)
 
             # Second part of the side label rotation hack. If the
             # aspect ratio is too big, rotate.
@@ -1450,7 +1450,7 @@ Examples:
                     elif side == 3:
                         op.setRotation (RightRotationPainter.ROT_CCW90)
 
-                    sz = op.getMinimumSize (ctxt, style)
+                    sz = op.getLayoutInfo (ctxt, style)
 
             # End second part of hack.
             # Record minimum sizing so configurePainting can put this painter
@@ -1484,7 +1484,7 @@ Examples:
         return d, minfw, minfh
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         # Calling spaceExterior gets all of our axis painters to
         # register their label markers with the text backend. Do this
         # before getting the size of anything else so, if we're using
@@ -1496,7 +1496,7 @@ Examples:
         # outerpainter sizes. If we're painting a scene containing more
         # than one RectPlot, we'll still get multiple latex invocations,
         # but this cuts down on them. A full solution requires some kind
-        # of "prepGetMinimumSize" that propagates down from toplevel to
+        # of "prepGetLayoutInfo" that propagates down from toplevel to
         # *all* axis painters to tell them to actually register their
         # textpainters before minimum sizes are actually calculated.
 
@@ -1507,7 +1507,7 @@ Examples:
         fsizes = np.zeros (6)
 
         for fp in self.fpainters:
-            fsizes = np.maximum (fsizes, fp.getMinimumSize (ctxt, style))
+            fsizes = np.maximum (fsizes, fp.getLayoutInfo (ctxt, style))
 
         fw = fsizes[0] + fsizes[3] + fsizes[5]
         fh = fsizes[1] + fsizes[2] + fsizes[4]
@@ -1808,7 +1808,7 @@ class GenericKeyPainter (Painter):
         raise NotImplementedError ()
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         self.ts = TextStamper (self._getText ())
         self.tw, self.th = self.ts.getSize (ctxt, style)
 
@@ -2423,12 +2423,12 @@ class AbsoluteFieldOverlay (FieldPainter):
         self.child.setParent (self)
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         h = self.hPadding * style.smallScale
         v = self.vPadding * style.smallScale
 
         # FIXME: ignoring padding requests of the child.
-        self.chsize = sz = self.child.getMinimumSize (ctxt, style)
+        self.chsize = sz = self.child.getLayoutInfo (ctxt, style)
         return sz[0], sz[1], sz[2] + v, sz[3] + h, sz[4] + v, sz[5] + h
 
 

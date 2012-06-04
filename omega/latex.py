@@ -44,7 +44,7 @@ class LatexPainter (_TextPainterBase):
         self.hAlign = float (hAlign)
         self.vAlign = float (vAlign)
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         r = self.cache.getRenderer (self.handle)
         return r.bbw, r.bbh, 0, 0, 0, 0
 

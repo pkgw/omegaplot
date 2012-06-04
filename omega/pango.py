@@ -86,7 +86,7 @@ class PangoPainter (base._TextPainterBase):
         self.vAlign = float (vAlign)
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         pcr = pangocairo.CairoContext (ctxt)
         layout = pcr.create_layout ()
         globalLayoutMutate (layout)

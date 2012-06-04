@@ -32,11 +32,11 @@ class Overlay (Painter):
     vBorderSize = 4 # in style.smallScale
     bgStyle = None # style ref
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         sz = N.zeros (6)
 
         for p in self.painters:
-            sz = N.maximum (sz, p.getMinimumSize (ctxt, style))
+            sz = N.maximum (sz, p.getLayoutInfo (ctxt, style))
 
         sz[3:6:2] += self.hBorderSize * style.smallScale
         sz[2:6:2] += self.vBorderSize * style.smallScale
@@ -146,12 +146,12 @@ class Grid (Painter):
         p.setParent (self)
 
 
-    def getMinimumSize (self, ctxt, style):
+    def getLayoutInfo (self, ctxt, style):
         v = N.empty ((self.nh, self.nw, 6))
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
-                v[r,c] = self._elements[r,c].getMinimumSize (ctxt, style)
+                v[r,c] = self._elements[r,c].getLayoutInfo (ctxt, style)
 
         # Simple, totally uniform borders and sizes.
 
@@ -251,8 +251,8 @@ class RightRotationPainter (Painter):
         else:
             raise ValueError ('rot')
 
-    def getMinimumSize (self, ctxt, style):
-        sz = self.child.getMinimumSize (ctxt, style)
+    def getLayoutInfo (self, ctxt, style):
+        sz = self.child.getLayoutInfo (ctxt, style)
         return self._rotateSize (self.rotation, *sz)
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
@@ -359,7 +359,7 @@ class LinearBox (Painter):
         raise NotImplementedError ()
 
 
-    def _boxGetMinimumSize (self, ctxt, style):
+    def _boxGetLayoutInfo (self, ctxt, style):
         majb = self.majBorderSize * style.smallScale
         minb = self.minBorderSize * style.smallScale
 
@@ -508,12 +508,12 @@ class VBox (LinearBox):
 
 
     def _getChildMinSize (self, child, ctxt, style):
-        t = child.getMinimumSize (ctxt, style)
+        t = child.getLayoutInfo (ctxt, style)
         return t[1], t[0], t[2], t[3], t[4], t[5]
 
 
-    def getMinimumSize (self, ctxt, style):
-        t = self._boxGetMinimumSize (ctxt, style)
+    def getLayoutInfo (self, ctxt, style):
+        t = self._boxGetLayoutInfo (ctxt, style)
         return t[1], t[0], t[2], t[3], t[4], t[5]
 
 
@@ -551,7 +551,7 @@ class HBox (LinearBox):
 
 
     def _getChildMinSize (self, child, ctxt, style):
-        t = child.getMinimumSize (ctxt, style)
+        t = child.getLayoutInfo (ctxt, style)
         return t[0], t[1], t[5], t[2], t[3], t[4]
 
 
@@ -559,8 +559,8 @@ class HBox (LinearBox):
         ctxt.translate (major, minor)
 
 
-    def getMinimumSize (self, ctxt, style):
-        t = self._boxGetMinimumSize (ctxt, style)
+    def getLayoutInfo (self, ctxt, style):
+        t = self._boxGetLayoutInfo (ctxt, style)
         return t[0], t[1], t[3], t[4], t[5], t[2]
 
 
