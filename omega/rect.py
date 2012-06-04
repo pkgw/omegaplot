@@ -1424,7 +1424,7 @@ Examples:
 
     def _calcOuterSpace (self, ctxt, style):
         any = [False] * 4
-        self.osizes = []
+        self.olinfos = []
 
         # For each side of the plot, we record the maximum border and
         # interior sizes both along and away from that side.
@@ -1434,15 +1434,15 @@ Examples:
 
         for (op, side, pos) in self.opainters:
             any[side] = True
-            sz = op.getLayoutInfo (ctxt, style)
+            li = op.getLayoutInfo (ctxt, style)
 
             # Second part of the side label rotation hack. If the
             # aspect ratio is too big, rotate.
 
             if op in self.mainLabels and side % 2 == 1 and \
                    isinstance (op, RightRotationPainter) and \
-                   sz[0] > 0 and sz[1] > 0:
-                aspect = float (sz[0]) / sz[1]
+                   li.minsize[0] > 0 and li.minsize[1] > 0:
+                aspect = float (li.minsize[0]) / li.minsize[1]
 
                 if aspect > 3.:
                     if side == 1:
@@ -1450,24 +1450,24 @@ Examples:
                     elif side == 3:
                         op.setRotation (RightRotationPainter.ROT_CCW90)
 
-                    sz = op.getLayoutInfo (ctxt, style)
+                    li = op.getLayoutInfo (ctxt, style)
 
             # End second part of hack.
             # Record minimum sizing so configurePainting can put this painter
             # in the right spot. (We always paint outer painters at their
             # minimum sizes.)
 
-            self.osizes.append (sz)
+            self.olinfos.append (li)
 
             # Translate the outer painter's sizing information from the x/y
             # plane to the along/away "plane"
 
-            work[0] = sz[side + 2] # border size farther from axis
-            work[1] = sz[1 - (side % 2)] # interior size away from axis
-            work[2] = sz[((side + 2) % 4) + 2] # border size nearer to axis
-            work[3] = sz[((side + 1) % 4) + 2] # b sz to right of axis looking away from it
-            work[4] = sz[side % 2] # interior size along axis
-            work[5] = sz[((side + 3) % 4) + 2] # b sz to left of axis looking away from it
+            work[0] = li.minborders[side] # border size farther from axis
+            work[1] = li.minsize[1 - (side % 2)] # interior size away from axis
+            work[2] = li.minborders[((side + 2) % 4)] # border size nearer to axis
+            work[3] = li.minborders[((side + 1) % 4)] # b sz to right of axis looking away from it
+            work[4] = li.minsize[side % 2] # interior size along axis
+            work[5] = li.minborders[((side + 3) % 4)] # b sz to left of axis looking away from it
 
             # Now accumulate that information in the table for this side
 
@@ -1507,7 +1507,7 @@ Examples:
         fsizes = np.zeros (6)
 
         for fp in self.fpainters:
-            fsizes = np.maximum (fsizes, fp.getLayoutInfo (ctxt, style))
+            fsizes = np.maximum (fsizes, fp.getLayoutInfo (ctxt, style).asBoxInfo ())
 
         fw = fsizes[0] + fsizes[3] + fsizes[5]
         fh = fsizes[1] + fsizes[2] + fsizes[4]
@@ -1568,7 +1568,7 @@ Examples:
             elif cur < self.fieldAspect:
                 fw = fh / self.fieldAspect
 
-        return fw, fh, border[0], border[1], border[2], border[3]
+        return LayoutInfo (minsize=(fw, fh), minborders=border)
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
@@ -1640,9 +1640,10 @@ Examples:
 
         owidths = [self.border[i] - axisWidths[i] - opad for i in xrange (4)]
 
-        for i in xrange (len (self.osizes)):
+        for i in xrange (len (self.olinfos)):
             op, side, pos = self.opainters[i]
-            ow, oh, obt, obr, obb, obl = self.osizes[i]
+            ow, oh = self.olinfos[i].minsize
+            obt, obr, obb, obl = self.olinfos[i].minborders
 
             if side == self.SIDE_TOP:
                 x = bl + (w - ow) * pos - obl
@@ -1817,7 +1818,7 @@ class GenericKeyPainter (Painter):
         bl = self.hDrawSize * style.largeScale
         bl += self.hPadding * style.smallScale
 
-        return self.tw, h, 0, 0, 0, bl
+        return LayoutInfo (minsize=(self.tw, h), minborders=(0, 0, 0, bl))
 
 
     def doPaint (self, ctxt, style):
@@ -2426,10 +2427,12 @@ class AbsoluteFieldOverlay (FieldPainter):
     def getLayoutInfo (self, ctxt, style):
         h = self.hPadding * style.smallScale
         v = self.vPadding * style.smallScale
+        bofs = np.asarray ((v, h, v, h))
 
         # FIXME: ignoring padding requests of the child.
-        self.chsize = sz = self.child.getLayoutInfo (ctxt, style)
-        return sz[0], sz[1], sz[2] + v, sz[3] + h, sz[4] + v, sz[5] + h
+        self.chlinfo = li = self.child.getLayoutInfo (ctxt, style)
+        return LayoutInfo (minsize=li.minsize,
+                           minborders=np.asarray (li.minborders + bofs))
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
@@ -2441,12 +2444,13 @@ class AbsoluteFieldOverlay (FieldPainter):
         # aligned according to hAlign and vAlign, so that its non-border edges
         # land on the edge of the non-border region of the field.
 
-        dx = bl - self.chsize[5] + self.hAlign * (w - self.chsize[0])
-        dy = bt - self.chsize[2] + self.vAlign * (h - self.chsize[1])
+        chmb = self.chlinfo.minborders
+        dx = bl - chmb[3] + self.hAlign * (w - self.chlinfo.minsize[0])
+        dy = bt - chmb[0] + self.vAlign * (h - self.chlinfo.minsize[1])
 
         ctxt.save ()
         ctxt.translate (dx, dy)
-        self.child.configurePainting (ctxt, style, *self.chsize)
+        self.child.configurePainting (ctxt, style, *self.chlinfo.asBoxInfo ())
         ctxt.restore ()
 
 

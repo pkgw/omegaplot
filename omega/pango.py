@@ -94,7 +94,7 @@ class PangoPainter (base._TextPainterBase):
         e = layout.get_extents ()[1] # [1] -> use logical extents
         e = [v / S for v in e]
         self._extents = e
-        return e[W], e[H], 0, 0, 0, 0
+        return base.LayoutInfo (minsize=(e[W], e[H]))
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bl, bb):

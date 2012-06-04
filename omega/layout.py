@@ -16,7 +16,7 @@
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
 from math import pi
-from base import Painter, NullPainter
+from base import LayoutInfo, Painter, NullPainter
 import numpy as N
 
 
@@ -36,12 +36,12 @@ class Overlay (Painter):
         sz = N.zeros (6)
 
         for p in self.painters:
-            sz = N.maximum (sz, p.getLayoutInfo (ctxt, style))
+            sz = N.maximum (sz, p.getLayoutInfo (ctxt, style).asBoxInfo ())
 
         sz[3:6:2] += self.hBorderSize * style.smallScale
         sz[2:6:2] += self.vBorderSize * style.smallScale
 
-        return sz
+        return LayoutInfo (minsize=sz[:2], minborders=sz[2:])
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (Overlay, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
@@ -151,7 +151,7 @@ class Grid (Painter):
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
-                v[r,c] = self._elements[r,c].getLayoutInfo (ctxt, style)
+                v[r,c] = self._elements[r,c].getLayoutInfo (ctxt, style).asBoxInfo ()
 
         # Simple, totally uniform borders and sizes.
 
@@ -165,8 +165,9 @@ class Grid (Painter):
         hb = self.hBorderSize * style.smallScale
         vb = self.vBorderSize * style.smallScale
 
-        return (minw, minh, maxes[2] + vb, maxes[3] + hb,
-                maxes[4] + vb, maxes[5] + hb)
+        return LayoutInfo (minsize=(minw, minh),
+                           minborders=(maxes[2] + vb, maxes[3] + hb,
+                                       maxes[4] + vb, maxes[5] + hb))
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
@@ -252,8 +253,9 @@ class RightRotationPainter (Painter):
             raise ValueError ('rot')
 
     def getLayoutInfo (self, ctxt, style):
-        sz = self.child.getLayoutInfo (ctxt, style)
-        return self._rotateSize (self.rotation, *sz)
+        sz = self._rotateSize (self.rotation,
+                               *self.child.getLayoutInfo (ctxt, style).asBoxInfo ())
+        return LayoutInfo (minsize=sz[:2], minborders=sz[2:])
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (RightRotationPainter, self).configurePainting (ctxt, style, w, h,
@@ -408,8 +410,9 @@ class LinearBox (Painter):
 
         minmaj += maxSPW * totwt
 
-        return (minmaj, maxcmin, bmaj1 + majb, maxbmin1 + minb,
-                bmaj2 + majb, maxbmin2 + minb)
+        return LayoutInfo (minsize=(minmaj, maxcmin),
+                           minborders=(bmaj1 + majb, maxbmin1 + minb,
+                                       bmaj2 + majb, maxbmin2 + minb))
 
 
     def _boxTranslate (self, ctxt, major, minor):
@@ -508,13 +511,14 @@ class VBox (LinearBox):
 
 
     def _getChildMinSize (self, child, ctxt, style):
-        t = child.getLayoutInfo (ctxt, style)
-        return t[1], t[0], t[2], t[3], t[4], t[5]
+        li = child.getLayoutInfo (ctxt, style)
+        return (li.minsize[1], li.minsize[0]) + tuple (li.minborders)
 
 
     def getLayoutInfo (self, ctxt, style):
-        t = self._boxGetLayoutInfo (ctxt, style)
-        return t[1], t[0], t[2], t[3], t[4], t[5]
+        li = self._boxGetLayoutInfo (ctxt, style)
+        return LayoutInfo (minsize=(li.minsize[1], li.minsize[0]),
+                           minborders=li.minborders)
 
 
     def _boxTranslate (self, ctxt, major, minor):
@@ -551,8 +555,9 @@ class HBox (LinearBox):
 
 
     def _getChildMinSize (self, child, ctxt, style):
-        t = child.getLayoutInfo (ctxt, style)
-        return t[0], t[1], t[5], t[2], t[3], t[4]
+        li = child.getLayoutInfo (ctxt, style)
+        mb = li.minborders
+        return tuple (li.minsize) + tuple (mb[3], mb[0], mb[1], mb[2])
 
 
     def _boxTranslate (self, ctxt, major, minor):
@@ -560,8 +565,10 @@ class HBox (LinearBox):
 
 
     def getLayoutInfo (self, ctxt, style):
-        t = self._boxGetLayoutInfo (ctxt, style)
-        return t[0], t[1], t[3], t[4], t[5], t[2]
+        li = self._boxGetLayoutInfo (ctxt, style)
+        mb = li.minborders
+        return LayoutInfo (minsize=li.minsize,
+                           minborders=(mb[1], mb[2], mb[3], mb[0]))
 
 
     def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,

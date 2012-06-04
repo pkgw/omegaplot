@@ -430,6 +430,23 @@ class ContextTooSmallError (StandardError):
     pass
 
 
+class LayoutInfo (object):
+    minsize = (0, 0)
+    minborders = (0, 0, 0, 0)
+
+    def __init__ (self, minsize=None, minborders=None):
+        if minsize is not None:
+            self.minsize = minsize
+        if minborders is not None:
+            self.minborders = minborders
+
+
+    def asBoxInfo (self):
+        a = np.asarray (list (self.minsize) + list (self.minborders))
+        assert a.size == 6 # seems like a good place for sanity checking
+        return a
+
+
 class Painter (object):
     mainStyle = None
     parentRef = None
@@ -469,12 +486,9 @@ class Painter (object):
 
 
     def getLayoutInfo (self, ctxt, style):
-        #"""Should be a function of the style only."""
-        # I feel like the above should be true, but we at least
-        # need ctxt for measuring text, unless another way is found.
-        # Return min_interior_width, min_interior_height, min_top_border,
-        # min_right_border, min_bot_border, min_left_border
-        return 0, 0, 0, 0, 0, 0
+        # This should really be a function of the style only, but
+        # right now ctxt is needed for measuring text sizes.
+        return LayoutInfo ()
 
 
     def configurePainting (self, ctxt, style, w, h, btop, brt, bbot, bleft):
@@ -514,9 +528,9 @@ class Painter (object):
 
         style.initContext (ctxt, w, h)
 
-        szinfo = self.getLayoutInfo (ctxt, style)
-        mainw = max (w - szinfo[3] - szinfo[5], 0) # fill as much as possible
-        mainh = max (h - szinfo[2] - szinfo[4], 0) # by default
+        li = self.getLayoutInfo (ctxt, style)
+        mainw = max (w - li.minborders[1] - li.minborders[3], 0) # fill as much as possible
+        mainh = max (h - li.minborders[0] - li.minborders[2], 0) # by default
 
         if self._toplevel_render_aspect is not None:
             # possibly shrink if trying to fix the main region aspect ratio
@@ -531,8 +545,8 @@ class Painter (object):
                 else:
                     mainh = mainw / self._toplevel_render_aspect
 
-        needw = mainw + szinfo[3] + szinfo[5]
-        needh = mainh + szinfo[2] + szinfo[4]
+        needw = mainw + li.minborders[1] + li.minborders[3]
+        needh = mainh + li.minborders[0] + li.minborders[2]
 
         if w < needw or h < needh:
             raise ContextTooSmallError ('Context too small: got (%s, %s);'
@@ -546,11 +560,10 @@ class Painter (object):
         marginw = 0.5 * (w - mainw)
         marginh = 0.5 * (h - mainh)
         margins = [marginh, marginw, marginh, marginw]
-        minfo = szinfo[2:]
 
         for i in xrange (4):
-            if margins[i] < minfo[i]:
-                delta = minfo[i] - margins[i]
+            if margins[i] < li.minborders[i]:
+                delta = li.minborders[i] - margins[i]
                 margins[i] += delta
                 margins[(i + 2) % 4] -= delta
 
@@ -614,8 +627,9 @@ class DebugPainter (Painter):
 
     def getLayoutInfo (self, ctxt, style):
         s = style.smallScale
-        return (self.minWidth * s, self.minHeight * s, self.bTop * s, self.bRight * s,
-                self.bBottom * s, self.bLeft * s)
+        return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
+                           minborders=(self.bTop * s, self.bRight * s,
+                                       self.bBottom * s, self.bLeft * s))
 
 
     def doPaint (self, ctxt, style):
@@ -690,7 +704,7 @@ class CairoTextPainter (_TextPainterBase):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
-        return self.extents[2], self.extents[3], 0, 0, 0, 0
+        return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
 
 
     def doPaint (self, ctxt, style):
@@ -774,7 +788,7 @@ class _ImagePainterBase (Painter):
         if not isinstance (surf, cairo.ImageSurface):
             raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
 
-        return surf.get_width (), surf.get_height (), 0, 0, 0, 0
+        return LayoutInfo (minsize=(surf.get_width (), surf.get_height ()))
 
 
     def doPaint (self, ctxt, style):

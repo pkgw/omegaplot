@@ -46,7 +46,7 @@ class LatexPainter (_TextPainterBase):
 
     def getLayoutInfo (self, ctxt, style):
         r = self.cache.getRenderer (self.handle)
-        return r.bbw, r.bbh, 0, 0, 0, 0
+        return LayoutInfo (minsize=(r.bbw, r.bbh))
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bl, bb):
         super (LatexPainter, self).configurePainting (ctxt, style, w, h, bt, br, bl, bb)
