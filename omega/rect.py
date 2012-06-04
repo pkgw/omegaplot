@@ -25,6 +25,7 @@ from base import (_TextPainterBase, _kwordDefaulted,
                   _kwordExtract, _checkKwordsConsumed)
 from base import textMarkup as TM
 from layout import RightRotationPainter
+import util
 
 
 class RectDataHolder (DataHolder):
@@ -1502,7 +1503,8 @@ Examples:
 
         self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
 
-        # Get minimum size of plot field based on field painters.
+        # Get minimum size of plot field based on field painters. We ignore
+        # any aspect ratios specified by the field painters.
 
         fsizes = np.zeros (6)
 
@@ -1558,17 +1560,8 @@ Examples:
             border[i] = aspace + ospace
             #print i, axspace[i], obd[i][0:3], opad, border[i]
 
-        # If we have a desired aspect ratio, might need to bump
-        # up one of the dimensions of our minimum field size.
-
-        if self.fieldAspect is not None:
-            cur = float (fw) / fh
-            if cur > self.fieldAspect:
-                fh = fw / self.fieldAspect
-            elif cur < self.fieldAspect:
-                fw = fh / self.fieldAspect
-
-        return LayoutInfo (minsize=(fw, fh), minborders=border)
+        fw, wh = util.expandAspect (self.fieldAspect, fw, fh)
+        return LayoutInfo (minsize=(fw, fh), minborders=border, aspect=self.fieldAspect)
 
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
@@ -1576,25 +1569,8 @@ Examples:
                                                   bt, br, bb, bl)
 
         # w and h give the size of the field, bl and bt the x and y
-        # offsets to get to its upper left corner.
-
-        # FIXME: this new model prevents us from being able to specify
-        # the aspect ratio of the field. That logic will have to land
-        # somewhere else. Preserving the code here.
-
-        #if self.fieldAspect is not None:
-        #    cur = float (fieldw) / fieldh
-
-        #    if cur > self.fieldAspect:
-        #        # Wider than desired ; bump up left/right margins
-        #        want_fieldw = fieldh * self.fieldAspect
-        #        fdelta_x = (fieldw - want_fieldw) / 2
-        #        fieldw = want_fieldw
-        #    elif cur < self.fieldAspect:
-        #        # Taller than desired ; bump up top/bottom margins
-        #        want_fieldh = fieldw / self.fieldAspect
-        #        fdelta_y = (fieldh - want_fieldh) / 2
-        #        fieldh = want_fieldh
+        # offsets to get to its upper left corner. We have to hope that
+        # our container has honored our aspect ratio request.
 
         # Configure the field painters, which is easy. We just give them
         # the smallest possible borders that will make them all happy.

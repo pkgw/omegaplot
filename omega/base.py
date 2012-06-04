@@ -433,12 +433,14 @@ class ContextTooSmallError (StandardError):
 class LayoutInfo (object):
     minsize = (0, 0)
     minborders = (0, 0, 0, 0)
+    aspect = None
 
-    def __init__ (self, minsize=None, minborders=None):
+    def __init__ (self, minsize=None, minborders=None, aspect=None):
         if minsize is not None:
             self.minsize = minsize
         if minborders is not None:
             self.minborders = minborders
+        self.aspect = aspect
 
 
     def asBoxInfo (self):
@@ -521,6 +523,8 @@ class Painter (object):
 
 
     def renderBasic (self, ctxt, style, w, h):
+        from util import doublearray, shrinkAspect, nudgeMargins
+
         # Must init the context before calling getLayoutInfo
         # in case we're using the Cairo text backend -- we need
         # the font size to be set correctly. Hacky; should go away
@@ -531,20 +535,7 @@ class Painter (object):
         li = self.getLayoutInfo (ctxt, style)
         mainw = max (w - li.minborders[1] - li.minborders[3], 0) # fill as much as possible
         mainh = max (h - li.minborders[0] - li.minborders[2], 0) # by default
-
-        if self._toplevel_render_aspect is not None:
-            # possibly shrink if trying to fix the main region aspect ratio
-            if mainh <= 0:
-                mainh = mainw / self._toplevel_render_aspect
-            else:
-                aspect = mainw / mainh
-
-                if aspect > self._toplevel_render_aspect:
-                    # Too wide
-                    mainw = mainh * self._toplevel_render_aspect
-                else:
-                    mainh = mainw / self._toplevel_render_aspect
-
+        mainw, mainh = shrinkAspect (li.aspect, mainw, mainh)
         needw = mainw + li.minborders[1] + li.minborders[3]
         needh = mainh + li.minborders[0] + li.minborders[2]
 
@@ -554,18 +545,11 @@ class Painter (object):
                                             (w, h, needw, needh))
 
         # spend extra space on margins, trying to center the main plot
-        # area as much as possible. We've checked that there's enough
-        # space overall, so our tweaks should never cause any problems.
+        # area as much as possible.
 
         marginw = 0.5 * (w - mainw)
         marginh = 0.5 * (h - mainh)
-        margins = [marginh, marginw, marginh, marginw]
-
-        for i in xrange (4):
-            if margins[i] < li.minborders[i]:
-                delta = li.minborders[i] - margins[i]
-                margins[i] += delta
-                margins[(i + 2) % 4] -= delta
+        margins = nudgeMargins (doublearray (marginh, marginw), li.minborders)
 
         self.configurePainting (ctxt, style, mainw, mainh, *margins)
         self.paint (ctxt, style)
@@ -623,13 +607,14 @@ class DebugPainter (Painter):
     bRight = 0
     bBottom = 0
     bLeft = 0
-
+    aspect = None
 
     def getLayoutInfo (self, ctxt, style):
         s = style.smallScale
         return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
                            minborders=(self.bTop * s, self.bRight * s,
-                                       self.bBottom * s, self.bLeft * s))
+                                       self.bBottom * s, self.bLeft * s),
+                           aspect=self.aspect)
 
 
     def doPaint (self, ctxt, style):
@@ -778,6 +763,8 @@ def _setTextBackend (painterClass, stamperClass, markupFunc):
 # Generic painting of ImageSurfaces
 
 class _ImagePainterBase (Painter):
+    pixelAspect = None
+
     def getSurf (self, style):
         raise NotImplementedError ()
 
@@ -788,7 +775,14 @@ class _ImagePainterBase (Painter):
         if not isinstance (surf, cairo.ImageSurface):
             raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
 
-        return LayoutInfo (minsize=(surf.get_width (), surf.get_height ()))
+        w, h = surf.get_width (), surf.get_height ()
+
+        if self.pixelAspect is None:
+            aspect = None
+        else:
+            aspect = self.pixelAspect * float (w) / h
+
+        return LayoutInfo (minsize=(w, h), aspect=aspect)
 
 
     def doPaint (self, ctxt, style):

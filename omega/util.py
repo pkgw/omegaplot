@@ -24,6 +24,7 @@ well. This is not to imply that these functions aren't important --
 :func:`quickXY`, for instance, is quite useful.
 """
 
+import numpy as np
 from base import _kwordDefaulted
 
 # Quick display of plots
@@ -296,3 +297,89 @@ def dumpPainter (painter, **kwargs):
 def resetDumping ():
     global _dumpPager
     _dumpPager = None
+
+
+# Geometry stuff
+
+def doublearray (a, b):
+    return np.asarray ([a, b, a, b])
+
+
+def shrinkAspect (aspect, w, h):
+    if aspect is not None:
+        # We don't short-circuit so aggressively here to make sure our
+        # sanity checks get run.
+        aspect = float (aspect)
+
+    w, h = float (w), float (h)
+
+    if aspect is not None and aspect <= 0.:
+        raise ValueError ('illegal aspect ratio %f' % aspect)
+
+    if w < 0.:
+        raise ValueError ('illegal width %f' % w)
+
+    if h < 0.:
+        raise ValueError ('illegal height %f' % h)
+
+    if aspect is None:
+        return w, h
+
+    if w == 0. or h == 0.:
+        return 0., 0.
+
+    if w > h * aspect: # Too wide
+        return h * aspect, h
+
+    return w, w / aspect
+
+
+def expandAspect (aspect, w, h):
+    if aspect is not None:
+        # We don't short-circuit so aggressively here to make sure our
+        # sanity checks get run.
+        aspect = float (aspect)
+
+    w, h = float (w), float (h)
+
+    if aspect is not None and aspect <= 0.:
+        raise ValueError ('illegal aspect ratio %f' % aspect)
+
+    if w < 0.:
+        raise ValueError ('illegal width %f' % w)
+
+    if h < 0.:
+        raise ValueError ('illegal height %f' % h)
+
+    if aspect is None:
+        return w, h
+
+    if w < h * aspect: # Not wide enough
+        return h * aspect, h
+
+    return w, w / aspect
+
+
+def nudgeMargins (current, minima):
+    """Given some space allocated to margins and their minimum sizes, reallocate
+    the space to make the margins as even as possible."""
+
+    result = np.array (current)
+    minima = np.asarray (minima)
+
+    if result[0] + result[2] < minima[0] + minima[2]:
+        raise ValueError ('not enough vertical space to redistribute (%s, %s)' % (result, minima))
+    if result[1] + result[3] < minima[1] + minima[3]:
+        raise ValueError ('not enough horizontal space to redistribute (%s, %s)' % (result, minima))
+    if np.any (minima < 0):
+        raise ValueError ('some margin minima were negative (%s, %s)' % (result, minima))
+    if np.any (result < 0):
+        raise ValueError ('some margin sizes were negative (%s, %s)' % (result, minima))
+
+    for i in xrange (4):
+        if result[i] < minima[i]:
+            delta = minima[i] - result[i]
+            result[i] += delta
+            result[(i + 2) % 4] -= delta
+
+    return result

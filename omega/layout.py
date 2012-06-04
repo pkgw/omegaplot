@@ -16,6 +16,7 @@
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
 from base import LayoutInfo, Painter, NullPainter
+from util import expandAspect, shrinkAspect, nudgeMargins
 import numpy as np
 
 
@@ -33,14 +34,23 @@ class Overlay (Painter):
 
     def getLayoutInfo (self, ctxt, style):
         sz = np.zeros (6)
+        aspect = None
 
         for p in self.painters:
-            sz = np.maximum (sz, p.getLayoutInfo (ctxt, style).asBoxInfo ())
+            li = p.getLayoutInfo (ctxt, style)
+            sz = np.maximum (sz, li.asBoxInfo ())
 
+            if aspect is None:
+                aspect = li.aspect
+            elif li.aspect is not None and li.aspect != aspect:
+                raise RuntimeError ('cannot overlay painters with disageeing aspect '
+                                    'ratios (%f, %f)' % (aspect, li.aspect))
+
+        sz[:2] = expandAspect (aspect, *sz[:2])
         sz[3:6:2] += self.hBorderSize * style.smallScale
         sz[2:6:2] += self.vBorderSize * style.smallScale
 
-        return LayoutInfo (minsize=sz[:2], minborders=sz[2:])
+        return LayoutInfo (minsize=sz[:2], minborders=sz[2:], aspect=li.aspect)
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (Overlay, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
@@ -147,14 +157,24 @@ class Grid (Painter):
 
     def getLayoutInfo (self, ctxt, style):
         v = np.empty ((self.nh, self.nw, 6))
+        aspect = None
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
-                v[r,c] = self._elements[r,c].getLayoutInfo (ctxt, style).asBoxInfo ()
+                li = self._elements[r,c].getLayoutInfo (ctxt, style)
+                v[r,c] = li.asBoxInfo ()
+
+                if aspect is None:
+                    aspect = li.aspect
+                elif li.aspect is not None and li.aspect != aspect:
+                    raise RuntimeError ('cannot grid painters with disagreeing aspect '
+                                        'ratios (%f, %f)' % (aspect, li.aspect))
 
         # Simple, totally uniform borders and sizes.
 
         self.maxes = maxes = v.max (0).max (0)
+        self._childaspect = aspect
+        maxes[:2] = expandAspect (aspect, *maxes[:2])
 
         minw = self.nw * maxes[0]
         minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
@@ -177,6 +197,11 @@ class Grid (Painter):
         hb = self.hBorderSize * style.smallScale
         vb = self.vBorderSize * style.smallScale
 
+        # Figure out borders and such. Children get shrunk to provide
+        # the right aspect ratio, with extra space redistributed into
+        # their margins. All the while we account for our extra border
+        # around the whole thing.
+
         bt -= vb
         br -= hb
         bb -= vb
@@ -184,6 +209,23 @@ class Grid (Painter):
 
         childw = (w - (self.nw - 1) * (hPadReal + bl + br)) / self.nw
         childh = (h - (self.nh - 1) * (vPadReal + bt + bb)) / self.nh
+        childw, childh = shrinkAspect (self._childaspect, childw, childh)
+
+        if self.nw == 1:
+            bhextra = w - childw
+        else:
+            bhextra = (w - self.nw * childw) / (self.nw - 1) - (hPadReal + bl + br)
+            bhextra /= self.nw
+
+        if self.nh == 1:
+            bvextra = h - childh
+        else:
+            bvextra = (h - self.nh * childh) / (self.nh - 1) - (vPadReal + bt + bb)
+            bvextra /= self.nw
+
+        bt, br, bb, bl = nudgeMargins ((bt + 0.5 * bvextra, br + 0.5 * bhextra,
+                                        bb + 0.5 * bvextra, bl + 0.5 * bhextra),
+                                       self.maxes[2:])
 
         fullcw = childw + hPadReal + bl + br
         fullch = childh + vPadReal + bt + bb
@@ -252,15 +294,28 @@ class RightRotationPainter (Painter):
             raise ValueError ('rot')
 
     def getLayoutInfo (self, ctxt, style):
-        sz = self._rotateSize (self.rotation,
-                               *self.child.getLayoutInfo (ctxt, style).asBoxInfo ())
-        return LayoutInfo (minsize=sz[:2], minborders=sz[2:])
+        li = self.child.getLayoutInfo (ctxt, style)
+        sz = self._rotateSize (self.rotation, *li.asBoxInfo ())
+
+        if li.aspect is None:
+            aspect = None
+        elif self.rotation in (self.ROT_NONE, self.ROT_180):
+            aspect = li.aspect
+        else:
+            aspect = 1. / li.aspect
+
+        minsize = expandAspect (aspect, *sz[:2])
+
+        return LayoutInfo (minsize=minsize, minborders=sz[2:], aspect=aspect)
 
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (RightRotationPainter, self).configurePainting (ctxt, style, w, h,
                                                               bt, br, bb, bl)
 
         ctxt.save ()
+
+        # TODO: we should do the best we can to give our child the
+        # aspect ratio it wants, if it wants one.
 
         fw, fh = self.fullw, self.fullh
 
@@ -303,7 +358,7 @@ class LinearBox (Painter):
 
         for i in xrange (0, self.size):
             np = NullPainter ()
-            self._elements[i] = (np, 1.0, 0.0, 0.0, 0.0)
+            self._elements[i] = (np, 1.0, 0.0, 0.0, 0.0, None)
             np.setParent (self)
 
     # FIXME: when these are changed, need to indicate
@@ -316,44 +371,48 @@ class LinearBox (Painter):
         return self._elements[idx][0]
 
     def __setitem__ (self, idx, value):
-        prevptr, prevwt, prevb1, prevmaj, prevb2 = self._elements[idx]
+        prevptr, prevwt, prevb1, prevmaj, prevb2, prevaspect = self._elements[idx]
 
-        if prevptr is value: return
+        if prevptr is value:
+            return
 
         # This will recurse to our own _lostChild
-        if prevptr is not None: prevptr.setParent (None)
+        if prevptr is not None:
+            prevptr.setParent (None)
 
         # Do this before modifying self._elements, so that
         # if value is already in _elements and is being
         # moved to an earlier position, _lostChild doesn't
         # remove the wrong entry.
 
-        if value is None: value = NullPainter ()
+        if value is None:
+            value = NullPainter ()
         value.setParent (self)
 
-        self._elements[idx] = (value, prevwt, prevb1, prevmaj, prevb2)
+        self._elements[idx] = (value, prevwt, prevb1, prevmaj, prevb2, prevaspect)
 
     def appendChild (self, child, weight=1.0):
-        if child is None: child = NullPainter ()
+        if child is None:
+            child = NullPainter ()
         child.setParent (self)
 
-        self._elements.append ((None, weight, 0.0, 0.0, 0.0))
+        self._elements.append ((None, weight, 0.0, 0.0, 0.0, None))
         self.size += 1
         self[self.size - 1] = child
 
     def _lostChild (self, child):
         for i in xrange (0, self.size):
-            (ptr, wt, tmp, tmp, tmp) = self._elements[i]
+            ptr, wt, tmp, tmp, tmp, tmp = self._elements[i]
 
             if ptr is child:
                 newptr = NullPainter ()
-                self._elements[i] = (newptr, wt, 0.0, 0.0, 0.0)
+                self._elements[i] = (newptr, wt, 0.0, 0.0, 0.0, None)
                 newptr.setParent (self)
 
 
     def setWeight (self, index, wt):
-        (ptr, oldwt, bmaj1, majsz, bmaj2) = self._elements[index]
-        self._elements[index] = (ptr, wt, bmaj1, majsz, bmaj2)
+        ptr, oldwt, bmaj1, majsz, bmaj2, aspect = self._elements[index]
+        self._elements[index] = ptr, wt, bmaj1, majsz, bmaj2, aspect
 
 
     def _getChildMinSize (self, child, ctxt, style):
@@ -371,8 +430,11 @@ class LinearBox (Painter):
         maxbmin1 = maxbmin2 = maxcmin = 0
 
         for i in xrange (self.size):
-            (ptr, wt, tmp, tmp, tmp) = self._elements[i]
-            cmaj, cmin, cbmaj1, cbmin1, cbmaj2, cbmin2 = self._getChildMinSize (ptr, ctxt, style)
+            ptr, wt, tmp, tmp, tmp, tmp = self._elements[i]
+            cmaj, cmin, cbmaj1, cbmin1, cbmaj2, cbmin2, caspect = \
+                self._getChildMinSize (ptr, ctxt, style)
+
+            cmaj, cmin = expandAspect (caspect, cmaj, cmin)
 
             # Along the major direction, we don't equalize borders at all, so the
             # effective size of each child includes its borders...
@@ -397,7 +459,7 @@ class LinearBox (Painter):
             maxbmin1 = max (maxbmin1, cbmin1)
             maxbmin2 = max (maxbmin2, cbmin2)
 
-            self._elements[i] = (ptr, wt, cbmaj1eff, cmaj, cbmaj2eff)
+            self._elements[i] = (ptr, wt, cbmaj1eff, cmaj, cbmaj2eff, caspect)
 
             if wt == 0:
                 minmaj += cfull
@@ -455,7 +517,7 @@ class LinearBox (Painter):
         self._boxTranslate (ctxt, bmaj, bmin)
 
         for i in xrange (self.size):
-            ptr, wt, cbmaj1, cmaj, cbmaj2 = self._elements[i]
+            ptr, wt, cbmaj1, cmaj, cbmaj2, caspect = self._elements[i]
 
             if wt == 0:
                 cfullmaj = cbmaj1 + cmaj + cbmaj2
@@ -466,7 +528,7 @@ class LinearBox (Painter):
                     cfullmaj = 0
 
                 cfullmaj = max (cfullmaj, cbmaj1 + cmaj + cbmaj2)
-                assert cfullmaj <= majspace, 'Not enough room in vbox!'
+                assert cfullmaj <= majspace, 'Not enough room in linear box!'
 
             if i == 0:
                 cbmaj1 = bmaj1 - bmaj
@@ -474,9 +536,26 @@ class LinearBox (Painter):
                 cbmaj2 = bmaj2 - bmaj
 
             cmaj = cfullmaj - cbmaj1 - cbmaj2
+            cmin, cbmin1, cbmin2 = minor, bmin1, bmin2
 
-            self._boxConfigureChild (ptr, ctxt, style, cmaj, minor,
-                                     cbmaj1, bmin1, cbmaj2, bmin2)
+            if caspect is not None:
+                delta = cmaj - caspect * minor
+
+                if delta > 0:
+                    # FIXME: this can be uneven or possibly break minimum sizing
+                    cmaj -= delta
+                    cbmaj1 += 0.5 * delta
+                    cbmaj2 += 0.5 * delta
+                elif delta < 0:
+                    # This is going to look gross but we need to try as hard as
+                    # we can to honor aspect ratios
+                    delta = minor - cmaj / caspect
+                    cmin -= delta
+                    cbmin1 += 0.5 * delta
+                    cbmin2 += 0.5 * delta
+
+            self._boxConfigureChild (ptr, ctxt, style, cmaj, cmin,
+                                     cbmaj1, cbmin1, cbmaj2, cbmin2)
             self._boxTranslate (ctxt, cfullmaj + pad, 0)
 
             if wt != 0:
@@ -511,7 +590,11 @@ class VBox (LinearBox):
 
     def _getChildMinSize (self, child, ctxt, style):
         li = child.getLayoutInfo (ctxt, style)
-        return (li.minsize[1], li.minsize[0]) + tuple (li.minborders)
+        if li.aspect is None:
+            aspect = None
+        else:
+            aspect = 1. / li.aspect # box aspect is major/minor = h/w
+        return (li.minsize[1], li.minsize[0]) + tuple (li.minborders) + (aspect, )
 
 
     def getLayoutInfo (self, ctxt, style):
@@ -556,7 +639,7 @@ class HBox (LinearBox):
     def _getChildMinSize (self, child, ctxt, style):
         li = child.getLayoutInfo (ctxt, style)
         mb = li.minborders
-        return tuple (li.minsize) + tuple (mb[3], mb[0], mb[1], mb[2])
+        return tuple (li.minsize) + (mb[3], mb[0], mb[1], mb[2], li.aspect)
 
 
     def _boxTranslate (self, ctxt, major, minor):
