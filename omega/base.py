@@ -102,6 +102,7 @@ class DataHolder (object):
     fltdata = None
     dlen = 0
 
+
     def register (self, *widths):
         """Register a consumer with this DataHolder.
 
@@ -139,6 +140,7 @@ class DataHolder (object):
 
         return (offsets, widths)
 
+
     def _checkLengths (self):
         if self.intdata is None and self.fltdata is None:
             raise Exception ('No data yet!')
@@ -150,6 +152,7 @@ class DataHolder (object):
         if self.fltdata is not None and \
            self.fltdata.shape[1] != self.dlen:
             raise Exception ('Disagreeing int and float data lengths')
+
 
     def get (self, cinfo):
         """Retrieve the data requested by a particular consumer.
@@ -178,15 +181,10 @@ class DataHolder (object):
             type, ofs, w = self.axistypes[i], offsets[i], widths[i]
 
             if w == 0:
-                #print 'axis %d: none allocated' % i
                 ret += (np.ndarray ((0,self.dlen)), )
             elif type == self.AxisTypeInt:
-                #print 'axis %d: int, range %d-%d' % (i, intofs+ofs,
-                #                                     intofs+ofs+w)
                 ret += (self.intdata[intofs+ofs:intofs+ofs+w,:], )
             elif type == self.AxisTypeFloat:
-                #print 'axis %d: flt, range %d-%d' % (i, fltofs+ofs,
-                #                                     fltofs+ofs+w)
                 ret += (self.fltdata[fltofs+ofs:fltofs+ofs+w,:], )
 
             if type == self.AxisTypeInt:
@@ -195,6 +193,7 @@ class DataHolder (object):
                 fltofs += self.allocations[i]
 
         return ret
+
 
     def getAll (self):
         """Retrieve all data stored in this DataHolder.
@@ -216,15 +215,10 @@ class DataHolder (object):
             type, w = self.axistypes[i], self.allocations[i]
 
             if w == 0:
-                #print 'axis %d: none allocated' % i
                 ret += (np.ndarray ((0,self.dlen)), )
             elif type == self.AxisTypeInt:
-                #print 'axis %d: int, all range %d-%d' % (i, intofs,
-                #                                     intofs+w)
                 ret += (self.intdata[intofs:intofs+w,:], )
             elif type == self.AxisTypeFloat:
-                #print 'axis %d: flt, all range %d-%d' % (i, fltofs,
-                #                                     fltofs+w)
                 ret += (self.fltdata[fltofs:fltofs+w,:], )
 
             if type == self.AxisTypeInt:
@@ -233,6 +227,7 @@ class DataHolder (object):
                 fltofs += w
 
         return ret
+
 
     def totalWidth (self):
         """Get the total number of columns in this DataHolder.
@@ -244,6 +239,7 @@ class DataHolder (object):
 
         return reduce (lambda x, y: x + y, self.allocations)
 
+
     def _allocMerged (self, type, dtype, len):
         totw = 0
 
@@ -251,6 +247,7 @@ class DataHolder (object):
             if atype == type: totw += w
 
         return np.ndarray ((totw, len), dtype=dtype)
+
 
     def _setGeneric (self, type, dtype, arrays):
         arrays = [np.asarray (x) for x in arrays]
@@ -389,6 +386,7 @@ class ToplevelPaintParent (object):
     def __init__ (self, weakRef):
         self._weakRef = bool (weakRef)
 
+
     def getPainter (self):
         if not self._weakRef:
             return self._painter
@@ -402,6 +400,7 @@ class ToplevelPaintParent (object):
             return None
 
         return p
+
 
     def setPainter (self, painter):
         pCur = self.getPainter ()
@@ -419,13 +418,17 @@ class ToplevelPaintParent (object):
         else:
             self._painterRef = None
 
+
     def _lostChild (self, child):
         if not self._weakRef:
             self._painter = None
         else:
             self._painterRef = None
 
-class ContextTooSmallError (StandardError): pass
+
+class ContextTooSmallError (StandardError):
+    pass
+
 
 class Painter (object):
     mainStyle = None
@@ -434,8 +437,10 @@ class Painter (object):
 
     from weakref import ref as _ref
 
+
     def __init__ (self):
         self.matrix = None
+
 
     def _getParent (self):
         if self.parentRef is None: return None
@@ -447,6 +452,7 @@ class Painter (object):
             return None
 
         return p
+
 
     def setParent (self, parent):
         p = self._getParent ()
@@ -461,6 +467,7 @@ class Painter (object):
 
         self.matrix = None
 
+
     def getMinimumSize (self, ctxt, style):
         #"""Should be a function of the style only."""
         # I feel like the above should be true, but we at least
@@ -468,6 +475,7 @@ class Painter (object):
         # Return min_interior_width, min_interior_height, min_top_border,
         # min_right_border, min_bot_border, min_left_border
         return 0, 0, 0, 0, 0, 0
+
 
     def configurePainting (self, ctxt, style, w, h, btop, brt, bbot, bleft):
         p = self._getParent ()
@@ -482,6 +490,7 @@ class Painter (object):
         self.fullw = w + brt + bleft
         self.fullh = h + btop + bbot
 
+
     def paint (self, ctxt, style):
         if self.matrix is None:
             raise RuntimeError ('Attempting to paint without having called configurePainting')
@@ -491,6 +500,7 @@ class Painter (object):
         style.apply (ctxt, self.mainStyle)
         self.doPaint (ctxt, style)
         ctxt.restore ()
+
 
     def doPaint (self, ctxt, style):
         raise NotImplementedError ()
@@ -587,7 +597,8 @@ class Painter (object):
 
 
 class NullPainter (Painter):
-    def doPaint (self, ctxt, style): pass
+    def doPaint (self, ctxt, style):
+        pass
 
 
 class DebugPainter (Painter):
@@ -634,6 +645,7 @@ class Stamp (object):
         x, y = ctxt.get_current_point ()
         self.paintAt (ctxt, x, y)
 
+
 # Text handling routines. Possible backends are Cairo text
 # support (fast) or LaTeX (inefficient but capable of rendering
 # arbitrarily complex formulae). I am not fond of globals, but you
@@ -643,6 +655,7 @@ class Stamp (object):
 
 class _TextPainterBase (Painter):
     color = 'foreground'
+
 
 class _TextStamperBase (object):
     def getSize (self, ctxt, style):
@@ -672,11 +685,13 @@ class CairoTextPainter (_TextPainterBase):
         if hAlign is not None: self.hAlign = hAlign
         if vAlign is not None: self.vAlign = vAlign
 
+
     def getMinimumSize (self, ctxt, style):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
         return self.extents[2], self.extents[3], 0, 0, 0, 0
+
 
     def doPaint (self, ctxt, style):
         dx = self.border[3] + (self.width - self.extents[2]) * self.hAlign
@@ -686,16 +701,19 @@ class CairoTextPainter (_TextPainterBase):
         ctxt.set_source_rgb (*style.getColor (self.color))
         ctxt.show_text (self.text)
 
+
 class CairoTextStamper (_TextStamperBase):
     def __init__ (self, text):
         self.text = text
         self.extents = None
+
 
     def getSize (self, ctxt, style):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
         return self.extents[2:4]
+
 
     def paintAt (self, ctxt, x, y, color):
         ctxt.save ()
@@ -705,15 +723,19 @@ class CairoTextStamper (_TextStamperBase):
         ctxt.show_text (self.text)
         ctxt.restore ()
 
+
 _textPainterClass = CairoTextPainter
 _textStamperClass = CairoTextStamper
 _textMarkupFunc = lambda t: t
 
+
 def TextPainter (text, **kwargs):
     return _textPainterClass (text, **kwargs)
 
+
 def TextStamper (text, **kwargs):
     return _textStamperClass (text, **kwargs)
+
 
 def textMarkup (text, **kwargs):
     # This is a little silly-seeming, but it lets code import the
@@ -745,6 +767,7 @@ class _ImagePainterBase (Painter):
     def getSurf (self, style):
         raise NotImplementedError ()
 
+
     def getMinimumSize (self, ctxt, style):
         surf = self.getSurf (style)
 
@@ -752,6 +775,7 @@ class _ImagePainterBase (Painter):
             raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
 
         return surf.get_width (), surf.get_height (), 0, 0, 0, 0
+
 
     def doPaint (self, ctxt, style):
         surf = self.getSurf (style)
@@ -767,8 +791,10 @@ class ImagePainter (_ImagePainterBase):
         _ImagePainterBase.__init__ (self)
         self.surf = surf
 
+
     def getSurf (self, style):
         return self.surf
+
 
 # Expandable keyword arg handling
 
@@ -808,7 +834,8 @@ def _kwordExtract (kwargs, *names):
 
 
 def _checkKwordsConsumed (kwargs):
-    if len (kwargs) == 0: return
+    if len (kwargs) == 0:
+        return
 
     args = ', '.join ('%s=%s' % tup for tup in kwargs.iteritems ())
     raise TypeError ('Unconsumed keyword arguments: ' + args)
