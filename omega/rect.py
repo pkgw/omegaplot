@@ -3018,10 +3018,21 @@ class CoordinateAxis (RectAxis):
         else:
             assert False, 'should not be reached'
 
+        # Do the iteration, with some obnoxious setup necessary so
+        # that we can check relative errors with the possibility of
+        # having places where arb == 0.
+
+        w = np.where (arb != 0)
+        if w[0].size == arb.size:
+            arbscale = arb
+        else:
+            arbscale = arb.copy ()
+            arbscale[np.where (arb == 0)] = np.abs (arb[w]).min ()
+
         for iternum in xrange (64):
             err = arb - lin2arb (lin)
 
-            if not np.any (np.abs (err) / arb > 1e-6):
+            if not np.any (np.abs (err) / arbscale > 1e-6):
                 break
 
             dlindarb = DELTA / (lin2arb (lin + DELTA) - lin2arb (lin))
