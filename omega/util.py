@@ -367,9 +367,9 @@ def nudgeMargins (current, minima):
     result = np.array (current)
     minima = np.asarray (minima)
 
-    if result[0] + result[2] < minima[0] + minima[2]:
+    if result[0] + result[2] + 1e-4 < minima[0] + minima[2]:
         raise ValueError ('not enough vertical space to redistribute (%s, %s)' % (result, minima))
-    if result[1] + result[3] < minima[1] + minima[3]:
+    if result[1] + result[3] + 1e-4 < minima[1] + minima[3]:
         raise ValueError ('not enough horizontal space to redistribute (%s, %s)' % (result, minima))
     if np.any (minima < 0):
         raise ValueError ('some margin minima were negative (%s, %s)' % (result, minima))
