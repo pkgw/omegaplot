@@ -22,6 +22,7 @@ mypydir = $(pythondir)/omega
 mypy_PYTHON = \
    __init__.py \
    base.py \
+   ceaproj.py \
    gtkInteg.py \
    ipyInteg.py \
    latex.py \
