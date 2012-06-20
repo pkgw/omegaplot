@@ -419,3 +419,225 @@ class WithXErrorBars (RStamp):
 
         imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
         return (x[0], x[1]) + subd
+
+
+# Arrow painting
+
+def arrow (ctxt, x, y, direction, length, headsize):
+    dperp = headsize * 0.95
+    dpara = headsize * 0.3
+
+    if length < 0:
+        if direction == 'left':
+            newdir = 'right'
+        elif direction == 'right':
+            newdir = 'left'
+        elif direction == 'top':
+            newdir = 'bottom'
+        elif direction == 'bottom':
+            newdir = 'top'
+
+        length = -length
+        direction = newdir
+
+    llength = max (length - dperp, 0)
+
+    if direction == 'left':
+        dlx, dly = -llength, 0
+        dh1x, dh1y = 0, dpara
+        dh2x, dh2y = -(length - llength), dpara
+    elif direction == 'right':
+        dlx, dly = llength, 0
+        dh1x, dh1y = 0, -dpara
+        dh2x, dh2y = length - llength, -dpara
+    elif direction == 'top':
+        dlx, dly = 0, -llength
+        dh1x, dh1y = -dpara, 0
+        dh2x, dh2y = -dpara, -(length - llength)
+    elif direction == 'bottom':
+        dlx, dly = 0, llength
+        dh1x, dh1y = dpara, 0
+        dh2x, dh2y = dpara, length - llength
+    else:
+        raise ValueError ('unrecognized arrow direction "%s"' % direction)
+
+    if llength != 0:
+        ctxt.move_to (x, y)
+        ctxt.rel_line_to (dlx, dly)
+        ctxt.stroke ()
+
+    ctxt.move_to (x + dlx + dh1x, y + dly + dh1y)
+    ctxt.rel_line_to (-2 * dh1x, -2 * dh1y)
+    ctxt.rel_line_to (dh2x, dh2y)
+    ctxt.close_path ()
+    ctxt.fill ()
+
+
+class _WithArrow (RStamp):
+    """
+    This is a confusing class here. The whole point of limit arrows as
+    opposed to error bars is that the arrow length is not particularly
+    meaningful, so it is specified in style units (largeScale) and not
+    tied to rectangular X or Y values.
+
+    However, we will often have limit arrows pointing toward some
+    limiting value (say, zero!), and it is ugly to have the arrows
+    overshoot that value. So this stamp adds a data column of either X
+    or Y type (depending on *direction*) here called "towards": for
+    each point, the arrow goes from the X-or-Y value towards
+    "towards", without overshooting it. (I.e., the length has a
+    maximum of the specified length in style units, but may be shorter
+    if necessary.)
+
+    This means that for *direction*, 'left' and 'right', and 'top' and
+    'bottom', are essentially equivalent. The only place where the
+    particular value matters is in the key (cf getSampleValues).
+
+    Additionally, we may want to draw a set of points where some have
+    arrows and some do not. To allow this, if *length* is None,
+    another column of type floating-misc is added, specifying per-row
+    arrow lengths. If one of these is zero, no arrow is drawn for that
+    point.
+
+    Finally, we can either draw on top of a substamp, or use a default.
+    The default draws a narrow bar perpendicular to the arrow and is
+    activated by setting *substamp* to None.
+
+    So, by default, with up-down arrows, the dataholder pattern becomes
+
+    [x, y, y-arrow-towards]
+
+    With left-right arrows, it's
+
+    [x, x-arrow-towards, y]
+
+    With variably-lengthed up-down arrows, it's
+
+    [arrowlength, x, y, y-arrow-towards]
+    """
+
+    def __init__ (self, substamp, direction, length, headsize, keylength):
+        self.substamp = substamp
+        self.direction = direction
+        self.length = length # in style.largeScale, or None
+        self.headsize = headsize # in style.largeScale
+        self.keylength = keylength
+        self.lengthCInfo = None
+
+
+    def setData (self, data):
+        if self.substamp is not None:
+            self.substamp.setData (data)
+
+        super (_WithArrow, self).setData (data)
+
+        if self.direction in ('left', 'right'):
+            self.towardsCInfo = data.register (0, 0, 1, 0)
+        else:
+            self.towardsCInfo = data.register (0, 0, 0, 1)
+
+        if self.length is None:
+            self.lengthCInfo = data.register (0, 1, 0, 0)
+
+
+    def _getSampleValues (self, style, x, y):
+        if self.substamp is None:
+            subd = ()
+        else:
+            subd = self.substamp._getSampleValues (style, x, y)
+
+        l = self.keylength * style.largeScale
+
+        if self.direction == 'left':
+            v = x - l
+        elif self.direction == 'right':
+            v = x + l
+        elif self.direction == 'top':
+            v = y - l
+        elif self.direction == 'bottom':
+            v = y + l
+
+        return (v, l) + subd
+
+
+    def _getDataValues (self, style, xform):
+        if self.substamp is None:
+            subd = ()
+        else:
+            subd = self.substamp._getDataValues (style, xform)
+
+        imisc, fmisc, x, y = self.data.getMapped (self.towardsCInfo, xform)
+
+        if self.direction in ('left', 'right'):
+            towards = x[0]
+        else:
+            towards = y[0]
+
+        if self.length is not None: # fixed length for all arrows
+            l = self.length * style.largeScale
+        else: # length varies from arrow to arrow
+            imisc, fmisc, x, y = self.data.getMapped (self.lengthCInfo, xform)
+            l = fmisc[0] * style.largeScale
+
+        return (towards, l) + subd
+
+
+    def _paintData (self, ctxt, style, x, y, mydata):
+        towards, lengths = mydata[:2]
+        subdata = mydata[2:]
+        isx = self.direction in ('left', 'right')
+
+        if self.substamp is not None:
+            self.substamp._paintData (ctxt, style, x, y, subdata)
+
+        if isx:
+            ref = x
+            dirs = ['left', 'right']
+        else:
+            ref = y
+            dirs = ['top', 'bottom']
+
+        for i in xrange (x.size):
+            if self.substamp is None:
+                # Draw our little perpendicular bar, copying the sizing logic
+                # used in arrow ()
+                if isx:
+                    ctxt.move_to (x[i], y[i] - 0.3 * self.headsize * style.largeScale)
+                    ctxt.line_to (x[i], y[i] + 0.3 * self.headsize * style.largeScale)
+                    ctxt.stroke ()
+                else:
+                    ctxt.move_to (x[i] - 0.3 * self.headsize * style.largeScale, y[i])
+                    ctxt.line_to (x[i] + 0.3 * self.headsize * style.largeScale, y[i])
+                    ctxt.stroke ()
+
+            if lengths[i] != 0:
+                # This one gets drawn. Figure out the effective
+                # direction and length, set by the relation between
+                # the data coordinate and towards, and do it.
+                l = min (abs (towards[i] - ref[i]), lengths[i])
+                d = dirs[ref[i] < towards[i]]
+                arrow (ctxt, x[i], y[i], d, l, self.headsize * style.largeScale)
+
+
+class WithDownArrow (_WithArrow):
+    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
+        super (WithDownArrow, self).__init__ (substamp, 'bottom', length,
+                                              headsize, keylength)
+
+
+class WithUpArrow (_WithArrow):
+    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
+        super (WithUpArrow, self).__init__ (substamp, 'top', length,
+                                            headsize, keylength)
+
+
+class WithLeftArrow (_WithArrow):
+    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
+        super (WithLeftArrow, self).__init__ (substamp, 'left', length,
+                                              headsize, keylength)
+
+
+class WithRightArrow (_WithArrow):
+    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
+        super (WithRightArrow, self).__init__ (substamp, 'right', length,
+                                               headsize, keylength)
