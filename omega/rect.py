@@ -133,6 +133,8 @@ class LogarithmicAxis (RectAxis):
     max = property (getMax, setMax)
 
     def transform (self, values):
+        values = np.asarray (values)
+
         if values.size == 0:
             # Need to catch this since otherwise the ret.min() below
             # will cause an error.
