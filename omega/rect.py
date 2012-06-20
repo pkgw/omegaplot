@@ -949,7 +949,7 @@ class RectPlot (Painter):
 
 
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
-             dsn=None, field=None):
+             dsn=None, field=None, rself=False):
         # FIXME: don't rebound if the FP doesn't have any data.
 
         assert (isinstance (fp, FieldPainter))
@@ -977,6 +977,8 @@ class RectPlot (Painter):
         if rebound:
             self.rebound (nudgex, nudgey, field)
 
+        if rself:
+            return self # eases chaining
         return fp
 
 
