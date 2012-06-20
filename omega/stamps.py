@@ -21,15 +21,14 @@ Mainly useful for marking specific data points."""
 # Import names with underscores so that we don't need
 # to manually specify an __all__.
 
-import cairo as _cairo
-import math as _math
-import numpy as _N
+import numpy as np
 from base import Stamp
+from math import pi, sqrt
 
 _defaultStampSize = 5
 
 # import stride_tricks
-# _N.broadcast_arrays = stride_tricks.broadcast_arrays
+# np.broadcast_arrays = stride_tricks.broadcast_arrays
 
 class RStamp (Stamp):
     # A R(ect)Stamp is a stamp usually associated
@@ -55,10 +54,10 @@ class RStamp (Stamp):
         # This paints a data-free "sample" version of
         # the stamp.
         data = self._getSampleValues (style, x, y)
-        data = [_N.atleast_1d (q) for q in data]
+        data = [np.atleast_1d (q) for q in data]
 
-        self._paintData (ctxt, style, _N.atleast_1d (x),
-                         _N.atleast_1d (y), data)
+        self._paintData (ctxt, style, np.atleast_1d (x),
+                         np.atleast_1d (y), data)
 
 
     def paintMany (self, ctxt, style, xform):
@@ -67,7 +66,7 @@ class RStamp (Stamp):
         y = ally[0]
 
         data = self._getDataValues (style, xform)
-        data = _N.broadcast_arrays (x, *data)[1:]
+        data = np.broadcast_arrays (x, *data)[1:]
 
         self._paintData (ctxt, style, x, y, data)
 
@@ -172,7 +171,7 @@ def symCircle (ctxt, style, size, fill):
     else: go = ctxt.stroke
 
     ctxt.new_sub_path () # prevents leading line segment to arc beginning
-    ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * _math.pi)
+    ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * pi)
     go ()
 
 def symUpTriangle (ctxt, style, size, fill):
@@ -213,7 +212,7 @@ def symDiamond (ctxt, style, size, fill):
     go ()
 
 def symBox (ctxt, style, size, fill):
-    s = size * style.smallScale / _math.sqrt (2)
+    s = size * style.smallScale / sqrt (2)
 
     ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
 
@@ -221,7 +220,7 @@ def symBox (ctxt, style, size, fill):
     else: ctxt.stroke ()
 
 def symX (ctxt, style, size):
-    s = size * style.smallScale / _math.sqrt (2)
+    s = size * style.smallScale / sqrt (2)
 
     ctxt.move_to (-0.5 * s, -0.5 * s)
     ctxt.rel_line_to (s, s)
