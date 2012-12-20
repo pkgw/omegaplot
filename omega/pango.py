@@ -148,15 +148,26 @@ class PangoStamper (base._TextStamperBase):
         pcr.restore ()
 
 
+_subsuperRise = 5000
+
+def setBuiltinSubsuperRise (value):
+    global _subsuperRise
+    _subsuperRise = int (value)
+
 _pangoMappings = {
     # U+22C5 = math dot operator
-    '10^%d': '10<sup>%d</sup>',
-    '%d*10^%d': u'%d\u22c510<sup>%d</sup>',
-    'UNIT_h': 'UNIT_<sup>h</sup>',
-    'UNIT_m': 'UNIT_<sup>m</sup>',
-    'UNIT_s': 'UNIT_<sup>s</sup>',
+    '10^%d': '10<span size="smaller" rise="{R}">%d</span>',
+    '%d*10^%d': u'%d\u22c510<span size="smaller" rise="{R}">%d</span>',
+    'UNIT_h': 'UNIT_<span size="smaller" rise="{R}">h</span>',
+    'UNIT_m': 'UNIT_<span size="smaller" rise="{R}">m</span>',
+    'UNIT_s': 'UNIT_<span size="smaller" rise="{R}">s</span>',
 }
 
+def _getPangoMapping (t):
+    new = _pangoMappings.get (t)
+    if new is None:
+        return t
+    return new.replace ('{R}', str (_subsuperRise))
 
-base._setTextBackend (PangoPainter, PangoStamper,
-                      lambda t: _pangoMappings.get (t, t))
+
+base._setTextBackend (PangoPainter, PangoStamper, _getPangoMapping)
