@@ -2375,7 +2375,7 @@ class AbsoluteFieldOverlay (FieldPainter):
     vAlign = 0.0
     hPadding = 3 # in style.smallScale
     vPadding = 3 # in style.smallScale
-
+    scale = 1.
 
     def __init__ (self, child=None, hAlign=0.0, vAlign=0.0):
         super (AbsoluteFieldOverlay, self).__init__ ()
@@ -2411,6 +2411,7 @@ class AbsoluteFieldOverlay (FieldPainter):
 
         # FIXME: ignoring padding requests of the child.
         self.chlinfo = li = self.child.getLayoutInfo (ctxt, style)
+        li.minsize = [li.minsize[0] * self.scale, li.minsize[1] * self.scale]
         return LayoutInfo (minsize=li.minsize,
                            minborders=np.asarray (li.minborders + bofs))
 
