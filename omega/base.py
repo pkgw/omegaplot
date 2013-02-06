@@ -566,8 +566,10 @@ class Painter (object):
 
         tpp = ToplevelPaintParent (False)
         self.setParent (tpp)
-        func (self.renderBasic)
-        self.setParent (None)
+        try:
+            func (self.renderBasic)
+        finally:
+            self.setParent (None)
 
 
     def sendTo (self, pager):
