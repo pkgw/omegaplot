@@ -219,7 +219,8 @@ def symBox (ctxt, style, size, fill):
     if fill: ctxt.fill ()
     else: ctxt.stroke ()
 
-def symX (ctxt, style, size):
+def symX (ctxt, style, size, fill=False):
+    # "fill" not honored here, but allow it for signature compatibility.
     s = size * style.smallScale / sqrt (2)
 
     ctxt.move_to (-0.5 * s, -0.5 * s)
@@ -229,7 +230,8 @@ def symX (ctxt, style, size):
     ctxt.rel_line_to (s, -s)
     ctxt.stroke ()
 
-def symPlus (ctxt, style, size):
+def symPlus (ctxt, style, size, fill=False):
+    # "fill" not honored here, but allow it for signature compatibility.
     s = size * style.smallScale
 
     ctxt.move_to (-0.5 * s, 0)
