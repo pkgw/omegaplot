@@ -254,6 +254,12 @@ class DataTheme (object):
     def getSymbolFunc (self, n):
         raise NotImplementedError ()
 
+    def getStrictSymbolFunc (self, n):
+        """In "strict" mode, don't iterate through colors, and avoid stamps
+        that may be confused with limit arrows, and return functions for
+        which the fill mode is a parameter."""
+        raise NotImplementedError ()
+
 
 
 def _wf (func, fill):
@@ -325,11 +331,17 @@ class MonochromeDataTheme (DataTheme):
                  _wf (stamps.symDiamond, False),
                  _wf (stamps.symDownTriangle, False)]
 
-
     def getSymbolFunc (self, dsn):
-        dsn = dsn % len (self._symFuncs)
+        return self._symFuncs[dsn % len (self._symFuncs)]
 
-        return self._symFuncs[dsn]
+    _strictSymFuncs = [stamps.symCircle,
+                       stamps.symBox,
+                       stamps.symDiamond,
+                       stamps.symX,
+                       stamps.symPlus]
+
+    def getStrictSymbolFunc (self, dsn):
+        return self._strictSymFuncs[dsn % len (self._strictSymFuncs)]
 
 
 class ColorDataTheme (DataTheme):
@@ -370,6 +382,11 @@ class ColorDataTheme (DataTheme):
         # FIXME hardcoded hack
         symnum = (dsn // 6) % len (MonochromeDataTheme._symFuncs)
         return MonochromeDataTheme._symFuncs[symnum]
+
+
+    def getStrictSymbolFunc (self, dsn):
+        ssf = MonochromeDataTheme._strictSymFuncs
+        return ssf[dsn % len (ssf)]
 
 
 # Higher-level styling for various graphical elements based
