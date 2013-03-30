@@ -643,3 +643,173 @@ class WithRightArrow (_WithArrow):
     def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
         super (WithRightArrow, self).__init__ (substamp, 'right', length,
                                                headsize, keylength)
+
+
+# The all-in-wonder MultiStamp.
+
+_ms_features = {
+    'cnum': (1, 0, 0, 0),
+    'fill': (1, 0, 0, 0),
+    'shape': (1, 0, 0, 0),
+    'size': (0, 1, 0, 0),
+    'ux': (1, 0, 2, 0),
+    'uy': (1, 0, 0, 2),
+}
+
+def _rotated_triangle (rot):
+    def paint (ctxt, style, size, fill):
+        ctxt.save ()
+        ctxt.rotate (rot)
+        symUpTriangle (ctxt, style, size, fill)
+        ctxt.restore ()
+
+    return paint
+
+
+class MultiStamp (RStamp):
+    features = None
+    fixedfill = True
+    fixedshape = 0
+    fixedsize = _defaultStampSize
+
+    _cnum_cinfo = None
+    _fill_cinfo = None
+    _shape_cinfo = None
+    _size_cinfo = None
+    _ux_cinfo = None
+    _uy_cinfo = None
+
+    def __init__ (self, *features):
+        for f in features:
+            if f not in _ms_features:
+                raise ValueError ('unrecognized feature "%s"' % f)
+        self.features = features
+
+
+    def setData (self, data):
+        super (MultiStamp, self).setData (data)
+
+        for f in self.features:
+            setattr (self, '_' + f + '_cinfo', data.register (*_ms_features[f]))
+
+
+    def paintAt (self, ctxt, style, x, y):
+        pass # TODO
+
+
+    def paintMany (self, ctxt, style, xform):
+        imisc, fmisc, allx, ally = self.data.getAllMapped (xform)
+        x = allx[0]
+        y = ally[0]
+
+        docnum = self._cnum_cinfo is not None
+        dofill = self._fill_cinfo is not None
+        doshape = self._shape_cinfo is not None
+        dosize = self._size_cinfo is not None
+        doux = self._ux_cinfo is not None
+        douy = self._uy_cinfo is not None
+
+        if docnum:
+            cnums = self.data.get (self._cnum_cinfo)[0][0]
+
+        if dofill:
+            fills = self.data.get (self._fill_cinfo)[0][0]
+        else:
+            fill = self.fixedfill
+
+        if doshape:
+            shapes = self.data.get (self._shape_cinfo)[0][0]
+
+        if dosize:
+            sizes = self.data.get (self._size_cinfo)[1][0]
+        else:
+            size = self.fixedsize
+
+        if doux:
+            d = self.data.getMapped (self._ux_cinfo, xform)
+            xlimstyles = d[0][0]
+            uxs = d[2]
+        else:
+            uxkind = 'n'
+
+        if douy:
+            d = self.data.getMapped (self._uy_cinfo, xform)
+            ylimstyles = d[0][0]
+            uys = d[3]
+        else:
+            uykind = 'n'
+
+        for i in xrange (x.size):
+            ctxt.save ()
+
+            if docnum:
+                ctxt.set_source_rgb (*style.colors.getDataColor (cnums[i]))
+
+            if doshape:
+                symfunc = style.data.getStrictSymbolFunc (shapes[i])
+            else:
+                symfunc = style.data.getStrictSymbolFunc (self.fixedshape)
+
+            if dosize:
+                size = sizes[i]
+
+            if dofill:
+                fill = fills[i]
+
+            if doux:
+                xls = xlimstyles[i]
+
+                if xls == -1:
+                    uxkind = 'u' # upper limit
+                elif xls == 1:
+                    uxkind = 'l' # lower
+                elif uxs[0,i] == x[i] and uxs[1,i] == x[i]:
+                    uxkind = 'n' # none
+                else:
+                    uxkind = 'b' # error bars
+
+            if douy:
+                yls = ylimstyles[i]
+
+                if yls == -1:
+                    uykind = 'u' # upper limit
+                elif yls == 1:
+                    uykind = 'l' # lower
+                elif uys[0,i] == y[i] and uys[1,i] == y[i]:
+                    uykind = 'n' # none
+                else:
+                    uykind = 'b' # error bars
+
+            if uxkind == 'u':
+                if uykind == 'u':
+                    symfunc = _rotated_triangle (-0.75 * np.pi)
+                elif uykind == 'l':
+                    symfunc = _rotated_triangle (-0.25 * np.pi)
+                else:
+                    symfunc = _rotated_triangle (-0.5 * np.pi)
+            elif uxkind == 'l':
+                if uykind == 'u':
+                    symfunc = _rotated_triangle (0.75 * np.pi)
+                elif uykind == 'l':
+                    symfunc = _rotated_triangle (0.25 * np.pi)
+                else:
+                    symfunc = _rotated_triangle (0.5 * np.pi)
+            elif uykind == 'u':
+                symfunc = _rotated_triangle (np.pi)
+            elif uykind == 'l':
+                symfunc = _rotated_triangle (0)
+
+            if uxkind == 'b':
+                #ctxt.set_line_width (style.sizes.thickLine)
+                ctxt.move_to (uxs[0,i], y[i])
+                ctxt.line_to (uxs[1,i], y[i])
+                ctxt.stroke ()
+
+            if uykind == 'b':
+                ctxt.move_to (x[i], uys[0,i])
+                ctxt.line_to (x[i], uys[1,i])
+                ctxt.stroke ()
+
+            ctxt.translate (x[i], y[i])
+            symfunc (ctxt, style, size, fill)
+            ctxt.restore ()
