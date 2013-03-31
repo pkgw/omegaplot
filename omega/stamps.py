@@ -652,6 +652,7 @@ _ms_features = {
     'fill': (1, 0, 0, 0),
     'shape': (1, 0, 0, 0),
     'size': (0, 1, 0, 0),
+    'tlines': (1, 0, 0, 0),
     'ux': (1, 0, 2, 0),
     'uy': (1, 0, 0, 2),
 }
@@ -669,6 +670,7 @@ def _rotated_triangle (rot):
 class MultiStamp (RStamp):
     features = None
     fixedfill = True
+    fixedlinestyle = None
     fixedshape = 0
     fixedsize = _defaultStampSize
 
@@ -676,6 +678,7 @@ class MultiStamp (RStamp):
     _fill_cinfo = None
     _shape_cinfo = None
     _size_cinfo = None
+    _tlines_cinfo = None
     _ux_cinfo = None
     _uy_cinfo = None
 
@@ -706,6 +709,7 @@ class MultiStamp (RStamp):
         dofill = self._fill_cinfo is not None
         doshape = self._shape_cinfo is not None
         dosize = self._size_cinfo is not None
+        dotlines = self._tlines_cinfo is not None
         doux = self._ux_cinfo is not None
         douy = self._uy_cinfo is not None
 
@@ -738,6 +742,31 @@ class MultiStamp (RStamp):
             uys = d[3]
         else:
             uykind = 'n'
+
+        if dotlines:
+            lineinfo = self.data.get (self._tlines_cinfo)[0][0]
+            linegroups = {}
+
+            for i in xrange (x.size):
+                idx = lineinfo[i]
+                if idx == 0:
+                    continue
+                linegroups.setdefault (idx, []).append (i)
+
+            ctxt.save ()
+            style.apply (ctxt, self.fixedlinestyle)
+
+            for points in linegroups.itervalues ():
+                n = len (points)
+                if n < 2:
+                    continue
+
+                ctxt.move_to (x[points[0]], y[points[0]])
+                for i in xrange (1, n):
+                    ctxt.line_to (x[points[i]], y[points[i]])
+                ctxt.stroke ()
+
+            ctxt.restore ()
 
         for i in xrange (x.size):
             ctxt.save ()
