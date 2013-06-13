@@ -440,7 +440,12 @@ class LinearAxisPainter (BlankAxisPainter):
             self.axis.max *= 1.05
             return
 
-        mip = int (np.floor (np.log10 (span))) # major interval power
+        # Large integer axis bounds can cause problems: np.log10 (long (1e19))
+        # works fine, but np.log10 (long (1e20)) raises an AttributeError. I
+        # imagine there's some internal conversion to bignum representation.
+        # Anyway, we avoid any problems by coercing to floating-point.
+
+        mip = int (np.floor (np.log10 (1. * span))) # major interval power
         step = 10 ** mip
 
         newmin = int (np.floor (self.axis.min / step)) * step
@@ -456,7 +461,7 @@ class LinearAxisPainter (BlankAxisPainter):
 
     def getTickLocations (self):
         self.axis.normalize ()
-        span = self.axis.max - self.axis.min
+        span = 1. * (self.axis.max - self.axis.min) # see comment in nudgeBounds()
         mip = int (np.floor (np.log10 (span))) # major interval power
 
         if np.log10 (span) - mip < self.autoBumpThreshold:
