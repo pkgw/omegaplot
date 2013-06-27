@@ -2008,8 +2008,10 @@ class XYDataPainter (FieldPainter):
         ctxt.restore ()
 
 
-class ContinuousSteppedPainter (FieldPainter):
-    """The X values are the left edges of the bins."""
+class OldContinuousSteppedPainter (FieldPainter):
+    """Like ContinuousSteppedPainter, but takes N data points if you have N
+    y-values, and guesses the rightmost bin edge. I.e., the X values are the
+    left edges of the bins."""
 
     lineStyle = None
     needsDataStyle = True
@@ -2018,7 +2020,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
 
     def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
-        super (ContinuousSteppedPainter, self).__init__ ()
+        super (OldContinuousSteppedPainter, self).__init__ ()
 
         self.lineStyle = lineStyle
         self.connectors = connectors
@@ -2056,7 +2058,7 @@ class ContinuousSteppedPainter (FieldPainter):
 
 
     def doPaint (self, ctxt, style):
-        super (ContinuousSteppedPainter, self).doPaint (ctxt, style)
+        super (OldContinuousSteppedPainter, self).doPaint (ctxt, style)
 
         xs, ys = self.data.getRawXY (self.cinfo)
         finalx = self.xform.mapX (self._calcMaxX (xs))
@@ -2104,6 +2106,140 @@ class ContinuousSteppedPainter (FieldPainter):
                 prevx, prevy = x, y
 
         ctxt.line_to (finalx, prevy)
+        ctxt.stroke ()
+
+
+class ContinuousSteppedPainter (FieldPainter):
+    """Draws histogram-style lines. If you have N horizontal segments that you
+    want to plot, provide N+1 data points, with the X values giving all of the
+    bin edges, from the left edge of the 1st bin through the right edge of the
+    Nth bin. The final Y value is ignored.
+
+    X values must be sorted, but may be either increasing or decreasing.
+    """
+
+    lineStyle = None
+    needsDataStyle = True
+    dsn = None
+    connectors = True
+
+
+    def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
+        super (ContinuousSteppedPainter, self).__init__ ()
+
+        self.lineStyle = lineStyle
+        self.connectors = connectors
+        self.keyText = keyText
+
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+
+
+    def setDataHist (self, edges, yvals):
+        edges = np.atleast_1d (edges)
+        yvals = np.atleast_1d (yvals)
+
+        if edges.size != yvals.size + 1:
+            raise ValueError ('for %d y-values, need %d edges; got %d' %
+                              (yvals.size, yvals.size + 1, edges.size))
+
+        deltas = edges[1:] - edges[:-1]
+        if np.any (deltas > 0) and np.any (deltas < 0):
+            raise ValueError ('bin edges are not sorted')
+
+        self.setFloats (edges, np.concatenate ((yvals, [0])))
+        return self
+
+
+    def setDataXY (self, xvals, yvals, first=None, last=None):
+        xvals = np.atleast_1d (xvals)
+        yvals = np.atleast_1d (yvals)
+
+        if xvals.size != yvals.size:
+            raise ValueError ('got %d y-values but %d xvals' %
+                              (yvals.size, xvals.size))
+
+        if first is None or last is None:
+            if xvals.size < 2:
+                raise ValueError ('must provide at least 2 x-values for auto-edging')
+        elif xvals.size < 1:
+            raise ValueError ('must provide at least 1 x-value')
+
+        if first is not None:
+            first = float (first)
+        else:
+            first = 1.5 * xvals[0] - 0.5 * xvals[1]
+
+        if last is not None:
+            last = float (last)
+        else:
+            last = 1.5 * xvals[-1] - 0.5 * xvals[-2]
+
+        midpoints = 0.5 * (xvals[:-1] + xvals[1:])
+        edges = np.concatenate (([first], midpoints, [last]))
+        return self.setDataHist (edges, yvals)
+
+
+    def getDataBounds (self):
+        imisc, fmisc, xs, ys = self.data.getAll ()
+        return xs.min (), xs.max (), ys[0][:-1].min (), ys[0][:-1].max ()
+
+
+    def getKeyPainter (self):
+        if self.keyText is None:
+            return None
+        return GenericDataKeyPainter (self, True, False, False)
+
+
+    def doPaint (self, ctxt, style):
+        super (ContinuousSteppedPainter, self).doPaint (ctxt, style)
+
+        _, _, xs, ys = self.data.getMapped (self.cinfo, self.xform)
+        xs, ys = xs[0], ys[0]
+
+        if xs.size < 2:
+            return
+
+        style.applyDataLine (ctxt, self.dsn)
+        style.apply (ctxt, self.lineStyle)
+
+        prevx, prevy = xs[0], ys[0]
+        ctxt.move_to (prevx, prevy)
+        cmpval = None
+
+        if self.connectors:
+            for i in xrange (1, xs.size - 1):
+                x, y = xs[i], ys[i]
+
+                c = cmp (x, prevx)
+                if cmpval is None and c != 0:
+                    cmpval = c
+                elif c != cmpval and c != 0:
+                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
+                                     % (prevx, x, cmpval, c))
+
+                ctxt.line_to (x, prevy)
+                ctxt.line_to (x, y)
+                prevx, prevy = x, y
+        else:
+            for i in xrange (1, xs.size - 1):
+                x, y = xs[i], ys[i]
+
+                c = cmp (x, prevx)
+                if cmpval is None and c != 0:
+                    cmpval = c
+                elif c != cmpval and c != 0:
+                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
+                                     % (prevx, x, cmpval, c))
+
+                ctxt.line_to (x, prevy)
+                ctxt.stroke ()
+                ctxt.move_to (x, y)
+                prevx, prevy = x, y
+
+        ctxt.line_to (xs[-1], prevy)
         ctxt.stroke ()
 
 

@@ -163,28 +163,23 @@ def quickXYErr (*args, **kwargs):
 
     return rp
 
-def quickHist (data, bins=10, range=None, normed=False, **kwargs):
-    from numpy import histogram
+def quickHist (data, bins=10, range=None, **kwargs):
+    from numpy import concatenate, histogram
 
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
     ymin = _kwordDefaulted (kwargs, 'ymin', float, 0.0)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
 
-    try:
-        values, edges = histogram (data, bins, range, normed, new=False)
-    except TypeError:
-        # Pre-1.2 numpy, or post-1.4
-        values, edges = histogram (data, bins, range, normed)
+    values, edges = histogram (data, bins, range)
+    if edges.size != values.size + 1:
+        raise RuntimeError ('using too-old numpy? got weird histogram result')
 
-        if edges.size > values.size:
-            edges = edges[:-1]
-
-    fp = rect.ContinuousSteppedPainter (**kwargs)
-    fp.setFloats (edges, values)
+    csp = rect.ContinuousSteppedPainter (**kwargs)
+    csp.setDataHist (edges, values)
 
     rp = rect.RectPlot ()
-    rp.add (fp)
+    rp.add (csp)
     rp.setBounds (xmin, xmax, ymin, ymax)
     return rp
 
