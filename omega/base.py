@@ -263,8 +263,8 @@ class DataHolder (object):
             elif a.ndim != 2:
                 raise Exception ('Expect 1- or 2-D arrays only')
 
-            if type == self.AxisTypeInt and a.dtype.kind != 'i':
-                raise Exception ('Need to pass ints to for int data')
+            if type == self.AxisTypeInt and a.dtype.kind not in 'ib':
+                raise Exception ('Need to pass ints to for int data (%s)' % a.dtype)
 
             w = a.shape[0]
             dataofs = 0
