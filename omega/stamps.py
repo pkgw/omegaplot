@@ -183,7 +183,7 @@ def symUpTriangle (ctxt, style, size, fill):
     ctxt.move_to (0, -0.666666 * s)
     ctxt.rel_line_to (s/2, s)
     ctxt.rel_line_to (-s, 0)
-    ctxt.rel_line_to (s/2, -s)
+    ctxt.close_path ()
     go ()
 
 def symDownTriangle (ctxt, style, size, fill):
@@ -195,7 +195,7 @@ def symDownTriangle (ctxt, style, size, fill):
     ctxt.move_to (0, s * 0.666666)
     ctxt.rel_line_to (-s/2, -s)
     ctxt.rel_line_to (s, 0)
-    ctxt.rel_line_to (-s/2, s)
+    ctxt.close_path ()
     go ()
 
 def symDiamond (ctxt, style, size, fill):
@@ -208,7 +208,7 @@ def symDiamond (ctxt, style, size, fill):
     ctxt.rel_line_to (s2, s2)
     ctxt.rel_line_to (-s2, s2)
     ctxt.rel_line_to (-s2, -s2)
-    ctxt.rel_line_to (s2, -s2)
+    ctxt.close_path ()
     go ()
 
 def symBox (ctxt, style, size, fill):
