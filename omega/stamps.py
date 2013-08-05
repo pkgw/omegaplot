@@ -659,6 +659,7 @@ class WithRightArrow (_WithArrow):
 _ms_features = {
     'cnum': (1, 0, 0, 0),
     'fill': (1, 0, 0, 0),
+    'prepaint': (1, 0, 0, 0),
     'shape': (1, 0, 0, 0),
     'size': (0, 1, 0, 0),
     'tlines': (1, 0, 0, 0),
@@ -684,9 +685,11 @@ class MultiStamp (RStamp):
     fixedshape = 0
     fixedsize = _defaultStampSize
     extracolors = []
+    prepaintfuncs = [lambda c, s, x, y: None]
 
     _cnum_cinfo = None
     _fill_cinfo = None
+    _prepaint_cinfo = None
     _shape_cinfo = None
     _size_cinfo = None
     _tlines_cinfo = None
@@ -719,6 +722,7 @@ class MultiStamp (RStamp):
 
         docnum = self._cnum_cinfo is not None
         dofill = self._fill_cinfo is not None
+        doprepaint = self._prepaint_cinfo is not None
         doshape = self._shape_cinfo is not None
         dosize = self._size_cinfo is not None
         dotlines = self._tlines_cinfo is not None
@@ -743,6 +747,9 @@ class MultiStamp (RStamp):
             fills = zsort (self.data.get (self._fill_cinfo)[0][0])
         else:
             fill = self.fixedfill
+
+        if doprepaint:
+            ppfuncs = zsort (self.data.get (self._prepaint_cinfo)[0][0])
 
         if doshape:
             shapes = zsort (self.data.get (self._shape_cinfo)[0][0])
@@ -853,6 +860,9 @@ class MultiStamp (RStamp):
                 symfunc = _rotated_triangle (np.pi)
             elif uykind == 'l':
                 symfunc = _rotated_triangle (0)
+
+            if doprepaint:
+                self.prepaintfuncs[ppfuncs[i]] (ctxt, style, x[i], y[i])
 
             if uxkind == 'b':
                 ctxt.move_to (uxs[0,i], y[i])
