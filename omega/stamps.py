@@ -167,41 +167,41 @@ class PrimaryRStamp (RStamp):
 # These functions actually paint a symbol
 
 def symCircle (ctxt, style, size, fill):
-    if fill: go = ctxt.fill
-    else: go = ctxt.stroke
-
     ctxt.new_sub_path () # prevents leading line segment to arc beginning
     ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * pi)
-    go ()
+
+    if fill:
+        ctxt.fill_preserve ()
+    ctxt.stroke ()
+
 
 def symUpTriangle (ctxt, style, size, fill):
-    if fill: go = ctxt.fill
-    else: go = ctxt.stroke
-
     s = size * style.smallScale
 
     ctxt.move_to (0, -0.666666 * s)
     ctxt.rel_line_to (s/2, s)
     ctxt.rel_line_to (-s, 0)
     ctxt.close_path ()
-    go ()
+
+    if fill:
+        ctxt.fill_preserve ()
+    ctxt.stroke ()
+
 
 def symDownTriangle (ctxt, style, size, fill):
-    if fill: go = ctxt.fill
-    else: go = ctxt.stroke
-
     s = size * style.smallScale
 
     ctxt.move_to (0, s * 0.666666)
     ctxt.rel_line_to (-s/2, -s)
     ctxt.rel_line_to (s, 0)
     ctxt.close_path ()
-    go ()
+
+    if fill:
+        ctxt.fill_preserve ()
+    ctxt.stroke ()
+
 
 def symDiamond (ctxt, style, size, fill):
-    if fill: go = ctxt.fill
-    else: go = ctxt.stroke
-
     s2 = size * style.smallScale / 2
 
     ctxt.move_to (0, -s2)
@@ -209,15 +209,21 @@ def symDiamond (ctxt, style, size, fill):
     ctxt.rel_line_to (-s2, s2)
     ctxt.rel_line_to (-s2, -s2)
     ctxt.close_path ()
-    go ()
+
+    if fill:
+        ctxt.fill_preserve ()
+    ctxt.stroke ()
+
 
 def symBox (ctxt, style, size, fill):
     s = size * style.smallScale / sqrt (2)
 
     ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
 
-    if fill: ctxt.fill ()
-    else: ctxt.stroke ()
+    if fill:
+        ctxt.fill_preserve ()
+    ctxt.stroke ()
+
 
 def symX (ctxt, style, size, fill=False):
     # "fill" not honored here, but allow it for signature compatibility.
@@ -241,6 +247,7 @@ def symPlus (ctxt, style, size, fill=False):
     ctxt.rel_line_to (0, s)
     ctxt.stroke ()
 
+
 # Stamps drawing these symbols
 
 class Circle (PrimaryRStamp):
@@ -261,6 +268,7 @@ class UpTriangle (PrimaryRStamp):
 
     def _paintOne (self, ctxt, style, size):
         symUpTriangle (ctxt, style, size, self.fill)
+
 
 class DownTriangle (PrimaryRStamp):
     def __init__ (self, fill=True, **kwargs):
@@ -472,7 +480,8 @@ def arrow (ctxt, x, y, direction, length, headsize):
     ctxt.rel_line_to (-2 * dh1x, -2 * dh1y)
     ctxt.rel_line_to (dh2x, dh2y)
     ctxt.close_path ()
-    ctxt.fill ()
+    ctxt.fill_preserve ()
+    ctxt.stroke ()
 
 
 class _WithArrow (RStamp):
