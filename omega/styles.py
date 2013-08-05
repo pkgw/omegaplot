@@ -76,7 +76,7 @@ class Style (object):
 
         v = item.get ('linewidth')
         if v is not None:
-            ctxt.set_line_width (v * self.sizes.thickLine)
+            ctxt.set_line_width (v * self.sizes.fineLine)
 
         v = item.get ('dashing')
         if v is not None:
@@ -90,12 +90,11 @@ class Style (object):
 
 
     def initContext (self, ctxt, width, height):
-        # Clear the context
         ctxt.set_source_rgb (*self.colors.background)
         ctxt.paint ()
 
-        # Font size
         ctxt.set_font_size (self.sizes.normalFontSize)
+        ctxt.set_line_width (self.sizes.fineLine)
 
 
     def applyDataLine (self, ctxt, dsn):
@@ -126,7 +125,6 @@ class Sizes (object):
     smallScale = None
     largeScale = None
     fineLine = None
-    thickLine = None
     normalFontSize = None
 
 
@@ -147,7 +145,6 @@ class BitmapSizes (Sizes):
     smallScale = 2
     largeScale = 5
     fineLine = 1
-    thickLine = 2
     normalFontSize = 12
 
 
@@ -159,7 +156,6 @@ class VectorSizes (Sizes):
     smallScale = 1.5
     largeScale = 4.5
     fineLine = 0.5
-    thickLine = 1
     normalFontSize = 12
 
 
@@ -290,10 +286,10 @@ class MonochromeDataTheme (DataTheme):
 
 
     def applyLine (self, style, ctxt, dsn):
-        if dsn is None: return
+        if dsn is None:
+            return
 
         ctxt.set_source_rgb (*style.colors.foreground)
-        ctxt.set_line_width (style.sizes.thickLine)
 
         dlas = self._dashLengthArrays
         dashlengths = dlas[dsn % len (dlas)]
@@ -311,11 +307,11 @@ class MonochromeDataTheme (DataTheme):
 
 
     def applyStamp (self, style, ctxt, dsn):
-        if dsn is None: return
+        if dsn is None:
+            return
 
         # No variation based on data style number here.
         ctxt.set_source_rgb (*style.colors.foreground)
-        ctxt.set_line_width (style.sizes.thickLine)
 
 
     _symFuncs = [_wf (stamps.symCircle, True),
@@ -358,7 +354,6 @@ class ColorDataTheme (DataTheme):
 
         c = style.colors.getDataColor (dsn)
         ctxt.set_source_rgb (*c)
-        ctxt.set_line_width (style.sizes.thickLine)
 
 
     def applyRegion (self, style, ctxt, dsn):
@@ -375,7 +370,6 @@ class ColorDataTheme (DataTheme):
 
         c = style.colors.getDataColor (dsn)
         ctxt.set_source_rgb (*c)
-        ctxt.set_line_width (style.sizes.thickLine)
 
 
     def getSymbolFunc (self, dsn):
@@ -404,7 +398,7 @@ class DefaultRoles (Roles):
 
 
     def apply_strongLine (self, ctxt, style):
-        ctxt.set_line_width (style.sizes.thickLine)
+        ctxt.set_line_width (2 * style.sizes.fineLine)
         ctxt.set_source_rgb (*style.colors.foreground)
 
 
@@ -412,8 +406,8 @@ class DefaultRoles (Roles):
         # FIXME: PostScript doesn't support opacity,
         # so it would be best to avoid any use of the
         # alpha channel by default in any of our styles.
-
         ctxt.set_source_rgb (*style.colors.faint)
+
 
 # Now put them all together
 
