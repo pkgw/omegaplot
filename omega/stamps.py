@@ -655,6 +655,7 @@ _ms_features = {
     'tlines': (1, 0, 0, 0),
     'ux': (1, 0, 2, 0),
     'uy': (1, 0, 0, 2),
+    'z': (1, 0, 0, 0),
 }
 
 def _rotated_triangle (rot):
@@ -682,6 +683,7 @@ class MultiStamp (RStamp):
     _tlines_cinfo = None
     _ux_cinfo = None
     _uy_cinfo = None
+    _z_cinfo = None
 
     def __init__ (self, *features):
         for f in features:
@@ -713,39 +715,50 @@ class MultiStamp (RStamp):
         dotlines = self._tlines_cinfo is not None
         doux = self._ux_cinfo is not None
         douy = self._uy_cinfo is not None
+        doz = self._z_cinfo is not None
+
+        if doz:
+            zs = self.data.get (self._z_cinfo)[0][0]
+            zidxs = np.argsort (zs)
+            zsort = lambda a: a[zidxs]
+            zsort2 = lambda a: a[:,zidxs]
+            x = zsort (x)
+            y = zsort (y)
+        else:
+            zsort = zsort2 = lambda a: a
 
         if docnum:
-            cnums = self.data.get (self._cnum_cinfo)[0][0]
+            cnums = zsort (self.data.get (self._cnum_cinfo)[0][0])
 
         if dofill:
-            fills = self.data.get (self._fill_cinfo)[0][0]
+            fills = zsort (self.data.get (self._fill_cinfo)[0][0])
         else:
             fill = self.fixedfill
 
         if doshape:
-            shapes = self.data.get (self._shape_cinfo)[0][0]
+            shapes = zsort (self.data.get (self._shape_cinfo)[0][0])
 
         if dosize:
-            sizes = self.data.get (self._size_cinfo)[1][0]
+            sizes = zsort (self.data.get (self._size_cinfo)[1][0])
         else:
             size = self.fixedsize
 
         if doux:
             d = self.data.getMapped (self._ux_cinfo, xform)
-            xlimstyles = d[0][0]
-            uxs = d[2]
+            xlimstyles = zsort (d[0][0])
+            uxs = zsort2 (d[2])
         else:
             uxkind = 'n'
 
         if douy:
             d = self.data.getMapped (self._uy_cinfo, xform)
-            ylimstyles = d[0][0]
-            uys = d[3]
+            ylimstyles = zsort (d[0][0])
+            uys = zsort2 (d[3])
         else:
             uykind = 'n'
 
         if dotlines:
-            lineinfo = self.data.get (self._tlines_cinfo)[0][0]
+            lineinfo = zsort (self.data.get (self._tlines_cinfo)[0][0])
             linegroups = {}
 
             for i in xrange (x.size):
@@ -833,7 +846,6 @@ class MultiStamp (RStamp):
                 symfunc = _rotated_triangle (0)
 
             if uxkind == 'b':
-                #ctxt.set_line_width (style.sizes.thickLine)
                 ctxt.move_to (uxs[0,i], y[i])
                 ctxt.line_to (uxs[1,i], y[i])
                 ctxt.stroke ()
