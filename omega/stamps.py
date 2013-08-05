@@ -673,6 +673,7 @@ class MultiStamp (RStamp):
     fixedlinestyle = None
     fixedshape = 0
     fixedsize = _defaultStampSize
+    extracolors = []
 
     _cnum_cinfo = None
     _fill_cinfo = None
@@ -772,7 +773,10 @@ class MultiStamp (RStamp):
             ctxt.save ()
 
             if docnum:
-                ctxt.set_source_rgb (*style.colors.getDataColor (cnums[i]))
+                if cnums[i] < 0:
+                    ctxt.set_source_rgb (*self.extracolors[-cnums[i] - 1])
+                else:
+                    ctxt.set_source_rgb (*style.colors.getDataColor (cnums[i]))
 
             if doshape:
                 symfunc = style.data.getStrictSymbolFunc (shapes[i])
