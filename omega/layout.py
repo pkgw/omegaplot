@@ -67,7 +67,7 @@ class Overlay (Painter):
         ctxt.restore ()
 
     def doPaint (self, ctxt, style):
-        if self.bgStyle:
+        if self.bgStyle is not None:
             ctxt.save ()
             style.apply (ctxt, self.bgStyle)
             ctxt.rectangle (0, 0, self.fullw, self.fullh)
@@ -350,6 +350,8 @@ class LinearBox (Painter):
     # as children are added, while the "minor axis" is always
     # one painter tall.
 
+    bgStyle = None # style ref
+
     def __init__ (self, size):
         super (LinearBox, self).__init__ ()
         self.size = int (size)
@@ -565,6 +567,13 @@ class LinearBox (Painter):
         ctxt.restore ()
 
     def doPaint (self, ctxt, style):
+        if self.bgStyle is not None:
+            ctxt.save ()
+            style.apply (ctxt, self.bgStyle)
+            ctxt.rectangle (0, 0, self.fullw, self.fullh)
+            ctxt.fill ()
+            ctxt.restore ()
+
         for i in xrange (self.size):
             self._elements[i][0].paint (ctxt, style)
 
