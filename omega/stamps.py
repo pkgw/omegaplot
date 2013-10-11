@@ -668,11 +668,69 @@ _ms_features = {
     'z': (1, 0, 0, 0),
 }
 
-def _rotated_triangle (rot):
+
+def _single_limit (rot):
+    '''rot=0 -> limit points down'''
+
     def paint (ctxt, style, size, fill):
+        s = size * style.smallScale
+        s1 = 2 * s # total length of line
+        s2 = 0.8 * s # width of triangle (along line axis)
+        s3 = s # height of triangle (away from line)
+
         ctxt.save ()
         ctxt.rotate (rot)
-        symUpTriangle (ctxt, style, size, fill)
+
+        ctxt.move_to (-0.5 * s1, 0)
+        ctxt.rel_line_to (s1, 0)
+        ctxt.stroke ()
+
+        ctxt.move_to (-0.5 * s2, 0)
+        ctxt.rel_line_to (s2, 0)
+        ctxt.rel_line_to (-0.5 * s2, -s3)
+        ctxt.close_path ()
+        if fill:
+            ctxt.fill_preserve ()
+        ctxt.stroke ()
+
+        ctxt.restore ()
+
+    return paint
+
+
+def _double_limit (rot):
+    '''rot=0 -> limit points down and left'''
+
+    def paint (ctxt, style, size, fill):
+        s = size * style.smallScale * 2 # keeps consistency with other symbols
+        s1 = 0.2 * s # length of short side of triangle
+        s2 = 0.45 * s # length of long (non-hypoteneuse) side
+
+        ctxt.save ()
+        ctxt.rotate (rot)
+
+        ctxt.move_to (-(s - s2), 0)
+        ctxt.rel_line_to (0, s1)
+        ctxt.rel_line_to (-s2, -s1)
+        ctxt.rel_line_to (s, 0)
+        ctxt.rel_line_to (0, s)
+        ctxt.rel_line_to (-s1, -s2)
+        ctxt.rel_line_to (s1, 0)
+        ctxt.stroke ()
+
+        if fill:
+            ctxt.move_to (0, s)
+            ctxt.rel_line_to (0, -s2)
+            ctxt.rel_line_to (-s1, 0)
+            ctxt.close_path ()
+            ctxt.fill ()
+
+            ctxt.move_to (-s, 0)
+            ctxt.rel_line_to (s2, 0)
+            ctxt.rel_line_to (0, s1)
+            ctxt.close_path ()
+            ctxt.fill ()
+
         ctxt.restore ()
 
     return paint
@@ -844,22 +902,22 @@ class MultiStamp (RStamp):
 
             if uxkind == 'u':
                 if uykind == 'u':
-                    symfunc = _rotated_triangle (-0.75 * np.pi)
+                    symfunc = _double_limit (0)
                 elif uykind == 'l':
-                    symfunc = _rotated_triangle (-0.25 * np.pi)
+                    symfunc = _double_limit (0.5 * np.pi)
                 else:
-                    symfunc = _rotated_triangle (-0.5 * np.pi)
+                    symfunc = _single_limit (-0.5 * np.pi)
             elif uxkind == 'l':
                 if uykind == 'u':
-                    symfunc = _rotated_triangle (0.75 * np.pi)
+                    symfunc = _double_limit (-0.5 * np.pi)
                 elif uykind == 'l':
-                    symfunc = _rotated_triangle (0.25 * np.pi)
+                    symfunc = _double_limit (np.pi)
                 else:
-                    symfunc = _rotated_triangle (0.5 * np.pi)
+                    symfunc = _single_limit (0.5 * np.pi)
             elif uykind == 'u':
-                symfunc = _rotated_triangle (np.pi)
+                symfunc = _single_limit (np.pi)
             elif uykind == 'l':
-                symfunc = _rotated_triangle (0)
+                symfunc = _single_limit (0)
 
             if doprepaint:
                 self.prepaintfuncs[ppfuncs[i]] (ctxt, style, x[i], y[i])
