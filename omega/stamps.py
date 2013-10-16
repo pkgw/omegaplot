@@ -686,12 +686,16 @@ def _single_limit (rot):
         ctxt.stroke ()
 
         ctxt.move_to (-0.5 * s2, 0)
-        ctxt.rel_line_to (s2, 0)
-        ctxt.rel_line_to (-0.5 * s2, -s3)
-        ctxt.close_path ()
+        ctxt.rel_line_to (0.5 * s2, s3)
+        ctxt.rel_line_to (0.5 * s2, -s3)
+        # This way we don't double-stroke the triangle base, which has a
+        # discernable and aesthetically detrimental effect:
         if fill:
-            ctxt.fill_preserve ()
-        ctxt.stroke ()
+            ctxt.stroke_preserve ()
+            ctxt.close_path ()
+            ctxt.fill ()
+        else:
+            ctxt.stroke ()
 
         ctxt.restore ()
 
@@ -906,18 +910,18 @@ class MultiStamp (RStamp):
                 elif uykind == 'l':
                     symfunc = _double_limit (0.5 * np.pi)
                 else:
-                    symfunc = _single_limit (-0.5 * np.pi)
+                    symfunc = _single_limit (0.5 * np.pi)
             elif uxkind == 'l':
                 if uykind == 'u':
                     symfunc = _double_limit (-0.5 * np.pi)
                 elif uykind == 'l':
                     symfunc = _double_limit (np.pi)
                 else:
-                    symfunc = _single_limit (0.5 * np.pi)
+                    symfunc = _single_limit (-0.5 * np.pi)
             elif uykind == 'u':
-                symfunc = _single_limit (np.pi)
-            elif uykind == 'l':
                 symfunc = _single_limit (0)
+            elif uykind == 'l':
+                symfunc = _single_limit (np.pi)
 
             if doprepaint:
                 self.prepaintfuncs[ppfuncs[i]] (ctxt, style, x[i], y[i])
