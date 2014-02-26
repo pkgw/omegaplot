@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -15,55 +15,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""IPython integration for OmegaPlot."""
+"""IPython integration for OmegaPlot.
 
-# Do we have IPython? Are we being run in it?
+This only works for versions >=0.11, I think.
+"""
+
+# Are we being run inside IPython?
 
 try:
-    import IPython.ipapi
-
-    haveIPython = True
-    api = IPython.ipapi.get ()
-    inIPython = api is not None
-
-    if inIPython:
-        _ipsh = api.IP
-except ImportError:
-    haveIPython = False
+    __IPYTHON__
+    inIPython = True
+except NameError:
     inIPython = False
-    _ipsh = None
-
-# If we're using it, are we in crazy multithreaded mode?
-# If so, check that we're in GTK threading mode, since that's
-# the only toolkit backend we have right now.
-
-def _checkGTKThreads ():
-    import threading
-
-    for t in threading.enumerate ():
-        if isinstance (t, IPython.Shell.IPShellGTK):
-            return t.gtk_mainloop
-
-    raise ImportError ('Running in multithreaded IPython but not using GTK threads.')
-
-if inIPython:
-    usingThreads = isinstance (_ipsh, IPython.Shell.MTInteractiveShell)
-
-    if usingThreads:
-        _real_gtk_mainloop = _checkGTKThreads ()
-    else:
-        _real_gtk_mainloop = None
 
 
 def shell ():
     if not inIPython:
-        raise Exception ('Trying to get IPython shell and not even in IPython! Fix your code')
+        return None
+    return get_ipython ()
 
-    return _ipsh
 
-def gtkMainloopWorkaround ():
-    if inIPython and usingThreads:
-        _real_gtk_mainloop ()
-    else:
-        import gtk
-        gtk.main ()
+def gtk_mainloop_running ():
+    if not inIPython:
+        return False
+
+    import IPython.lib.inputhook
+    return IPython.lib.inputhook.inputhook_manager.current_gui () == 'gtk'

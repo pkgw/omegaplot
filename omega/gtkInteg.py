@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -26,16 +26,17 @@ import styles, render
 _defaultStyle = styles.ColorOnBlackBitmap
 
 
-# This is needed to know what to do about mainloop integration
-# with the pager.
-
+# This is needed to know what to do about mainloop integration with the pager
+# (XXX: should have a generic architecture, blah blah).
 import ipyInteg
 
-interactiveAutoRepaint = True
 
-def slowMode ():
+interactiveAutoRepaint = False
+
+def autoRepaint (repaint):
     global interactiveAutoRepaint
-    interactiveAutoRepaint = False
+    interactiveAutoRepaint = repaint
+
 
 # A GTK widget that renders a Painter
 
@@ -305,11 +306,9 @@ class YesLoopDisplayPager (render.DisplayPager):
         self.win = None
 
 
-def initPager (gtk_mainloop_is_running):
-    if gtk_mainloop_is_running:
-        render.setDisplayPagerClass (YesLoopDisplayPager)
-    else:
-        render.setDisplayPagerClass (NoLoopDisplayPager)
+def makeGtkPager (**kwargs):
+    if ipyInteg.gtk_mainloop_running ():
+        return YesLoopDisplayPager (**kwargs)
+    return NoLoopDisplayPager (**kwargs)
 
-
-initPager (ipyInteg.inIPython and ipyInteg.usingThreads)
+render.setDisplayPagerClass (makeGtkPager)

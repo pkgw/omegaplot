@@ -515,10 +515,7 @@ _lastUsedIdent = 0
 
 def setDisplayPagerClass (klass):
     global _displayPagerClass
-
-    assert issubclass (klass, DisplayPager)
     assert len (_showPagers) == 0
-
     _displayPagerClass = klass
 
 

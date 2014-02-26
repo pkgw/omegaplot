@@ -251,6 +251,48 @@ def _makeDvi (snips, texbase, header, cfg):
 
     return texbase + '.dvi'
 
+
+def _makePdf (snips, texbase, header, cfg):
+    # XXXXXXX HAAACK
+    if cfg._debug:
+        shutflag = ''
+    else:
+        shutflag = cfg.shutup
+
+    texfile = texbase + '.tex'
+
+    f = file (texfile, 'w')
+    f.write (cfg.preamble)
+    if header is not None:
+        f.write (header)
+    f.write (cfg.midamble)
+
+    first = True
+
+    for snip in snips:
+        f.write ('\n')
+        if not first:
+            f.write ('\\newpage\n')
+        else:
+            first = False
+        f.write (snip)
+        f.write ('\n')
+
+    f.write ('\\end{document}\n')
+    f.close ()
+    del f
+
+    _run ('pdflatex %s \'%s\' %s %s' % (cfg.texflags, texfile,
+                                        shutflag, cfg.noinput), cfg)
+
+    if not cfg._debug:
+        os.unlink (texfile)
+        os.unlink (texbase + '.aux')
+        os.unlink (texbase + '.log')
+
+    return texbase + '.pdf'
+
+
 def _makePngs (dvifile, pngtmpl, count, cfg):
     if cfg._debug: shutflag = ''
     else: shutflag = cfg.shutup
@@ -352,6 +394,9 @@ def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
 
 def _render_dvi (snips, outbase, header, cfg):
     return _makeDvi (snips, outbase, header, cfg)
+
+def _render_pdf (snips, outbase, header, cfg):
+    return _makePdf (snips, outbase, header, cfg)
 
 def _render_eps (snips, outbase, header, cfg):
     dvifile = _makeDvi (snips, outbase, header, cfg)
