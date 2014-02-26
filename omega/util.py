@@ -145,6 +145,7 @@ and display a plot object::
 
     return rp
 
+
 def quickXYErr (*args, **kwargs):
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
     xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
@@ -162,6 +163,26 @@ def quickXYErr (*args, **kwargs):
         rp.rebound ()
 
     return rp
+
+
+def quickDF (*args, **kwargs):
+    xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
+    xmax = _kwordDefaulted (kwargs, 'xmax', float, None)
+    ymin = _kwordDefaulted (kwargs, 'ymin', float, None)
+    ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
+    xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
+    ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
+
+    rp = rect.RectPlot ()
+    rp.addDF (*args, **kwargs)
+    rp.setBounds (xmin, xmax, ymin, ymax)
+    rp.setLinLogAxes (xlog, ylog)
+
+    if xlog or ylog:
+        rp.rebound ()
+
+    return rp
+
 
 def quickHist (data, bins=10, range=None, **kwargs):
     from numpy import concatenate, histogram
