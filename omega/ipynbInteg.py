@@ -41,6 +41,10 @@ class NotebookDisplayPager (render.DisplayPager):
     def send (self, painter):
         w, h = self.dims
 
+        # TODO: Cairo 1.2 has "cairo_svg_surface_create_for_stream", which
+        # should allow us to render into memory rather than use a temporary
+        # file, but I haven't found a Python binding that lets us access it.
+
         tf = tempfile.NamedTemporaryFile (delete=False)
         tf.close ()
 
