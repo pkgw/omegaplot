@@ -25,6 +25,7 @@ mypy_PYTHON = \
    ceaproj.py \
    gtkInteg.py \
    ipyInteg.py \
+   ipynbInteg.py \
    latex.py \
    layout.py \
    pango.py \
