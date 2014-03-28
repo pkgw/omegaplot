@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-import cairo, os, tempfile
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import cairo, os, tempfile
 from IPython.display import display, SVG
 
-import styles, render
+from . import styles, render
 
 defaultStyle = styles.ColorOnWhiteVector
 defaultDims = (400, 300) # points

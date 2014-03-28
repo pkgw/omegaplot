@@ -1,4 +1,4 @@
-# Copyright 2012 Peter Williams
+# Copyright 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -17,8 +17,11 @@
 
 # Simple Lambert cylindrical equal-area (CEA) projection of the sphere.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
-from omega import rect, sphere
+
+from . import rect, sphere
 
 
 _makeLatPainter = lambda ax: sphere.AngularAxisPainter (ax, 180./np.pi,

@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -26,14 +26,16 @@ The relevant files are src/pgcnsc.f and src/pgcn01.f.
 FIXME: more docs.
 """
 
-import numpy as N
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import numpy as np
 
 # ArrayGrower class copy&pasted from miriad-python.
 
 class _ArrayGrower (object):
     __slots__ = ['dtype', 'ncols', 'chunkSize', '_nextIdx', '_arr']
 
-    def __init__ (self, ncols, dtype=N.float, chunkSize=128):
+    def __init__ (self, ncols, dtype=np.float, chunkSize=128):
         self.dtype = dtype
         self.ncols = ncols
         self.chunkSize = chunkSize
@@ -46,11 +48,11 @@ class _ArrayGrower (object):
 
 
     def addLine (self, line):
-        line = N.asarray (line, dtype=self.dtype)
+        line = np.asarray (line, dtype=self.dtype)
         assert (line.size == self.ncols)
 
         if self._arr is None:
-            self._arr = N.ndarray ((self.chunkSize, self.ncols), dtype=self.dtype)
+            self._arr = np.ndarray ((self.chunkSize, self.ncols), dtype=self.dtype)
         elif self._arr.shape[0] <= self._nextIdx:
             self._arr.resize ((self._arr.shape[0] + self.chunkSize, self.ncols))
 
@@ -67,7 +69,7 @@ class _ArrayGrower (object):
 
     def finish (self, trans=False):
         if self._arr is None:
-            ret = N.ndarray ((0, self.ncols), dtype=self.dtype)
+            ret = np.ndarray ((0, self.ncols), dtype=self.dtype)
         else:
             self._arr.resize ((self._nextIdx, self.ncols))
             ret = self._arr
@@ -109,9 +111,9 @@ def contourValue (data, rowcoords, colcoords, value):
 
     # Check args
 
-    data = N.asarray (data)
-    rowcoords = N.asarray (rowcoords)
-    colcoords = N.asarray (colcoords)
+    data = np.asarray (data)
+    rowcoords = np.asarray (rowcoords)
+    colcoords = np.asarray (colcoords)
     value = float (value)
 
     if data.ndim != 2: raise ValueError ('Data must be 2D')
@@ -168,18 +170,18 @@ def contourValue (data, rowcoords, colcoords, value):
                     hitEdge = True
                     break
                 elif hflags[i,j]:
-                    #print 'DN -> LF'
+                    #print ('DN -> LF')
                     d = LF
                 elif hflags[i,j+1]:
-                    #print 'DN -> RT'
+                    #print ('DN -> RT')
                     j += 1
                     d = RT
                 elif vflags[i+1,j]:
-                    #print 'DN -> DN'
+                    #print ('DN -> DN')
                     i += 1
                     d = DN
                 else:
-                    #print 'DN -> EOC'
+                    #print ('DN -> EOC')
                     break
             elif d == UP:
                 vflags[i,j] = False
@@ -188,20 +190,20 @@ def contourValue (data, rowcoords, colcoords, value):
                     hitEdge = True
                     break
                 elif hflags[i-1,j+1]:
-                    #print 'UP -> RT'
+                    #print ('UP -> RT')
                     d = RT
                     i -= 1
                     j += 1
                 elif hflags[i-1,j]:
-                    #print 'UP -> LF'
+                    #print ('UP -> LF')
                     i -= 1
                     d = LF
                 elif vflags[i-1,j]:
-                    #print 'UP -> UP'
+                    #print ('UP -> UP')
                     i -= 1
                     d = UP
                 else:
-                    #print 'UP -> EOC'
+                    #print ('UP -> EOC')
                     break
             elif d == LF:
                 hflags[i,j] = False
@@ -210,20 +212,20 @@ def contourValue (data, rowcoords, colcoords, value):
                     hitEdge = True
                     break
                 elif vflags[i,j-1]:
-                    #print 'LF -> UP'
+                    #print ('LF -> UP')
                     d = UP
                     j -= 1
                 elif vflags[i+1,j-1]:
-                    #print 'LF -> DN'
+                    #print ('LF -> DN')
                     d = DN
                     i += 1
                     j -= 1
                 elif hflags[i,j-1]:
-                    #print 'LF -> LF'
+                    #print ('LF -> LF')
                     d = LF
                     j -= 1
                 else:
-                    #print 'LF -> EOC'
+                    #print ('LF -> EOC')
                     break
             elif d == RT:
                 hflags[i,j] = False
@@ -232,18 +234,18 @@ def contourValue (data, rowcoords, colcoords, value):
                     hitEdge = True
                     break
                 elif vflags[i+1,j]:
-                    #print 'RT -> DN'
+                    #print ('RT -> DN')
                     d = DN
                     i += 1
                 elif vflags[i,j]:
-                    #print 'RT -> UP'
+                    #print ('RT -> UP')
                     d = UP
                 elif hflags[i,j+1]:
-                    #print 'RT -> RT'
+                    #print ('RT -> RT')
                     d = RT
                     j += 1
                 else:
-                    #print 'RT -> EOC'
+                    #print ('RT -> EOC')
                     break
 
             # Actually record the point for this
@@ -266,8 +268,8 @@ def contourValue (data, rowcoords, colcoords, value):
 
     # Init tables.
 
-    hflags = N.empty ((NR-1, NC), dtype=N.bool)
-    vflags = N.empty ((NR, NC-1), dtype=N.bool)
+    hflags = np.empty ((NR-1, NC), dtype=np.bool)
+    vflags = np.empty ((NR, NC-1), dtype=np.bool)
 
     transition = lambda z1, z2: (value > min (z1, z2) and
                                  value <= max (z1, z2) and
@@ -295,25 +297,25 @@ def contourValue (data, rowcoords, colcoords, value):
     for j in xrange (NC-1):
         # Top
         if vflags[0,j] and data[0,j] > data[0,j+1]:
-            #print 'follow from top:', 0, j
+            #print ('follow from top:', 0, j)
             follow (0, j, DN)
 
     for i in xrange (NR-1):
         # Right
         if hflags[i,NC-1] and data[i,NC-1] > data[i+1,NC-1]:
-            #print 'follow from right:', i, NC-1
+            #print ('follow from right:', i, NC-1)
             follow (i, NC-1, LF)
 
     for j in xrange (NC-1):
         # Bottom
         if vflags[NR-1,j] and data[NR-1,j] < data[NR-1,j+1]:
-            #print 'follow from bot:', NR-1, j
+            #print ('follow from bot:', NR-1, j)
             follow (NR-1, j, UP)
 
     for i in xrange (NR-1):
         # Left
         if hflags[i,0] and data[i,0] < data[i+1,0]:
-            #print 'follow from left:', i, 0
+            #print ('follow from left:', i, 0)
             follow (i, 0, RT)
 
     # Now search for interior contours.
@@ -321,7 +323,7 @@ def contourValue (data, rowcoords, colcoords, value):
     for i in xrange (NR-1):
         for j in xrange (NC):
             if hflags[i,j]:
-                #print 'follow interior:', i, j, '=>', colcoords[j], rinterp_dn_to_y (i, j)
+                #print ('follow interior:', i, j, '=>', colcoords[j], rinterp_dn_to_y (i, j))
                 if data[i,j] > data[i+1,j]:
                     # Higher value is farther up,
                     # so this obeys the clockwise rule.
@@ -369,15 +371,15 @@ def valsLinRange (lower, upper, pad=False, n=_defaultN):
     else:
         d = 0
 
-    return N.linspace (lower + d, upper - d, n)
+    return np.linspace (lower + d, upper - d, n)
 
 
 def valsLogRange (lower, upper, pad=False, n=_defaultN):
-    return N.exp (valsLinRange (N.log (lower), N.log (upper), pad, n))
+    return np.exp (valsLinRange (np.log (lower), np.log (upper), pad, n))
 
 
 def rangeBounds (data):
-    data = N.asarray (data)
+    data = np.asarray (data)
     return data.min (), data.max ()
 
 
@@ -392,8 +394,8 @@ def valsLogBounds (data, n=_defaultN):
 
 
 def rangeRMSMax (data, frms, fmax):
-    data = N.asarray (data)
-    return frms * N.sqrt ((data**2).mean ()), fmax * data.max ()
+    data = np.asarray (data)
+    return frms * np.sqrt ((data**2).mean ()), fmax * data.max ()
 
 
 def valsLinRMSMax (data, frms, fmax, n=_defaultN):
@@ -434,7 +436,7 @@ def contourAuto (data, rowcoords, colcoords, range='b', space='lin',
 
     """
     if values is not None:
-        values = N.asarray (values)
+        values = np.asarray (values)
     else:
         if range == 'b':
             r = rangeBounds (data)

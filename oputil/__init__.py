@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -17,3 +17,5 @@
 
 # We need this file to get "oputil" to appear as a module. Nothing
 # here, though.
+
+from __future__ import absolute_import, division, print_function, unicode_literals

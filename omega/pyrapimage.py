@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -20,20 +20,23 @@
 
 # FIXME: we're hardcoding which axes are the lat/lon axes, etc etc
 
-import numpy as N
-from omega import rect, sphere
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import numpy as np
+
+from . import rect, sphere
 
 
 def _makeRAPainter (axis):
-    return sphere.AngularAxisPainter (axis, 12./N.pi,
+    return sphere.AngularAxisPainter (axis, 12./np.pi,
                                       sphere.DISPLAY_HMS, sphere.WRAP_POS_HR)
 
 def _makeLatPainter (axis):
-    return sphere.AngularAxisPainter (axis, 180./N.pi,
+    return sphere.AngularAxisPainter (axis, 180./np.pi,
                                       sphere.DISPLAY_DMS, sphere.WRAP_LAT)
 
 def _makeLonPainter (axis):
-    return sphere.AngularAxisPainter (axis, 180./N.pi,
+    return sphere.AngularAxisPainter (axis, 180./np.pi,
                                       sphere.DISPLAY_DMS, sphere.WRAP_POS_DEG)
 
 
@@ -47,7 +50,7 @@ If you have a pyrap image, you get these via::
 
         super (PyrapImageCoordinates, self).__init__ (field_or_plot)
         self.image = image
-        self.refworld = self.image.toworld (N.zeros (self.image.ndim ()))
+        self.refworld = self.image.toworld (np.zeros (self.image.ndim ()))
         self._sniff_discontinuities ()
 
 
@@ -67,8 +70,8 @@ There will also be problems if you try to image latitudes that hit +/-
 must vary monotonically with the pixel coordinates. But for now I'm
 just dealing with the particular longitude wraparound issue.
 """
-        s = N.asarray (self.image.shape ())
-        p = N.zeros (s.size)
+        s = np.asarray (self.image.shape ())
+        p = np.zeros (s.size)
         delta = 1e-6
         toworld = self.image.toworld
 
@@ -101,9 +104,9 @@ just dealing with the particular longitude wraparound issue.
                         raise Exception ('can\'t handle more than one discontinuity')
 
                     if w1[-1] - expected_w > 0:
-                        delta_w = -2 * N.pi
+                        delta_w = -2 * np.pi
                     else:
-                        delta_w = 2 * N.pi
+                        delta_w = 2 * np.pi
 
                     w1[-1] += delta_w # correct for next set of checks
 
@@ -147,12 +150,12 @@ just dealing with the particular longitude wraparound issue.
                 # Usual astronomical convention: world coordinate
                 # decreases as pixel coord increases.
                 def lon_correct (x):
-                    if x > w1 + 0.5 * N.pi:
+                    if x > w1 + 0.5 * np.pi:
                         return x + delta_w
                     return x
             else:
                 def lon_correct (x):
-                    if x < w1 - 0.5 * N.pi:
+                    if x < w1 - 0.5 * np.pi:
                         return x + delta_w
                     return x
 
@@ -187,8 +190,8 @@ just dealing with the particular longitude wraparound issue.
 
 
     def lin2arb (self, linx, liny):
-        linx = N.atleast_1d (linx)
-        liny = N.atleast_1d (liny)
+        linx = np.atleast_1d (linx)
+        liny = np.atleast_1d (liny)
 
         assert linx.ndim == 1, 'can only handle 1d case right now'
 
@@ -197,16 +200,16 @@ just dealing with the particular longitude wraparound issue.
 
         if linx.size == 1:
             linxval = linx[0]
-            linx = N.empty (liny.shape, linx.dtype)
+            linx = np.empty (liny.shape, linx.dtype)
             linx.fill (linxval)
 
         if liny.size == 1:
             linyval = liny[0]
-            liny = N.empty (linx.shape, liny.dtype)
+            liny = np.empty (linx.shape, liny.dtype)
             liny.fill (linyval)
 
-        result = N.empty ((2, linx.size))
-        coords = N.zeros (self.image.ndim ())
+        result = np.empty ((2, linx.size))
+        coords = np.zeros (self.image.ndim ())
 
         for i in xrange (linx.size):
             coords[-1] = linx[i] # longitude is last coord
@@ -219,23 +222,23 @@ just dealing with the particular longitude wraparound issue.
 
 
     def arb2lin (self, arbx, arby):
-        arbx = N.atleast_1d (arbx)
-        arby = N.atleast_1d (arby)
+        arbx = np.atleast_1d (arbx)
+        arby = np.atleast_1d (arby)
 
         assert arbx.ndim == 1, 'can only handle 1d case right now'
 
         if arbx.size == 1:
             arbxval = arbx[0]
-            arbx = N.empty (arby.shape, arbx.dtype)
+            arbx = np.empty (arby.shape, arbx.dtype)
             arbx.fill (arbxval)
 
         if arby.size == 1:
             arbyval = arby[0]
-            arby = N.empty (arbx.shape, arby.dtype)
+            arby = np.empty (arbx.shape, arby.dtype)
             arby.fill (arbyval)
 
-        result = N.empty ((2, arbx.size))
-        coords = N.array (self.refworld)
+        result = np.empty ((2, arbx.size))
+        coords = np.array (self.refworld)
 
         for i in xrange (arbx.size):
             coords[-1] = arbx[i] # x is last coord

@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -18,12 +18,15 @@
 """Classes that draw small icons at a given point.
 Mainly useful for marking specific data points."""
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 # Import names with underscores so that we don't need
 # to manually specify an __all__.
 
 import numpy as np
-from base import Stamp
 from math import pi, sqrt
+
+from .base import Stamp
 
 _defaultStampSize = 5
 

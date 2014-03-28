@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -20,9 +20,11 @@
 # Axis painters for spherical projections, and potentially
 # other spherical helpers
 
-from __future__ import division
-import numpy as N
-from omega import rect, TextStamper, textMarkup as TM
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import numpy as np
+
+from . import rect, TextStamper, textMarkup as TM
 
 DISPLAY_DMS = 0
 DISPLAY_HMS = 1
@@ -162,7 +164,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
         else:
             raise Exception ('TODO: fraction-of-arcsec labels')
 
-        coeff = int (N.ceil (axmin / axincr))
+        coeff = int (np.ceil (axmin / axincr))
         axval = coeff * axincr
         if axval < axmin:
             axval = axmin # roundoff insurance
@@ -201,8 +203,8 @@ class AngularAxisPainter (rect.BlankAxisPainter):
                     sign = '-'
                     effsecval = -effsecval
 
-                unit = int (N.floor (effsecval / 3600))
-                mnt = int (N.floor (effsecval / 60 - unit * 60.))
+                unit = int (np.floor (effsecval / 3600))
+                mnt = int (np.floor (effsecval / 60 - unit * 60.))
                 sec = max (effsecval - unit * 3600 - mnt * 60, 0)
                 info._breakdown = [sign, unit, mnt, sec]
 
@@ -258,7 +260,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
         # of these operations are sometimes much faster when done
         # in batch.
 
-        xformed, nangles = self.axis.transformWithDirection (N.asarray (axvalues))
+        xformed, nangles = self.axis.transformWithDirection (np.asarray (axvalues))
         for info, xf, nangle in zip (infos, xformed, nangles):
             info.xformed = xf
             info.nangle = nangle

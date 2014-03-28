@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -17,15 +17,17 @@
 
 # Rectangular plots.
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import cairo
 import numpy as np
-from base import *
-from base import (_TextPainterBase, _kwordDefaulted,
-                  _kwordExtract, _checkKwordsConsumed)
-from base import textMarkup as TM
-from layout import RightRotationPainter
-import util
+
+from .base import *
+from .base import (_TextPainterBase, _kwordDefaulted,
+                   _kwordExtract, _checkKwordsConsumed)
+from .base import textMarkup as TM
+from .layout import RightRotationPainter
+from . import util
 
 
 class RectDataHolder (DataHolder):
@@ -872,7 +874,7 @@ class RectField (object):
             self.yaxis.max = max (self.yaxis.max, float (ymax))
 
 
-from stamps import DataThemedStamp as _DTS
+from .stamps import DataThemedStamp as _DTS
 
 
 class RectPlot (Painter):
@@ -939,7 +941,7 @@ class RectPlot (Painter):
 
     def addKeyItem (self, item):
         if self.defaultKey is None:
-            import layout
+            from . import layout
             self.defaultKey = layout.VBox (0)
             self.defaultKeyOverlay = AbsoluteFieldOverlay (self.defaultKey)
             self.add (self.defaultKeyOverlay, rebound=False)
@@ -1036,7 +1038,7 @@ class RectPlot (Painter):
 
 
     def addXYErr (self, *args, **kwargs):
-        from stamps import WithYErrorBars
+        from .stamps import WithYErrorBars
 
         l = len (args)
 
@@ -1581,7 +1583,7 @@ Examples:
             aspace = max (aspace, axspace[(i + 3) % 4][0])
 
             border[i] = aspace + ospace
-            #print i, axspace[i], obd[i][0:3], opad, border[i]
+            #print (i, axspace[i], obd[i][0:3], opad, border[i])
 
         fw, wh = util.expandAspect (self.fieldAspect, fw, fh)
         return LayoutInfo (minsize=(fw, fh), minborders=border, aspect=self.fieldAspect)
@@ -1629,7 +1631,7 @@ Examples:
                 ow += opad
 
             if aw + ow > self.border[i]:
-                #print i, aw, obd[i,0:3], opad, self.border[i]
+                #print (i, aw, obd[i,0:3], opad, self.border[i])
                 raise RuntimeError ('Not enough space for axis labels and outside painters')
 
             axisWidths[i] = aw

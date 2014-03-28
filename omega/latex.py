@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -17,13 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import cairo
 from oputil import latexsnippet
 import atexit
 
-from base import *
-from base import _TextPainterBase, _TextStamperBase
-import base
+from .base import *
+from .base import _TextPainterBase, _TextStamperBase
+from . import base
 
 setZoom = latexsnippet.setZoom
 

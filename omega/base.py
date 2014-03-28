@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 # Basic classes of OmegaPlot.
 
@@ -523,7 +525,7 @@ class Painter (object):
 
 
     def renderBasic (self, ctxt, style, w, h):
-        from util import doublearray, shrinkAspect, nudgeMargins
+        from .util import doublearray, shrinkAspect, nudgeMargins
 
         # Must init the context before calling getLayoutInfo
         # in case we're using the Cairo text backend -- we need
@@ -542,7 +544,7 @@ class Painter (object):
         if w < needw or h < needh:
             raise ContextTooSmallError ('Context too small: got (%s, %s);'
                                         ' need (%s, %s)' % \
-                                            (w, h, needw, needh))
+                                        (w, h, needw, needh))
 
         # spend extra space on margins, trying to center the main plot
         # area as much as possible.
@@ -578,19 +580,19 @@ class Painter (object):
 
 
     def show (self, ident=None, **kwargs):
-        from render import showPainter
+        from .render import showPainter
         showPainter (self, ident, **kwargs)
         return self
 
 
     def save (self, filename, **kwargs):
-        from render import savePainter
+        from .render import savePainter
         savePainter (self, filename, **kwargs)
         return self
 
 
     def dump (self, **kwargs):
-        from util import dumpPainter
+        from .util import dumpPainter
         dumpPainter (self, **kwargs)
         return self
 

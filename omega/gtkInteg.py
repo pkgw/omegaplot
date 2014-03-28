@@ -15,20 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import gobject
 import gtk
 
 import sys #exc_info
 
-from base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
-import styles, render
+from .base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
+from . import styles, render
 
 _defaultStyle = styles.ColorOnBlackBitmap
 
 
 # This is needed to know what to do about mainloop integration with the pager
 # (XXX: should have a generic architecture, blah blah).
-import ipyInteg
+from . import ipyInteg
 
 
 interactiveAutoRepaint = False
@@ -51,8 +53,8 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
         self.paintId = -1
         self.autoRepaint = autoRepaint
 
-        self.connect ('expose_event', self._expose)
-        self.connect ('destroy', self._destroyed)
+        self.connect (b'expose_event', self._expose)
+        self.connect (b'destroy', self._destroyed)
 
 
     def setStyle (self, style):
@@ -101,7 +103,7 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
         try:
             p.renderBasic (ctxt, style, w, h)
         except ContextTooSmallError, ctse:
-            print ctse
+            print (ctse)
 
         return False
 
@@ -154,7 +156,7 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
 class PagerWindow (gtk.Window):
     isFullscreen = False
 
-    __gsignals__ = { 'key-press-event' : 'override' }
+    __gsignals__ = { b'key-press-event' : b'override' }
 
 
     def __init__ (self, blocking, autoRepaint, style=None, parent=None):
@@ -240,8 +242,8 @@ class NoLoopDisplayPager (render.DisplayPager):
 
     def _makeWin (self):
         win = PagerWindow (True, False, self.style, self.parent)
-        win.connect ('destroy', self._winDestroyed)
-        win.btn.connect ('clicked', self._nextClicked)
+        win.connect (b'destroy', self._winDestroyed)
+        win.btn.connect (b'clicked', self._nextClicked)
         return win
 
 
@@ -298,7 +300,7 @@ class YesLoopDisplayPager (render.DisplayPager):
 
     def _makeWin (self):
         win = PagerWindow (False, interactiveAutoRepaint, self.style, self.parent)
-        win.connect ('destroy', self._winDestroyed)
+        win.connect (b'destroy', self._winDestroyed)
         return win
 
 

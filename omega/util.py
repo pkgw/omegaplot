@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -24,12 +24,13 @@ well. This is not to imply that these functions aren't important --
 :func:`quickXY`, for instance, is quite useful.
 """
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
-from base import _kwordDefaulted
+
+from .base import _kwordDefaulted
 
 # Quick display of plots
-
-import rect
 
 def quickXY (*args, **kwargs):
     r"""Create a :class:`omega.rect.RectPlot` displaying some data.
@@ -135,7 +136,8 @@ and display a plot object::
     xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
     ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
 
-    rp = rect.RectPlot ()
+    from .rect import RectPlot
+    rp = RectPlot ()
     rp.addXY (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
     rp.setLinLogAxes (xlog, ylog)
@@ -154,7 +156,8 @@ def quickXYErr (*args, **kwargs):
     xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
     ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
 
-    rp = rect.RectPlot ()
+    from .rect import RectPlot
+    rp = RectPlot ()
     rp.addXYErr (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
     rp.setLinLogAxes (xlog, ylog)
@@ -173,7 +176,8 @@ def quickDF (*args, **kwargs):
     xlog = _kwordDefaulted (kwargs, 'xlog', bool, False)
     ylog = _kwordDefaulted (kwargs, 'ylog', bool, False)
 
-    rp = rect.RectPlot ()
+    from .rect import RectPlot
+    rp = RectPlot ()
     rp.addDF (*args, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
     rp.setLinLogAxes (xlog, ylog)
@@ -196,6 +200,7 @@ def quickHist (data, bins=10, range=None, **kwargs):
     if edges.size != values.size + 1:
         raise RuntimeError ('using too-old numpy? got weird histogram result')
 
+    from . import rect
     csp = rect.ContinuousSteppedPainter (**kwargs)
     csp.setDataHist (edges, values)
 
@@ -208,7 +213,8 @@ def quickHist (data, bins=10, range=None, **kwargs):
 def quickContours (data, rowcoords, colcoords, keyText='Contours',
                    xmin=None, xmax=None, ymin=None, ymax=None,
                    xlog=False, ylog=False, **kwargs):
-    rp = rect.RectPlot ()
+    from .rect import RectPlot
+    rp = RectPlot ()
     rp.addContours (data, rowcoords, colcoords, keyText, **kwargs)
     rp.setBounds (xmin, xmax, ymin, ymax)
     rp.setLinLogAxes (xlog, ylog)
@@ -220,8 +226,9 @@ def quickContours (data, rowcoords, colcoords, keyText='Contours',
 
 
 def quickImage (format, data):
-    p = rect.RectPlot ()
-    ip = rect.ImagePainter ().wrap (format, data)
+    from .rect import RectPlot, ImagePainter
+    p = RectPlot ()
+    ip = ImagePainter ().wrap (format, data)
     # take advantage of any futzing of data done by wrap():
     width = ip.surface.get_width ()
     height = ip.surface.get_height ()
@@ -241,22 +248,22 @@ _demoNumber = 0
 
 def _demo ():
     global _demoNumber
-    import numpy as N
+    import numpy as np
 
     if _demoNumber == 0:
-        x = N.linspace (0, 10, 100)
-        p = quickXY (x, N.sin (x), 'sin(x)')
-        p.addXY (x, N.cos (x), 'cos(x)')
+        x = np.linspace (0, 10, 100)
+        p = quickXY (x, np.sin (x), 'sin(x)')
+        p.addXY (x, np.cos (x), 'cos(x)')
         p.setLabels ('Radians', 'Trigginess')
     elif _demoNumber == 1:
-        x = N.linspace (-5, 5, 100)
+        x = np.linspace (-5, 5, 100)
         p = quickXY (x, x**2, 'squared')
         p.addXY (x, x**3, 'cubed')
         p.setLabels ('X', 'Y')
     elif _demoNumber == 2:
-        x = N.linspace (0.01, 10, 100)
-        p = quickXY (x, N.log10 (x), 'base 10')
-        p.addXY (x, N.log (x), 'natural')
+        x = np.linspace (0.01, 10, 100)
+        p = quickXY (x, np.log10 (x), 'base 10')
+        p.addXY (x, np.log (x), 'natural')
         p.setLabels ('X', 'Log[X]')
 
     _demoNumber = (_demoNumber + 1) % 3
@@ -270,7 +277,7 @@ def _demo ():
 # or is empty if the screen is to be used
 
 def quickPager (args, **kwargs):
-    import render
+    from . import render
 
     if len (args) == 0:
         pg = render.makeDisplayPager (**kwargs)
@@ -289,7 +296,7 @@ dumpTemplate = 'omegaDump%02d.ps'
 
 
 def _makeDumpPager (**kwargs):
-    from render import getFilePagerInfo, MultiFilePager, ReusingPager
+    from .render import getFilePagerInfo, MultiFilePager, ReusingPager
 
     tup = getFilePagerInfo (dumpTemplate)
     if tup is None:
@@ -307,7 +314,7 @@ def dumpPainter (painter, **kwargs):
         _dumpPager = _makeDumpPager (**kwargs)
 
     painter.sendTo (_dumpPager)
-    print 'Dumped to \"%s\".' % _dumpPager.spager.lastFile
+    print ('Dumped to \"%s\".' % _dumpPager.spager.lastFile)
 
 
 def resetDumping ():

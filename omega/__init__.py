@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -27,14 +27,15 @@ general introduction to OmegaPlot, please see the
 :ref:`full documentation <index>`.
 """
 
-from base import *
-from rect import *
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import layout, rect, render, stamps, styles, util
+from .base import *
+from .rect import *
+from . import layout, rect, render, stamps, styles, util
 
-from layout import Overlay, Grid
-from styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from util import (quickXY, quickXYErr, quickDF, quickHist, quickContours,
-                  quickImage, quickPager, _demo)
-from render import makePager, makeDisplayPager
+from .layout import Overlay, Grid
+from .styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
+from .util import (quickXY, quickXYErr, quickDF, quickHist, quickContours,
+                   quickImage, quickPager, _demo)
+from .render import makePager, makeDisplayPager
 

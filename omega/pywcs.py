@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -21,8 +21,11 @@
 # TODO: allow "paper 4" or "SIP" transforms if desired. Whatever
 # they are.
 
-import pywcs, numpy as N
-from omega import rect, sphere
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import pywcs, numpy as np
+
+from . import rect, sphere
 
 
 def _makeRAPainter (axis):
@@ -63,34 +66,34 @@ class WCSCoordinates (rect.RectCoordinates):
 
 
     def lin2arb (self, linx, liny):
-        linx = N.atleast_1d (linx)
-        liny = N.atleast_1d (liny)
+        linx = np.atleast_1d (linx)
+        liny = np.atleast_1d (liny)
 
         if linx.size == 1:
             linxval = linx[0]
-            linx = N.empty (liny.shape, linx.dtype)
+            linx = np.empty (liny.shape, linx.dtype)
             linx.fill (linxval)
 
         if liny.size == 1:
             linyval = liny[0]
-            liny = N.empty (linx.shape, liny.dtype)
+            liny = np.empty (linx.shape, liny.dtype)
             liny.fill (linyval)
 
         return self.wcs.wcs_pix2sky (linx, liny, 0)
 
 
     def arb2lin (self, arbx, arby):
-        arbx = N.atleast_1d (arbx)
-        arby = N.atleast_1d (arby)
+        arbx = np.atleast_1d (arbx)
+        arby = np.atleast_1d (arby)
 
         if arbx.size == 1:
             arbxval = arbx[0]
-            arbx = N.empty (arby.shape, arbx.dtype)
+            arbx = np.empty (arby.shape, arbx.dtype)
             arbx.fill (arbxval)
 
         if arby.size == 1:
             arbyval = arby[0]
-            arby = N.empty (arbx.shape, arby.dtype)
+            arby = np.empty (arbx.shape, arby.dtype)
             arby.fill (arbyval)
 
         return self.wcs.wcs_sky2pix (arbx, arby, 0)

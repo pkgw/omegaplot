@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -53,6 +53,8 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 
 """
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys, os
 from os.path import basename, splitext, join, abspath, exists
 import tempfile
@@ -84,7 +86,7 @@ class RenderConfig (object):
       accepting input. Defaults to '</dev/null'.
 
     preamble -- The very first text written to the LaTeX file that is
-      processed. Defaults to some sensible \usepackage commands.
+      processed. Defaults to some sensible \\usepackage commands.
 
     pstoedit -- FIXME
 
@@ -95,7 +97,7 @@ class RenderConfig (object):
     supershutup -- FIXME
 
     midamble -- The text that is written after the user header and before
-      the snippets. Sets the pagestyle to empty, a \usepackage{preview},
+      the snippets. Sets the pagestyle to empty, a \\usepackage{preview},
       and a \begin{document}.
     """
 
@@ -142,7 +144,7 @@ class RenderConfig (object):
     # images in the corners of such LaTeX groups, so that the correct bounding
     # boxes will be calculated by DVI processing programs.
 
-    preamble = r'''
+    preamble = br'''
 \documentclass[12pt]{article}
 \usepackage{amsmath}
 \usepackage{amsthm}
@@ -151,7 +153,7 @@ class RenderConfig (object):
 \usepackage{gensymb}
 '''
 
-    midamble = r'''
+    midamble = br'''
 \usepackage{preview}
 \pagestyle{empty}
 \begin{document}
@@ -192,7 +194,7 @@ def setZoom (factor, thecfg=defaultConfig):
 
 def _run (shellcmd, cfg):
     if cfg._debug:
-        print >>sys.stderr, 'Running:', shellcmd
+        print ('Running:', shellcmd, file=sys.stderr)
 
     ret = os.system (shellcmd)
 
@@ -221,7 +223,7 @@ def _makeDvi (snips, texbase, header, cfg):
 
     # Write out the TeX file
 
-    f = file (texfile, 'w')
+    f = file (texfile, 'wb')
     f.write (cfg.preamble)
     if header is not None: f.write (header)
     f.write (cfg.midamble)
@@ -229,13 +231,13 @@ def _makeDvi (snips, texbase, header, cfg):
     first = True
 
     for snip in snips:
-        f.write ('\n')
-        if not first: f.write ('\\newpage\n')
+        f.write (b'\n')
+        if not first: f.write (b'\\newpage\n')
         else: first = False
         f.write (snip)
-        f.write ('\n')
+        f.write (b'\n')
 
-    f.write ('\\end{document}\n')
+    f.write (b'\\end{document}\n')
     f.close ()
     del f
 
@@ -261,7 +263,7 @@ def _makePdf (snips, texbase, header, cfg):
 
     texfile = texbase + '.tex'
 
-    f = file (texfile, 'w')
+    f = file (texfile, 'wb')
     f.write (cfg.preamble)
     if header is not None:
         f.write (header)
@@ -270,15 +272,15 @@ def _makePdf (snips, texbase, header, cfg):
     first = True
 
     for snip in snips:
-        f.write ('\n')
+        f.write (b'\n')
         if not first:
-            f.write ('\\newpage\n')
+            f.write (b'\\newpage\n')
         else:
             first = False
         f.write (snip)
-        f.write ('\n')
+        f.write (b'\n')
 
-    f.write ('\\end{document}\n')
+    f.write (b'\\end{document}\n')
     f.close ()
     del f
 
@@ -340,19 +342,19 @@ def _makeSvgs (dvifile, epsbase, svgtmpl, count, cfg):
     return epsfiles, svgfiles
 
 def _getBBox (epsfile):
-    f = file (epsfile, 'r')
+    f = file (epsfile, 'rb')
     first = True
 
     x1 = None
 
     for l in f:
         if first:
-            assert l.startswith ('%!PS')
+            assert l.startswith (b'%!PS')
             first = False
         else:
-            if not l.startswith ('%%'): break
+            if not l.startswith (b'%%'): break
 
-            if l.startswith ('%%BoundingBox:'):
+            if l.startswith (b'%%BoundingBox:'):
                 x1, y1, x2, y2 = (int (x) for x in l.split ()[1:])
 
     assert x1 is not None, 'Couldn\'t find EPS file bounding box'
@@ -493,49 +495,49 @@ def renderToFile (snip, outfile, header=None, cfg=defaultConfig, **kwargs):
 # SCR global functions - no ctxt
 
 def _scrg_document ():
-    #print 'document'
+    #print ('document')
     pass
 
 def _scrg_layer (name, visible, printable, locked, outlined, *rest):
-    #print 'layer', visible, printable, locked, outlined, rest
+    #print ('layer', visible, printable, locked, outlined, rest)
     pass
 
 def _scrg_guess_cont ():
-    #print 'guess_cont'
+    #print ('guess_cont')
     pass
 
 # SCR local functions -- need ctxt
 
 def _scrl_fp (ctxt, color):
     # fill pattern
-    #print 'fp', color
+    #print ('fp', color)
     ctxt.set_source_rgb (*color)
 
 def _scr_nullfp (color): pass
 
 def _scrl_le (ctxt):
     # line pattern empty
-    #print 'le'
+    #print ('le')
     ctxt.set_dash ([])
 
 def _scrl_b (ctxt):
     # begin bezier
-    #print 'b'
+    #print ('b')
     ctxt.new_path ()
 
 def _scrl_bs (ctxt, x, y, cont):
     # bezier straightline
-    #print 'bs', x, y, cont
+    #print ('bs', x, y, cont)
     ctxt.line_to (x, y)
 
 def _scrl_bc (ctxt, x1, y1, x2, y2, x, y, cont):
     # bezier curve?
-    #print 'bc', x1, y1, x2, y2, x, y, cont
+    #print ('bc', x1, y1, x2, y2, x, y, cont)
     ctxt.curve_to (x1, y1, x2, y2, x, y)
 
 def _scrl_bC (ctxt):
     # bezier close
-    #print 'bC'
+    #print ('bC')
     ctxt.fill ()
 
 def _scr_makeDoer (func, ctxt):
@@ -570,7 +572,7 @@ class SkencilCairoRenderer (object):
         self.bbw = bbw
         self.bbh = bbh
 
-        source = file (filename, 'r').read ()
+        source = file (filename, 'rb').read ()
         self.compiled = compile (source, filename, 'exec')
 
     def render (self, ctxt, ignoreColor=False):
@@ -716,8 +718,8 @@ class CairoCache (object):
 
         self.outputs = [join (self.cdir, x) for x in sks]
 
-        #print 'post-render', len (self.renderers), len (self.snips)
-        #print self.renderers
+        #print ('post-render', len (self.renderers), len (self.snips))
+        #print (self.renderers)
 
         # for all new snippets ...
         for i in xrange (len (self.renderers), len (self.snips)):
@@ -788,10 +790,10 @@ class CairoCache (object):
             self.renderAll ()
 
         if self.renderers[handle] is None:
-            print 'oh no!'
-            print 'h', handle
-            print 's', self.snips[handle]
-            print 'o', self.outputs[handle]
+            print ('oh no!')
+            print ('h', handle)
+            print ('s', self.snips[handle])
+            print ('o', self.outputs[handle])
             raise Exception ()
 
         return self.renderers[handle]
@@ -821,7 +823,7 @@ if __name__ == '__main__':
     import sys
 
     if len (sys.argv) != 3:
-        print 'Usage: %s \'snippet\' outfile' % (sys.argv[0])
+        print ('Usage: %s \'snippet\' outfile' % (sys.argv[0]))
         sys.exit (1)
 
     renderToFile (sys.argv[1], sys.argv[2])

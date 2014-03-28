@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import cairo
 from numpy import pi
 
-import styles
+from . import styles
 
 
 # The abstract Pager class
@@ -251,7 +253,7 @@ class GridPager (Pager):
     # them to a sub-pager in batches.
 
     def __init__ (self, spager, nw, nh, nper=0):
-        from layout import Grid
+        from .layout import Grid
 
         nw = int (nw)
         nh = int (nh)
@@ -523,7 +525,7 @@ def _loadDisplayBackend ():
     # If we ever have multiple backends, we should try them
     # sequentially, etc.
 
-    import gtkInteg
+    from . import gtkInteg
     import omega
 
     omega.gtkInteg = gtkInteg

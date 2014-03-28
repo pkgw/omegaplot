@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# needed to get right 'pango' module:
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import cairo, pango, pangocairo
-from omega import base
+
+from . import base
 
 # FIXME: the way we do things here is likely to be SUPER SLOW
 # since we're creating new contexts willy-nilly. Should deal

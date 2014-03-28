@@ -1,4 +1,4 @@
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from base import LayoutInfo, Painter, NullPainter
-from util import expandAspect, shrinkAspect, nudgeMargins
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
+
+from .base import LayoutInfo, Painter, NullPainter
+from .util import expandAspect, shrinkAspect, nudgeMargins
 
 
 class Overlay (Painter):
@@ -469,7 +472,7 @@ class LinearBox (Painter):
                 maxSPW = max (maxSPW, 1. * cfull / wt)
                 totwt += wt
 
-            #print i, childh, minh
+            #print (i, childh, minh)
 
         minmaj += maxSPW * totwt
 
