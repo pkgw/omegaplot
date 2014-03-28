@@ -1,4 +1,4 @@
-dnl Copyright 2011, 2012 Peter Williams
+dnl Copyright 2011, 2012, 2014 Peter Williams
 dnl
 dnl This file is part of omegaplot.
 dnl
@@ -17,7 +17,7 @@ dnl along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
 dnl General initialization
 
-AC_INIT([OmegaPlot], [0.1], [peter@newton.cx])
+AC_INIT([omegaplot], [0.2], [peter@newton.cx])
 AC_CONFIG_SRCDIR([omega/rect.py])
 AM_INIT_AUTOMAKE([dist-bzip2])
 
@@ -25,12 +25,12 @@ AM_MAINTAINER_MODE
 
 dnl Both of these are used in doc/conf.py.in
 
-AC_SUBST([OMEGA_SHORTVERSION],[0.1])
-AC_SUBST([OMEGA_COPYRIGHT],["2011, 2012, Peter Williams"])
+AC_SUBST([OMEGA_SHORTVERSION],[0.2])
+AC_SUBST([OMEGA_COPYRIGHT],["2011-2014 Peter Williams"])
 
 dnl Python and dependent modules
 
-AM_PATH_PYTHON([2.3.5])
+AM_PATH_PYTHON([2.6])
 
 AM_CHECK_PYMOD(cairo,,,[
   AC_MSG_ERROR([The 'cairo' Python module is required])
