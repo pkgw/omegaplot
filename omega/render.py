@@ -525,10 +525,10 @@ def _loadDisplayBackend ():
     # If we ever have multiple backends, we should try them
     # sequentially, etc.
 
-    from . import gtkInteg
+    from . import gtk2
     import omega
 
-    omega.gtkInteg = gtkInteg
+    omega.gtk2 = gtk2
 
 
 def makeDisplayPager (nw=1, nh=1, nper=0, mustPage=True, **kwargs):

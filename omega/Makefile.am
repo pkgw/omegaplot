@@ -1,4 +1,4 @@
-## Copyright 2011, 2012 Peter Williams
+## Copyright 2011, 2012, 2014 Peter Williams
 ##
 ## This file is part of omegaplot.
 ##
@@ -23,9 +23,9 @@ mypy_PYTHON = \
    __init__.py \
    base.py \
    ceaproj.py \
-   gtkInteg.py \
-   ipyInteg.py \
-   ipynbInteg.py \
+   gtk2.py \
+   ipython.py \
+   ipynb.py \
    latex.py \
    layout.py \
    pango.py \

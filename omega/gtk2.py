@@ -30,7 +30,7 @@ _defaultStyle = styles.ColorOnBlackBitmap
 
 # This is needed to know what to do about mainloop integration with the pager
 # (XXX: should have a generic architecture, blah blah).
-from . import ipyInteg
+from . import ipython
 
 
 interactiveAutoRepaint = False
@@ -309,7 +309,7 @@ class YesLoopDisplayPager (render.DisplayPager):
 
 
 def makeGtkPager (**kwargs):
-    if ipyInteg.gtk_mainloop_running ():
+    if ipython.gtk_mainloop_running ():
         return YesLoopDisplayPager (**kwargs)
     return NoLoopDisplayPager (**kwargs)
 
