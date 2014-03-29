@@ -17,13 +17,18 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import cairo, os, tempfile
-from IPython.display import display, SVG
+# XXX: I'd like to use SVG graphics, but I ran into problems with corrupted
+# output with multiple plots in a notebook. See the history for SVG-writing
+# code.
+
+import cairo, os, StringIO, tempfile
+from IPython.display import display, Image
 
 from . import styles, render
 
-defaultStyle = styles.ColorOnWhiteVector
-defaultDims = (400, 300) # points
+defaultStyle = styles.ColorOnWhiteBitmap
+defaultDims = (600, 400)
+
 
 class NotebookDisplayPager (render.DisplayPager):
     def __init__ (self, dims=defaultDims, style=None):
@@ -42,14 +47,7 @@ class NotebookDisplayPager (render.DisplayPager):
     def send (self, painter):
         w, h = self.dims
 
-        # TODO: Cairo 1.2 has "cairo_svg_surface_create_for_stream", which
-        # should allow us to render into memory rather than use a temporary
-        # file, but I haven't found a Python binding that lets us access it.
-
-        tf = tempfile.NamedTemporaryFile (delete=False)
-        tf.close ()
-
-        surf = cairo.SVGSurface (tf.name, w, h)
+        surf = cairo.ImageSurface (cairo.FORMAT_ARGB32, w, h)
 
         def renderfunc (prend):
             ctxt = cairo.Context (surf)
@@ -58,15 +56,13 @@ class NotebookDisplayPager (render.DisplayPager):
 
         painter.render (renderfunc)
 
+        buf = StringIO.StringIO ()
+        surf.write_to_png (buf)
         surf.finish ()
-        svg = open (tf.name).read ()
+        data = buf.getvalue ()
+        buf.close ()
 
-        try:
-            os.unlink (tf.name)
-        except Exception:
-            pass
-
-        display (SVG (data=svg))
+        display (Image (data=data))
 
     def done (self):
         pass
