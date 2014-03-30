@@ -24,6 +24,7 @@ mypy_PYTHON = \
    base.py \
    ceaproj.py \
    gtk2.py \
+   gtk3.py \
    ipython.py \
    ipynb.py \
    latex.py \
