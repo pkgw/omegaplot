@@ -522,13 +522,17 @@ def setDisplayPagerClass (klass):
 
 
 def _loadDisplayBackend ():
-    # If we ever have multiple backends, we should try them
-    # sequentially, etc.
-
-    from . import gtk2
     import omega
 
-    omega.gtk2 = gtk2
+    try:
+        from . import gtk3
+    except ImportError:
+        pass
+
+    try:
+        from . import gtk2
+    except ImportError:
+        pass
 
 
 def makeDisplayPager (nw=1, nh=1, nper=0, mustPage=True, **kwargs):
