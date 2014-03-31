@@ -526,11 +526,13 @@ def _loadDisplayBackend ():
 
     try:
         from . import gtk3
+        return
     except ImportError:
         pass
 
     try:
         from . import gtk2
+        return
     except ImportError:
         pass
 
