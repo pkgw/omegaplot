@@ -238,7 +238,8 @@ class Gtk3DisplayPager (render.DisplayPager):
             Gtk.main_quit ()
             self._in_modal_loop = False
 
-        return False
+        # True -> do not destroy window.
+        return True
 
 
     def _next_clicked (self, event):
