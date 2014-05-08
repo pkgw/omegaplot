@@ -72,7 +72,11 @@ class Style (object):
 
         v = item.get ('color')
         if v is not None:
-            ctxt.set_source_rgb (*self.getColor (v))
+            c = self.getColor (v)
+            if len (c) == 4:
+                ctxt.set_source_rgba (*c)
+            else:
+                ctxt.set_source_rgb (*c)
 
         v = item.get ('linewidth')
         if v is not None:
@@ -84,8 +88,8 @@ class Style (object):
 
 
     def getColor (self, color):
-        if isinstance (color, tuple): return color
-
+        if isinstance (color, tuple):
+            return color
         return getattr (self.colors, color)
 
 
