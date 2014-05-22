@@ -2718,8 +2718,60 @@ class XBand (FieldPainter):
         ctxt.save ()
         style.apply (ctxt, self.style)
         ctxt.rectangle (x, 0, w, self.xform.height)
+        if self.fill: ctxt.fill_preserve ()
         if self.stroke: ctxt.stroke ()
-        if self.fill: ctxt.fill ()
+        ctxt.restore ()
+
+
+class YBand (FieldPainter):
+    # XXX: we use the same style for stroking and filling, which means
+    # (AFAICT) that they'll both use the same color. If your going to do both
+    # at once, that's probably not what you want. Also relevant to XBand.
+
+    style = 'genericBand'
+    needsDataStyle = False
+    dsn = None
+    stroke = False
+    fill = True
+
+
+    def __init__ (self, ymin, ymax, stroke=False, fill=True, keyText='Band'):
+        super (YBand, self).__init__ ()
+
+        self.stroke = stroke
+        self.fill = fill
+
+        if ymin > ymax:
+            ymin, ymax = ymax, ymin
+        self.ymin, self.ymax = ymin, ymax
+
+        self.keyText = keyText
+
+
+    def getDataBounds (self):
+        return None, None, self.ymin, self.ymax
+
+
+    def getKeyPainter (self):
+        if self.keyText is None:
+            return None
+        return RegionKeyPainter (self)
+
+
+    def doPaint (self, ctxt, style):
+        super (YBand, self).doPaint (ctxt, style)
+
+        mmin, mmax = self.xform.mapY (np.asarray ([self.ymin, self.ymax]))
+        h = abs (mmax - mmin)
+        y = min (mmin, mmax)
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+        ctxt.rectangle (0, y, self.xform.width, h)
+        if self.fill:
+            ctxt.fill_preserve ()
+        if self.stroke:
+            ctxt.stroke ()
         ctxt.restore ()
 
 
