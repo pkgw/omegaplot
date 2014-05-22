@@ -2718,8 +2718,11 @@ class XBand (FieldPainter):
         ctxt.save ()
         style.apply (ctxt, self.style)
         ctxt.rectangle (x, 0, w, self.xform.height)
-        if self.fill: ctxt.fill_preserve ()
-        if self.stroke: ctxt.stroke ()
+        if self.fill:
+            ctxt.fill_preserve ()
+        if self.stroke:
+            ctxt.stroke ()
+        ctxt.new_path () # clear path if we didn't stroke; restore() doesn't!
         ctxt.restore ()
 
 
@@ -2772,6 +2775,7 @@ class YBand (FieldPainter):
             ctxt.fill_preserve ()
         if self.stroke:
             ctxt.stroke ()
+        ctxt.new_path () # clear path if we didn't stroke; restore() doesn't!
         ctxt.restore ()
 
 
