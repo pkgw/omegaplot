@@ -18,6 +18,7 @@ setup (
 
     entry_points = {
         'console_scripts': [
+            'omegafig = oputil.omegafig:cmdline',
             'omegamap = oputil.omegamap:cmdline',
         ],
     },
