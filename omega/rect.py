@@ -674,10 +674,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         if not self.paintLabels:
             return
 
-        # Create the TextStamper objects all at once, so that if we
-        # are using the LaTeX backend, we can generate them images all
-        # in one go. (That will happen upon the first invocation of
-        # getLayoutInfo.)
+        # Create the TextStamper objects all at once, so that if we are using
+        # the LaTeX backend, we can generate them images all in one go. (That
+        # will happen upon the first invocation of doLayout.)
 
         labels = []
 
@@ -1448,233 +1447,7 @@ Examples:
         return (rt, rr, rb, rl)
 
 
-    def _calcOuterSpace (self, ctxt, style):
-        any = [False] * 4
-        self.olinfos = []
-
-        # For each side of the plot, we record the maximum border and
-        # interior sizes both along and away from that side.
-
-        d = np.zeros ((4, 6))
-        work = np.zeros (6)
-
-        for (op, side, pos) in self.opainters:
-            any[side] = True
-            li = op.getLayoutInfo (ctxt, style)
-
-            # Second part of the side label rotation hack. If the
-            # aspect ratio is too big, rotate.
-
-            if op in self.mainLabels and side % 2 == 1 and \
-                   isinstance (op, RightRotationPainter) and \
-                   li.minsize[0] > 0 and li.minsize[1] > 0:
-                aspect = float (li.minsize[0]) / li.minsize[1]
-
-                if aspect > 3.:
-                    if side == 1:
-                        op.setRotation (RightRotationPainter.ROT_CW90)
-                    elif side == 3:
-                        op.setRotation (RightRotationPainter.ROT_CCW90)
-
-                    li = op.getLayoutInfo (ctxt, style)
-
-            # End second part of hack.
-            # Record minimum sizing so configurePainting can put this painter
-            # in the right spot. (We always paint outer painters at their
-            # minimum sizes.)
-
-            self.olinfos.append (li)
-
-            # Translate the outer painter's sizing information from the x/y
-            # plane to the along/away "plane"
-
-            work[0] = li.minborders[side] # border size farther from axis
-            work[1] = li.minsize[1 - (side % 2)] # interior size away from axis
-            work[2] = li.minborders[((side + 2) % 4)] # border size nearer to axis
-            work[3] = li.minborders[((side + 1) % 4)] # b sz to right of axis looking away from it
-            work[4] = li.minsize[side % 2] # interior size along axis
-            work[5] = li.minborders[((side + 3) % 4)] # b sz to left of axis looking away from it
-
-            # Now accumulate that information in the table for this side
-
-            d[side] = np.maximum (d[side], work)
-
-        # The minimum sizes of the outer painters along their axes also constrain
-        # the sizes of the main plot field.
-
-        minfw = max (d[0,4], d[2,4])
-        minfh = max (d[1,4], d[3,4])
-
-        # Finally done.
-
-        return d, minfw, minfh
-
-
-    def getLayoutInfo (self, ctxt, style):
-        # Calling spaceExterior gets all of our axis painters to
-        # register their label markers with the text backend. Do this
-        # before getting the size of anything else so, if we're using
-        # the Latex backend, we can have as many markers registered as
-        # possible before actually doing the slow step of running
-        # latex, which will likely happen when getting the minimum
-        # size of our outer painters. We don't actually save the
-        # result here since we need a better starting guess based on the
-        # outerpainter sizes. If we're painting a scene containing more
-        # than one RectPlot, we'll still get multiple latex invocations,
-        # but this cuts down on them. A full solution requires some kind
-        # of "prepGetLayoutInfo" that propagates down from toplevel to
-        # *all* axis painters to tell them to actually register their
-        # textpainters before minimum sizes are actually calculated.
-
-        self._axisApplyHelper (0, 0, 'spaceExterior', ctxt, style)
-
-        # Get minimum size of plot field based on field painters. We ignore
-        # any aspect ratios specified by the field painters.
-
-        fsizes = np.zeros (6)
-
-        for fp in self.fpainters:
-            fsizes = np.maximum (fsizes, fp.getLayoutInfo (ctxt, style).asBoxInfo ())
-
-        fw = fsizes[0] + fsizes[3] + fsizes[5]
-        fh = fsizes[1] + fsizes[2] + fsizes[4]
-        self.fsizes = fsizes
-
-        # Compute bounds information for the outer painters.  The
-        # outer painters can force the plot field to be bigger since
-        # they must fit within it.
-
-        obd, minofw, minofh = self._calcOuterSpace (ctxt, style)
-        self.outer_border_data = obd
-        opad = self.outerPadding * style.smallScale
-        fw = max (fw, minofw)
-        fh = max (fh, minofh)
-
-        # Now actually do so for the axes. We use the current minimum field size
-        # to guess how much the axis labels are going to overlap from one side
-        # of the plot to adjacent sides. (Preview of coming attractions.)
-
-        axspace = self._axisApplyHelper (fw, fh, 'spaceExterior', ctxt, style)
-
-        # The minimal border can be tricky. It's easy to compute the minimum
-        # size along each side based on the extent of the axis labels and
-        # outer painters sticking out of that side:
-
-        border = [0] * 4
-
-        for i in xrange (4):
-            ospace = obd[i][0:3].sum ()
-            if ospace > 0:
-                # only add padding space if there are painters on this side
-                ospace += opad
-
-            # However, axis labels can overlap from their assigned sides
-            # onto the sides adjacent to them. This is particularly a
-            # problem with totally empty sides, since any content on the
-            # adjacent sides will require a little bit of a
-            # border. Unfortunately, we can't know how much an axis label
-            # will overlap until we know the actual width and height of
-            # the plot. We were conservative and used the minimum possible
-            # field size, which would lead to the maximum possible
-            # overlap.
-
-            aspace = axspace[i][1]
-            aspace = max (aspace, axspace[(i + 1) % 4][2])
-            aspace = max (aspace, axspace[(i + 3) % 4][0])
-
-            border[i] = aspace + ospace
-            #print (i, axspace[i], obd[i][0:3], opad, border[i])
-
-        fw, wh = util.expandAspect (self.fieldAspect, fw, fh)
-        return LayoutInfo (minsize=(fw, fh), minborders=border, aspect=self.fieldAspect)
-
-
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (RectPlot, self).configurePainting (ctxt, style, w, h,
-                                                  bt, br, bb, bl)
-
-        # w and h give the size of the field, bl and bt the x and y
-        # offsets to get to its upper left corner. We have to hope that
-        # our container has honored our aspect ratio request.
-
-        # Configure the field painters, which is easy. We just give them
-        # the smallest possible borders that will make them all happy.
-
-        fsizes = self.fsizes
-        fpw = w - fsizes[3] - fsizes[5]
-        fph = h - fsizes[2] - fsizes[4]
-
-        ctxt.save ()
-        ctxt.translate (bl, bt)
-
-        for fp in self.fpainters:
-            fp.configurePainting (ctxt, style, fpw, fph, *fsizes[2:])
-
-        ctxt.restore ()
-
-        # Now that we know how large the field is, we need to compute
-        # the actual bounds of the axis labels. While doing this, we
-        # verify that there's enough space for the outer painters.
-
-        obd = self.outer_border_data
-        opad = self.outerPadding * style.smallScale
-        s = self._axisApplyHelper (w, h, 'spaceExterior', ctxt, style)
-        axisWidths = [0.] * 4
-
-        for i in xrange (4): # for each side ...
-            # Compute axis width:
-            aw = s[i][1] # at least amount of 'outside' space needed on that axis
-            aw = max (aw, s[(i+1) % 4][2]) # or 'backward' space on next axis
-            aw = max (aw, s[(i+3) % 4][0]) # or 'forward' space on previous axis
-
-            # Compute outer-painter width: sum of maximum seen values of
-            ow = obd[i,0] + obd[i,1] + obd[i,2] # outer-border, interior, inner-border
-            if ow > 0:
-                ow += opad # if there are any outer painters at all, we want some padding.
-
-            if aw + ow > self.border[i]:
-                raise RuntimeError ('Not enough space for axis labels and outside painters ' +
-                                    str ((i, s[i], s[(i+1)%4], s[(i+3)%4],
-                                          obd[i,0:3], aw, opad, self.border[i])))
-
-            axisWidths[i] = aw
-
-        # Now we need to do the outer painters. Getting their position
-        # and borders right is obnoxious.
-
-        owidths = [self.border[i] - axisWidths[i] - opad for i in xrange (4)]
-
-        for i in xrange (len (self.olinfos)):
-            op, side, pos = self.opainters[i]
-            ow, oh = self.olinfos[i].minsize
-            obt, obr, obb, obl = self.olinfos[i].minborders
-
-            if side == self.SIDE_TOP:
-                x = bl + (w - ow) * pos - obl
-                y = owidths[0] - obd[0,2] - oh - obt
-                obb = obd[0,2]
-            elif side == self.SIDE_BOTTOM:
-                x = bl + (w - ow) * pos - obl
-                y = self.fullh - owidths[2]
-                obt = obd[2,2]
-            elif side == self.SIDE_LEFT:
-                x = owidths[3] - obd[3,2] - ow - obl
-                y = bt + (h - oh) * (1 - pos) - obt
-                obr = obd[3,2]
-            elif side == self.SIDE_RIGHT:
-                x = self.fullw - owidths[1]
-                y = bt + (h - oh) * (1 - pos) - obt
-                obl = obd[1,2]
-
-            ctxt.translate (x, y)
-            op.configurePainting (ctxt, style, ow, oh, obt, obr, obb, obl)
-            ctxt.translate (-x, -y)
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (RectPlot, self).tryLayout (ctxt, style, isfinal,
-                                          w, h, bt, br, bb, bl)
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         # w and h give the size of the field, bl and bt the x and y offsets to
         # get to its true upper left corner. We have to hope that our
         # container has honored our aspect ratio request.
@@ -1691,7 +1464,7 @@ Examples:
             ctxt.translate (bl, bt)
 
         for fp in self.fpainters:
-            li = fp.tryLayout (ctxt, style, isfinal, w, h, 0, 0, 0, 0)
+            li = fp.layout (ctxt, style, isfinal, w, h, 0, 0, 0, 0)
             minwidth = max (minwidth, li.minsize[0])
             minheight = max (minheight, li.minsize[1])
             minbt = max (minbt, li.minborders[0])
@@ -1708,7 +1481,6 @@ Examples:
         opad = self.outerPadding * style.smallScale
         s = self._axisApplyHelper (w, h, 'spaceExterior', ctxt, style)
         axisWidths = [0.] * 4
-        print ('s:', s)
 
         for i in xrange (4): # for each side ...
             # Compute axis width:
@@ -1723,15 +1495,12 @@ Examples:
         minbl = max (minbl, axisWidths[3])
 
         owidths = [self.border[i] - axisWidths[i] - opad for i in xrange (4)]
-        print ('aw:', axisWidths)
-        print ('ow:', owidths)
-        print ()
 
         # Now we need to do the outer painters. Getting their positions and
         # borders right is obnoxious.
 
         for op, side, pos in self.opainters:
-            li = op.tryLayout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
+            li = op.layout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
 
             # Second part of the side label rotation hack. If the
             # aspect ratio is too big, rotate.
@@ -1747,7 +1516,7 @@ Examples:
                     elif side == 3:
                         op.setRotation (RightRotationPainter.ROT_CCW90)
 
-                    li = op.tryLayout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
+                    li = op.layout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
             # End second part of hack.
 
             ow, oh = li.minsize
@@ -1783,7 +1552,7 @@ Examples:
             if isfinal:
                 ctxt.translate (x, y)
 
-            li = op.tryLayout (ctxt, style, isfinal, ow, oh, obt, obr, obb, obl)
+            li = op.layout (ctxt, style, isfinal, ow, oh, obt, obr, obb, obl)
 
             if isfinal:
                 ctxt.translate (-x, -y)
@@ -1935,21 +1704,7 @@ class GenericKeyPainter (Painter):
         raise NotImplementedError ()
 
 
-    def getLayoutInfo (self, ctxt, style):
-        self.ts = TextStamper (self._getText ())
-        self.tw, self.th = self.ts.getSize (ctxt, style)
-
-        h = max (self.th, self.vDrawSize * style.largeScale)
-
-        bl = self.hDrawSize * style.largeScale
-        bl += self.hPadding * style.smallScale
-
-        return LayoutInfo (minsize=(self.tw, h), minborders=(0, 0, 0, bl))
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (GenericKeyPainter, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bb, bl)
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         self.ts = TextStamper (self._getText ())
         self.tw, self.th = self.ts.getSize (ctxt, style)
 
@@ -2700,47 +2455,13 @@ class AbsoluteFieldOverlay (FieldPainter):
         self.child.setParent (self)
 
 
-    def getLayoutInfo (self, ctxt, style):
-        h = self.hPadding * style.smallScale
-        v = self.vPadding * style.smallScale
-        bofs = np.asarray ((v, h, v, h))
-
-        # FIXME: ignoring padding requests of the child.
-        self.chlinfo = li = self.child.getLayoutInfo (ctxt, style)
-        li.minsize = [li.minsize[0] * self.scale, li.minsize[1] * self.scale]
-        return LayoutInfo (minsize=li.minsize,
-                           minborders=np.asarray (li.minborders + bofs))
-
-
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (AbsoluteFieldOverlay, self).configurePainting (ctxt, style, w, h,
-                                                              bt, br, bb, bl)
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         # The width and height that we are given are the size of the entire
         # plot field. We place the child at its minimal size inside the field,
         # aligned according to hAlign and vAlign, so that its non-border edges
         # land on the edge of the non-border region of the field.
 
-        chmb = self.chlinfo.minborders
-        dx = bl - chmb[3] + self.hAlign * (w - self.chlinfo.minsize[0])
-        dy = bt - chmb[0] + self.vAlign * (h - self.chlinfo.minsize[1])
-
-        ctxt.save ()
-        ctxt.translate (dx, dy)
-        self.child.configurePainting (ctxt, style, *self.chlinfo.asBoxInfo ())
-        ctxt.restore ()
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (AbsoluteFieldOverlay, self).tryLayout (ctxt, style, isfinal,
-                                                      w, h, bt, br, bb, bl)
-
-        # The width and height that we are given are the size of the entire
-        # plot field. We place the child at its minimal size inside the field,
-        # aligned according to hAlign and vAlign, so that its non-border edges
-        # land on the edge of the non-border region of the field.
-
-        li = self.child.tryLayout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
+        li = self.child.layout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
         dx = bl - li.minborders[3] + self.hAlign * (w - li.minsize[0])
         dy = bt - li.minborders[0] + self.vAlign * (h - li.minsize[1])
 
@@ -2748,7 +2469,7 @@ class AbsoluteFieldOverlay (FieldPainter):
             ctxt.save ()
             ctxt.translate (dx, dy)
 
-        li = self.child.tryLayout (ctxt, style, isfinal, *li.asBoxInfo ())
+        li = self.child.layout (ctxt, style, isfinal, *li.asBoxInfo ())
 
         if isfinal:
             ctxt.restore ()

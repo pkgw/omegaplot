@@ -35,12 +35,12 @@ class Overlay (Painter):
     vBorderSize = 4 # in style.smallScale
     bgStyle = None # style ref
 
-    def getLayoutInfo (self, ctxt, style):
+    def XXXgetLayoutInfo (self, ctxt, style):
         sz = np.zeros (6)
         aspect = None
 
         for p in self.painters:
-            li = p.getLayoutInfo (ctxt, style)
+            li = p.XXXgetLayoutInfo (ctxt, style)
             sz = np.maximum (sz, li.asBoxInfo ())
 
             if aspect is None:
@@ -55,8 +55,8 @@ class Overlay (Painter):
 
         return LayoutInfo (minsize=sz[:2], minborders=sz[2:], aspect=li.aspect)
 
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (Overlay, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (Overlay, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
         bh = self.hBorderSize * style.smallScale
         bv = self.vBorderSize * style.smallScale
@@ -65,7 +65,7 @@ class Overlay (Painter):
         ctxt.translate (bh, bv)
 
         for p in self.painters:
-            p.configurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
+            p.XXXconfigurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
 
         ctxt.restore ()
 
@@ -158,13 +158,13 @@ class Grid (Painter):
         p.setParent (self)
 
 
-    def getLayoutInfo (self, ctxt, style):
+    def XXXgetLayoutInfo (self, ctxt, style):
         v = np.empty ((self.nh, self.nw, 6))
         aspect = None
 
         for r in xrange (self.nh):
             for c in xrange (self.nw):
-                li = self._elements[r,c].getLayoutInfo (ctxt, style)
+                li = self._elements[r,c].XXXgetLayoutInfo (ctxt, style)
                 v[r,c] = li.asBoxInfo ()
 
                 if aspect is None:
@@ -192,8 +192,8 @@ class Grid (Painter):
                                        maxes[4] + vb, maxes[5] + hb))
 
 
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (Grid, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (Grid, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
 
         hPadReal = self.hPadSize * style.smallScale
         vPadReal = self.vPadSize * style.smallScale
@@ -242,7 +242,7 @@ class Grid (Painter):
                 dy = r * fullch
 
                 ctxt.translate (dx, dy)
-                self._elements[r,c].configurePainting (ctxt, style, childw, childh,
+                self._elements[r,c].XXXconfigurePainting (ctxt, style, childw, childh,
                                                        bt, br, bb, bl)
                 ctxt.translate (-dx, -dy)
 
@@ -296,58 +296,7 @@ class RightRotationPainter (Painter):
         else:
             raise ValueError ('rot')
 
-    def getLayoutInfo (self, ctxt, style):
-        li = self.child.getLayoutInfo (ctxt, style)
-        sz = self._rotateSize (self.rotation, *li.asBoxInfo ())
-
-        if li.aspect is None:
-            aspect = None
-        elif self.rotation in (self.ROT_NONE, self.ROT_180):
-            aspect = li.aspect
-        else:
-            aspect = 1. / li.aspect
-
-        minsize = expandAspect (aspect, *sz[:2])
-
-        return LayoutInfo (minsize=minsize, minborders=sz[2:], aspect=aspect)
-
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (RightRotationPainter, self).configurePainting (ctxt, style, w, h,
-                                                              bt, br, bb, bl)
-
-        ctxt.save ()
-
-        # TODO: we should do the best we can to give our child the
-        # aspect ratio it wants, if it wants one.
-
-        fw, fh = self.fullw, self.fullh
-
-        if self.rotation == self.ROT_CW90:
-            ctxt.rotate (np.pi / 2)
-            ctxt.translate (0, -fw)
-        elif self.rotation == self.ROT_180:
-            ctxt.rotate (np.pi)
-            ctxt.translate (-fw, -fh)
-        elif self.rotation == self.ROT_CCW90:
-            ctxt.rotate (-np.pi / 2)
-            ctxt.translate (-fh, 0)
-
-        # Reverse the effects of the rotation on the boundaries
-        rot = self.rotation
-        if rot == self.ROT_CW90:
-            rot = self.ROT_CCW90
-        elif rot == self.ROT_CCW90:
-            rot = self.ROT_CW90
-        sz = self._rotateSize (rot, w, h, bt, br, bb, bl)
-
-        self.child.configurePainting (ctxt, style, *sz)
-
-        ctxt.restore ()
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (RightRotationPainter, self).tryLayout (ctxt, style, isfinal,
-                                                      w, h, bt, br, bb, bl)
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         fw, fh = self.fullw, self.fullh
 
         if isfinal:
@@ -373,7 +322,7 @@ class RightRotationPainter (Painter):
         elif rot == self.ROT_CCW90:
             rot = self.ROT_CW90
         sz = self._rotateSize (rot, w, h, bt, br, bb, bl)
-        li = self.child.tryLayout (ctxt, style, isfinal, *sz)
+        li = self.child.layout (ctxt, style, isfinal, *sz)
 
         if isfinal:
             ctxt.restore ()
@@ -391,9 +340,7 @@ class RightRotationPainter (Painter):
             aspect = 1. / li.aspect
 
         minsize = expandAspect (aspect, sz[0], sz[1])
-        li = LayoutInfo (minsize=minsize, minborders=sz[2:], aspect=aspect)
-        print ('li:', li.minsize, li.minborders)
-        return li
+        return LayoutInfo (minsize=minsize, minborders=sz[2:], aspect=aspect)
 
 
     def doPaint (self, ctxt, style):
@@ -491,12 +438,12 @@ class LinearBox (Painter):
         raise NotImplementedError ()
 
 
-    def _tryChildLayout (self, info, ctxt, style, isfinal, major, minor, bmaj1, bmin1,
+    def _boxDoChildLayout (self, info, ctxt, style, isfinal, major, minor, bmaj1, bmin1,
                          bmaj2, bmin2):
         raise NotImplementedError ()
 
 
-    def _boxTryLayout (self, ctxt, style, isfinal, major, minor, bmaj1, bmin1, bmaj2, bmin2):
+    def _boxDoLayout (self, ctxt, style, isfinal, major, minor, bmaj1, bmin1, bmaj2, bmin2):
         ##XXX ignoring these for now.
         ##want_bmaj = self.majBorderSize * style.smallScale
         ##want_bmin = self.minBorderSize * style.smallScale
@@ -511,7 +458,7 @@ class LinearBox (Painter):
         major += bmaj1 + bmaj2
 
         # Compute some key parameters. We need to make an extra call to
-        # tryLayout on zero-weight children, since we need to know their sizes
+        # doLayout on zero-weight children, since we need to know their sizes
         # before we can allocate leftover space to the non-zero-weight
         # children.
 
@@ -522,8 +469,8 @@ class LinearBox (Painter):
             if e.weight != 0:
                 totwt += e.weight
             else:
-                self._tryChildLayout (e, ctxt, style, False, 0., minor,
-                                      e.bmaj2, bmin1, e.bmaj2, bmin2)
+                self._boxDoChildLayout (e, ctxt, style, False, 0., minor,
+                                        e.bmaj2, bmin1, e.bmaj2, bmin2)
 
                 if e.aspect is not None:
                     e.major = e.minor * e.aspect
@@ -553,8 +500,8 @@ class LinearBox (Painter):
             else:
                 c_major = e.weight * majspace / totwt - e.bmaj1 - e.bmaj2
 
-            self._tryChildLayout (e, ctxt, style, isfinal, c_major, minor,
-                                  e.bmaj1, bmin1, e.bmaj2, bmin2)
+            self._boxDoChildLayout (e, ctxt, style, isfinal, c_major, minor,
+                                    e.bmaj1, bmin1, e.bmaj2, bmin2)
 
             if isfinal:
                 self._boxTranslate (ctxt, e.bmaj1 + c_major + e.bmaj2 + pad, 0)
@@ -611,11 +558,11 @@ class VBox (LinearBox):
     vBorderSize = property (_getVBorderSize, _setVBorderSize)
 
 
-    def _tryChildLayout (self, info, ctxt, style, isfinal, major, minor,
-                         bmaj1, bmin1, bmaj2, bmin2):
-        li = info.painter.tryLayout (ctxt, style, isfinal,
-                                     minor, major, # w = minor, h = major
-                                     bmaj1, bmin1, bmaj2, bmin2) # top, right, bottom, left
+    def _boxDoChildLayout (self, info, ctxt, style, isfinal, major, minor,
+                           bmaj1, bmin1, bmaj2, bmin2):
+        li = info.painter.layout (ctxt, style, isfinal,
+                                  minor, major, # w = minor, h = major
+                                  bmaj1, bmin1, bmaj2, bmin2) # top, right, bottom, left
 
         info.minor, info.major = li.minsize
 
@@ -629,30 +576,11 @@ class VBox (LinearBox):
         else:
             info.aspect = 1. / li.aspect # box aspect is major/minor = h/w
 
-
-    def getLayoutInfo (self, ctxt, style):
-        li = self._boxGetLayoutInfo (ctxt, style)
-        return LayoutInfo (minsize=(li.minsize[1], li.minsize[0]),
-                           minborders=li.minborders)
-
-
     def _boxTranslate (self, ctxt, major, minor):
         ctxt.translate (minor, major)
 
-
-    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
-                            bmaj2, bmin2):
-        child.configurePainting (ctxt, style, minor, major, bmaj1, bmin1, bmaj2, bmin2)
-
-
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (VBox, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
-        self._boxConfigurePainting (ctxt, style, h, w, bt, br, bb, bl)
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (VBox, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bb, bl)
-        return self._boxTryLayout (ctxt, style, isfinal, h, w, bt, br, bb, bl)
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        return self._boxDoLayout (ctxt, style, isfinal, h, w, bt, br, bb, bl)
 
 
 class HBox (LinearBox):
@@ -675,7 +603,7 @@ class HBox (LinearBox):
 
 
     def _getChildMinSize (self, child, ctxt, style):
-        li = child.getLayoutInfo (ctxt, style)
+        li = child.XXXgetLayoutInfo (ctxt, style)
         mb = li.minborders
         return tuple (li.minsize) + (mb[3], mb[0], mb[1], mb[2], li.aspect)
 
@@ -684,7 +612,7 @@ class HBox (LinearBox):
         ctxt.translate (major, minor)
 
 
-    def getLayoutInfo (self, ctxt, style):
+    def XXXgetLayoutInfo (self, ctxt, style):
         li = self._boxGetLayoutInfo (ctxt, style)
         mb = li.minborders
         return LayoutInfo (minsize=li.minsize,
@@ -693,9 +621,9 @@ class HBox (LinearBox):
 
     def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
                             bmaj2, bmin2):
-        child.configurePainting (ctxt, style, major, minor, bmin1, bmaj2, bmin2, bmaj1)
+        child.XXXconfigurePainting (ctxt, style, major, minor, bmin1, bmaj2, bmin2, bmaj1)
 
 
-    def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (HBox, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
+    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+        super (HBox, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
         self._boxConfigurePainting (ctxt, style, w, h, bl, bt, br, bb)

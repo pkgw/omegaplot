@@ -490,31 +490,15 @@ class Painter (object):
         return self
 
 
-    def getLayoutInfo (self, ctxt, style):
-        # This should really be a function of the style only, but
-        # right now ctxt is needed for measuring text sizes.
+    def doLayout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
         return LayoutInfo ()
 
 
-    def configurePainting (self, ctxt, style, w, h, btop, brt, bbot, bleft):
+    def layout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
         p = self._getParent ()
 
         if p is None:
-            raise Exception ('Cannot configure parentless painter')
-
-        self.matrix = ctxt.get_matrix ()
-        self.width = w
-        self.height = h
-        self.border = (btop, brt, bbot, bleft)
-        self.fullw = w + brt + bleft
-        self.fullh = h + btop + bbot
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
-        p = self._getParent ()
-
-        if p is None:
-            raise Exception ('Cannot configure parentless painter')
+            raise Exception ('cannot layout parentless painter')
 
         self.width = w
         self.height = h
@@ -525,7 +509,7 @@ class Painter (object):
         if isfinal:
             self.matrix = ctxt.get_matrix ()
 
-        return LayoutInfo ()
+        return self.doLayout (ctxt, style, isfinal, w, h, btop, brt, bbot, bleft)
 
 
     def paint (self, ctxt, style):
@@ -563,7 +547,7 @@ class Painter (object):
 
         for _ in xrange (10): # TODO: make number of iterations non-arbitrary
             ##print ('Li:', params)
-            li = self.tryLayout (ctxt, style, False, *params)
+            li = self.layout (ctxt, style, False, *params)
 
             # Reallocate based on most recent info. Fill as much of the plot
             # area with non-margins as possible, reallocating any leftover space to
@@ -577,7 +561,7 @@ class Painter (object):
             newparams[2:] = nudgeMargins (doublearray (marginh, marginw), li.minborders)
 
             if ((params - newparams)**2).sum () < 0.1:
-                break
+                break # XXX FIXME: I totally made up this stop criterion.
 
             params = newparams
         else:
@@ -597,7 +581,7 @@ class Painter (object):
         # Commit to this layout and paint.
 
         ##print ('Lf:', params)
-        self.tryLayout (ctxt, style, True, *params)
+        self.layout (ctxt, style, True, *params)
         self.paint (ctxt, style)
 
 
@@ -657,16 +641,7 @@ class DebugPainter (Painter):
     bLeft = 0
     aspect = None
 
-    def getLayoutInfo (self, ctxt, style):
-        s = style.smallScale
-        return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
-                           minborders=(self.bTop * s, self.bRight * s,
-                                       self.bBottom * s, self.bLeft * s),
-                           aspect=self.aspect)
-
-
-    def tryLayout (self, ctxt, style, isfinal, width, height, bt, br, bb, bl):
-        super (DebugPainter, self).tryLayout (ctxt, style, isfinal, width, height, bt, br, bb, bl)
+    def doLayout (self, ctxt, style, isfinal, width, height, bt, br, bb, bl):
         s = style.smallScale
         return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
                            minborders=(self.bTop * s, self.bRight * s,
@@ -742,16 +717,7 @@ class CairoTextPainter (_TextPainterBase):
         if vAlign is not None: self.vAlign = vAlign
 
 
-    def getLayoutInfo (self, ctxt, style):
-        if not self.extents:
-            self.extents = ctxt.text_extents (self.text)
-
-        return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
-
-
-    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        super (CairoTextPainter, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bb, bl)
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
         return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
@@ -834,7 +800,7 @@ class _ImagePainterBase (Painter):
         raise NotImplementedError ()
 
 
-    def getLayoutInfo (self, ctxt, style):
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         surf = self.getSurf (style)
 
         if not isinstance (surf, cairo.ImageSurface):

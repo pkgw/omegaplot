@@ -46,11 +46,11 @@ class LatexPainter (_TextPainterBase):
         self.hAlign = float (hAlign)
         self.vAlign = float (vAlign)
 
-    def getLayoutInfo (self, ctxt, style):
+    def XXXgetLayoutInfo (self, ctxt, style):
         r = self.cache.getRenderer (self.handle)
         return LayoutInfo (minsize=(r.bbw, r.bbh))
 
-    def configurePainting (self, ctxt, style, w, h, bt, br, bl, bb):
+    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bl, bb):
         super (LatexPainter, self).configurePainting (ctxt, style, w, h, bt, br, bl, bb)
 
         r = self.cache.getRenderer (self.handle)
