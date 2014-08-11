@@ -2421,13 +2421,13 @@ class SteppedUpperLimitPainter (FieldPainter):
 
 class AbsoluteFieldOverlay (FieldPainter):
     child = None
-    hAlign = 0.0
-    vAlign = 0.0
+    hAlign = 0.03
+    vAlign = 0.03
     hPadding = 3 # in style.smallScale
     vPadding = 3 # in style.smallScale
     scale = 1.
 
-    def __init__ (self, child=None, hAlign=0.0, vAlign=0.0):
+    def __init__ (self, child=None, hAlign=0.03, vAlign=0.03):
         super (AbsoluteFieldOverlay, self).__init__ ()
 
         self.setChild (child)
@@ -2454,15 +2454,18 @@ class AbsoluteFieldOverlay (FieldPainter):
         self.child.setParent (self)
 
 
-    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        # The width and height that we are given are the size of the entire
-        # plot field. We place the child at its minimal size inside the field,
-        # aligned according to hAlign and vAlign, so that its non-border edges
-        # land on the edge of the non-border region of the field.
+    def getDataBounds (self):
+        return None, None, None, None
 
+    def getKeyPainter (self):
+        return None
+
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         li = self.child.layout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
-        dx = bl - li.minborders[3] + self.hAlign * (w - li.minsize[0])
-        dy = bt - li.minborders[0] + self.vAlign * (h - li.minsize[1])
+        fullw = li.minsize[0] + li.minborders[1] + li.minborders[3]
+        fullh = li.minsize[1] + li.minborders[0] + li.minborders[2]
+        dx = self.hAlign * (w - fullw)
+        dy = self.vAlign * (h - fullh)
 
         if isfinal:
             ctxt.save ()
@@ -2473,14 +2476,7 @@ class AbsoluteFieldOverlay (FieldPainter):
         if isfinal:
             ctxt.restore ()
 
-        return li
-
-
-    def getDataBounds (self):
-        return None, None, None, None
-
-
-    def getKeyPainter (self): return None
+        return LayoutInfo (minsize=(fullw,fullh))
 
 
     def doPaint (self, ctxt, style):
