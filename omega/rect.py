@@ -1557,7 +1557,7 @@ Examples:
         axspace = self._axisApplyHelper (fw, fh, 'spaceExterior', ctxt, style)
 
         # The minimal border can be tricky. It's easy to compute the minimum
-        # size along each size based on the extent of the axis labels and
+        # size along each side based on the extent of the axis labels and
         # outer painters sticking out of that side:
 
         border = [0] * 4
@@ -1621,18 +1621,21 @@ Examples:
         s = self._axisApplyHelper (w, h, 'spaceExterior', ctxt, style)
         axisWidths = [0.] * 4
 
-        for i in xrange (4):
-            aw = s[i][1]
-            aw = max (aw, s[(i+1) % 4][2])
-            aw = max (aw, s[(i+3) % 4][0])
+        for i in xrange (4): # for each side ...
+            # Compute axis width:
+            aw = s[i][1] # at least amount of 'outside' space needed on that axis
+            aw = max (aw, s[(i+1) % 4][2]) # or 'backward' space on next axis
+            aw = max (aw, s[(i+3) % 4][0]) # or 'forward' space on previous axis
 
-            ow = obd[i,0] + obd[i,1] + obd[i,2]
+            # Compute outer-painter width: sum of maximum seen values of
+            ow = obd[i,0] + obd[i,1] + obd[i,2] # outer-border, interior, inner-border
             if ow > 0:
-                ow += opad
+                ow += opad # if there are any outer painters at all, we want some padding.
 
             if aw + ow > self.border[i]:
-                #print (i, aw, obd[i,0:3], opad, self.border[i])
-                raise RuntimeError ('Not enough space for axis labels and outside painters')
+                raise RuntimeError ('Not enough space for axis labels and outside painters ' +
+                                    str ((i, s[i], s[(i+1)%4], s[(i+3)%4],
+                                          obd[i,0:3], aw, opad, self.border[i])))
 
             axisWidths[i] = aw
 
