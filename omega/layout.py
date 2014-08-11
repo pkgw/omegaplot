@@ -583,7 +583,9 @@ class VBox (LinearBox):
         ctxt.translate (minor, major)
 
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        return self._boxDoLayout (ctxt, style, isfinal, h, w, bt, br, bb, bl)
+        li = self._boxDoLayout (ctxt, style, isfinal, h, w, bt, br, bb, bl)
+        return LayoutInfo (minsize=(li.minsize[1], li.minsize[0]),
+                           minborders=li.minborders)
 
 
 class HBox (LinearBox):
@@ -621,4 +623,7 @@ class HBox (LinearBox):
         ctxt.translate (major, minor)
 
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        return self._boxDoLayout (ctxt, style, isfinal, w, h, bl, bt, br, bb)
+        li = self._boxDoLayout (ctxt, style, isfinal, w, h, bl, bt, br, bb)
+        return LayoutInfo (minsize=li.minsize,
+                           minborders=(li.minborders[1], li.minborders[2],
+                                       li.minborders[3], li.minborders[0]))
