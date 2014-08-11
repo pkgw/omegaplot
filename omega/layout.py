@@ -35,39 +35,40 @@ class Overlay (Painter):
     vBorderSize = 4 # in style.smallScale
     bgStyle = None # style ref
 
-    def XXXgetLayoutInfo (self, ctxt, style):
-        sz = np.zeros (6)
-        aspect = None
+    ## def XXXgetLayoutInfo (self, ctxt, style):
+    ##     sz = np.zeros (6)
+    ##     aspect = None
+    ##
+    ##     for p in self.painters:
+    ##         li = p.XXXgetLayoutInfo (ctxt, style)
+    ##         sz = np.maximum (sz, li.asBoxInfo ())
+    ##
+    ##         if aspect is None:
+    ##             aspect = li.aspect
+    ##         elif li.aspect is not None and li.aspect != aspect:
+    ##             raise RuntimeError ('cannot overlay painters with disageeing aspect '
+    ##                                 'ratios (%f, %f)' % (aspect, li.aspect))
+    ##
+    ##     sz[:2] = expandAspect (aspect, *sz[:2])
+    ##     sz[3:6:2] += self.hBorderSize * style.smallScale
+    ##     sz[2:6:2] += self.vBorderSize * style.smallScale
+    ##
+    ##     return LayoutInfo (minsize=sz[:2], minborders=sz[2:], aspect=li.aspect)
+    ##
+    ## def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+    ##     bh = self.hBorderSize * style.smallScale
+    ##     bv = self.vBorderSize * style.smallScale
+    ##
+    ##     ctxt.save ()
+    ##     ctxt.translate (bh, bv)
+    ##
+    ##     for p in self.painters:
+    ##         p.XXXconfigurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
+    ##
+    ##     ctxt.restore ()
 
-        for p in self.painters:
-            li = p.XXXgetLayoutInfo (ctxt, style)
-            sz = np.maximum (sz, li.asBoxInfo ())
-
-            if aspect is None:
-                aspect = li.aspect
-            elif li.aspect is not None and li.aspect != aspect:
-                raise RuntimeError ('cannot overlay painters with disageeing aspect '
-                                    'ratios (%f, %f)' % (aspect, li.aspect))
-
-        sz[:2] = expandAspect (aspect, *sz[:2])
-        sz[3:6:2] += self.hBorderSize * style.smallScale
-        sz[2:6:2] += self.vBorderSize * style.smallScale
-
-        return LayoutInfo (minsize=sz[:2], minborders=sz[2:], aspect=li.aspect)
-
-    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (Overlay, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
-
-        bh = self.hBorderSize * style.smallScale
-        bv = self.vBorderSize * style.smallScale
-
-        ctxt.save ()
-        ctxt.translate (bh, bv)
-
-        for p in self.painters:
-            p.XXXconfigurePainting (ctxt, style, w, h, bt - bv, br - bh, bb - bv, bl - bh)
-
-        ctxt.restore ()
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        raise NotImplementedError ('omega.layout.Overlay')
 
     def doPaint (self, ctxt, style):
         if self.bgStyle is not None:
@@ -158,96 +159,99 @@ class Grid (Painter):
         p.setParent (self)
 
 
-    def XXXgetLayoutInfo (self, ctxt, style):
-        v = np.empty ((self.nh, self.nw, 6))
-        aspect = None
+    ## def XXXgetLayoutInfo (self, ctxt, style):
+    ##     v = np.empty ((self.nh, self.nw, 6))
+    ##     aspect = None
+    ##
+    ##     for r in xrange (self.nh):
+    ##         for c in xrange (self.nw):
+    ##             li = self._elements[r,c].XXXgetLayoutInfo (ctxt, style)
+    ##             v[r,c] = li.asBoxInfo ()
+    ##
+    ##             if aspect is None:
+    ##                 aspect = li.aspect
+    ##             elif li.aspect is not None and li.aspect != aspect:
+    ##                 raise RuntimeError ('cannot grid painters with disagreeing aspect '
+    ##                                     'ratios (%f, %f)' % (aspect, li.aspect))
+    ##
+    ##     # Simple, totally uniform borders and sizes.
+    ##
+    ##     self.maxes = maxes = v.max (0).max (0)
+    ##     self._childaspect = aspect
+    ##     maxes[:2] = expandAspect (aspect, *maxes[:2])
+    ##
+    ##     minw = self.nw * maxes[0]
+    ##     minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
+    ##     minh = self.nh * maxes[1]
+    ##     minh += (self.nh - 1) * (maxes[2] + maxes[4] + self.vPadSize * style.smallScale)
+    ##
+    ##     hb = self.hBorderSize * style.smallScale
+    ##     vb = self.vBorderSize * style.smallScale
+    ##
+    ##     return LayoutInfo (minsize=(minw, minh),
+    ##                        minborders=(maxes[2] + vb, maxes[3] + hb,
+    ##                                    maxes[4] + vb, maxes[5] + hb))
+    ##
+    ##
+    ## def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
+    ##     super (Grid, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
+    ##
+    ##     hPadReal = self.hPadSize * style.smallScale
+    ##     vPadReal = self.vPadSize * style.smallScale
+    ##     hb = self.hBorderSize * style.smallScale
+    ##     vb = self.vBorderSize * style.smallScale
+    ##
+    ##     # Figure out borders and such. Children get shrunk to provide
+    ##     # the right aspect ratio, with extra space redistributed into
+    ##     # their margins. All the while we account for our extra border
+    ##     # around the whole thing.
+    ##
+    ##     bt -= vb
+    ##     br -= hb
+    ##     bb -= vb
+    ##     bl -= hb
+    ##
+    ##     childw = (w - (self.nw - 1) * (hPadReal + bl + br)) / self.nw
+    ##     childh = (h - (self.nh - 1) * (vPadReal + bt + bb)) / self.nh
+    ##     childw, childh = shrinkAspect (self._childaspect, childw, childh)
+    ##
+    ##     if self.nw == 1:
+    ##         bhextra = w - childw
+    ##     else:
+    ##         bhextra = (w - self.nw * childw) / (self.nw - 1) - (hPadReal + bl + br)
+    ##         bhextra /= self.nw
+    ##
+    ##     if self.nh == 1:
+    ##         bvextra = h - childh
+    ##     else:
+    ##         bvextra = (h - self.nh * childh) / (self.nh - 1) - (vPadReal + bt + bb)
+    ##         bvextra /= self.nw
+    ##
+    ##     bt, br, bb, bl = nudgeMargins ((bt + 0.5 * bvextra, br + 0.5 * bhextra,
+    ##                                     bb + 0.5 * bvextra, bl + 0.5 * bhextra),
+    ##                                    self.maxes[2:])
+    ##
+    ##     fullcw = childw + hPadReal + bl + br
+    ##     fullch = childh + vPadReal + bt + bb
+    ##
+    ##     ctxt.save ()
+    ##     ctxt.translate (hb, vb)
+    ##
+    ##     for r in xrange (self.nh):
+    ##         for c in xrange (self.nw):
+    ##             dx = c * fullcw
+    ##             dy = r * fullch
+    ##
+    ##             ctxt.translate (dx, dy)
+    ##             self._elements[r,c].XXXconfigurePainting (ctxt, style, childw, childh,
+    ##                                                    bt, br, bb, bl)
+    ##             ctxt.translate (-dx, -dy)
+    ##
+    ##     ctxt.restore ()
 
-        for r in xrange (self.nh):
-            for c in xrange (self.nw):
-                li = self._elements[r,c].XXXgetLayoutInfo (ctxt, style)
-                v[r,c] = li.asBoxInfo ()
 
-                if aspect is None:
-                    aspect = li.aspect
-                elif li.aspect is not None and li.aspect != aspect:
-                    raise RuntimeError ('cannot grid painters with disagreeing aspect '
-                                        'ratios (%f, %f)' % (aspect, li.aspect))
-
-        # Simple, totally uniform borders and sizes.
-
-        self.maxes = maxes = v.max (0).max (0)
-        self._childaspect = aspect
-        maxes[:2] = expandAspect (aspect, *maxes[:2])
-
-        minw = self.nw * maxes[0]
-        minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
-        minh = self.nh * maxes[1]
-        minh += (self.nh - 1) * (maxes[2] + maxes[4] + self.vPadSize * style.smallScale)
-
-        hb = self.hBorderSize * style.smallScale
-        vb = self.vBorderSize * style.smallScale
-
-        return LayoutInfo (minsize=(minw, minh),
-                           minborders=(maxes[2] + vb, maxes[3] + hb,
-                                       maxes[4] + vb, maxes[5] + hb))
-
-
-    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (Grid, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
-
-        hPadReal = self.hPadSize * style.smallScale
-        vPadReal = self.vPadSize * style.smallScale
-        hb = self.hBorderSize * style.smallScale
-        vb = self.vBorderSize * style.smallScale
-
-        # Figure out borders and such. Children get shrunk to provide
-        # the right aspect ratio, with extra space redistributed into
-        # their margins. All the while we account for our extra border
-        # around the whole thing.
-
-        bt -= vb
-        br -= hb
-        bb -= vb
-        bl -= hb
-
-        childw = (w - (self.nw - 1) * (hPadReal + bl + br)) / self.nw
-        childh = (h - (self.nh - 1) * (vPadReal + bt + bb)) / self.nh
-        childw, childh = shrinkAspect (self._childaspect, childw, childh)
-
-        if self.nw == 1:
-            bhextra = w - childw
-        else:
-            bhextra = (w - self.nw * childw) / (self.nw - 1) - (hPadReal + bl + br)
-            bhextra /= self.nw
-
-        if self.nh == 1:
-            bvextra = h - childh
-        else:
-            bvextra = (h - self.nh * childh) / (self.nh - 1) - (vPadReal + bt + bb)
-            bvextra /= self.nw
-
-        bt, br, bb, bl = nudgeMargins ((bt + 0.5 * bvextra, br + 0.5 * bhextra,
-                                        bb + 0.5 * bvextra, bl + 0.5 * bhextra),
-                                       self.maxes[2:])
-
-        fullcw = childw + hPadReal + bl + br
-        fullch = childh + vPadReal + bt + bb
-
-        ctxt.save ()
-        ctxt.translate (hb, vb)
-
-        for r in xrange (self.nh):
-            for c in xrange (self.nw):
-                dx = c * fullcw
-                dy = r * fullch
-
-                ctxt.translate (dx, dy)
-                self._elements[r,c].XXXconfigurePainting (ctxt, style, childw, childh,
-                                                       bt, br, bb, bl)
-                ctxt.translate (-dx, -dy)
-
-        ctxt.restore ()
-
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        raise NotImplementedError ('omega.layout.Grid')
 
     def doPaint (self, ctxt, style):
         for r in xrange (self.nh):
