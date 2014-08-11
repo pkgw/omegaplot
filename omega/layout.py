@@ -492,7 +492,6 @@ class LinearBox (Painter):
 
         if isfinal:
             ctxt.save ()
-            self._boxTranslate (ctxt, bmaj1, bmin1)
 
         for e in self._elements:
             if e.weight == 0:
@@ -602,28 +601,20 @@ class HBox (LinearBox):
     vBorderSize = property (_getVBorderSize, _setVBorderSize)
 
 
-    def _getChildMinSize (self, child, ctxt, style):
-        li = child.XXXgetLayoutInfo (ctxt, style)
-        mb = li.minborders
-        return tuple (li.minsize) + (mb[3], mb[0], mb[1], mb[2], li.aspect)
-
+    def _boxDoChildLayout (self, info, ctxt, style, isfinal, major, minor,
+                           bmaj1, bmin1, bmaj2, bmin2):
+        li = info.painter.layout (ctxt, style, isfinal,
+                                  major, minor, # w = major, h = minor
+                                  bmin1, bmaj2, bmin2, bmaj1) # top, right, bottom, left
+        info.major, info.minor = li.minsize
+        info.bmaj1 = li.minborders[3]
+        info.bmin1 = li.minborders[0]
+        info.bmaj2 = li.minborders[1]
+        info.bmin2 = li.minborders[2]
+        info.aspect = li.aspect
 
     def _boxTranslate (self, ctxt, major, minor):
         ctxt.translate (major, minor)
 
-
-    def XXXgetLayoutInfo (self, ctxt, style):
-        li = self._boxGetLayoutInfo (ctxt, style)
-        mb = li.minborders
-        return LayoutInfo (minsize=li.minsize,
-                           minborders=(mb[1], mb[2], mb[3], mb[0]))
-
-
-    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
-                            bmaj2, bmin2):
-        child.XXXconfigurePainting (ctxt, style, major, minor, bmin1, bmaj2, bmin2, bmaj1)
-
-
-    def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-        super (HBox, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
-        self._boxConfigurePainting (ctxt, style, w, h, bl, bt, br, bb)
+    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        return self._boxDoLayout (ctxt, style, isfinal, w, h, bl, bt, br, bb)

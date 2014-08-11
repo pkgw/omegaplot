@@ -1456,8 +1456,7 @@ Examples:
         minbt = minbr = minbb = minbl = 0.
 
         # Field painters are easy -- their layouts are identical to our own,
-        # but without borders. We do give them an offset coordinate system to
-        # make axis computations simpler.
+        # but without borders.
 
         if isfinal:
             ctxt.save ()
