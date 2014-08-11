@@ -105,6 +105,23 @@ class PangoPainter (base._TextPainterBase):
         self._dy = self.vAlign * (h - e[H]) + e[Y]
 
 
+    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bl, bb):
+        super (PangoPainter, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bl, bb)
+
+        pcr = pangocairo.CairoContext (ctxt)
+        layout = pcr.create_layout ()
+        globalLayoutMutate (layout)
+        layout.set_markup (self.markup)
+        e = layout.get_extents ()[1] # [1] -> use logical extents
+        e = [v / S for v in e]
+        self._extents = e
+
+        self._dx = self.hAlign * (w - e[W]) + e[X]
+        self._dy = self.vAlign * (h - e[H]) + e[Y]
+
+        return base.LayoutInfo (minsize=(e[W], e[H]))
+
+
     def doPaint (self, ctxt, style):
         pcr = pangocairo.CairoContext (ctxt)
 

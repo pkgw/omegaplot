@@ -344,8 +344,75 @@ class RightRotationPainter (Painter):
 
         ctxt.restore ()
 
+    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        super (RightRotationPainter, self).tryLayout (ctxt, style, isfinal,
+                                                      w, h, bt, br, bb, bl)
+
+        fw, fh = self.fullw, self.fullh
+
+        if isfinal:
+            ctxt.save ()
+
+            if self.rotation == self.ROT_CW90:
+                ctxt.rotate (np.pi / 2)
+                ctxt.translate (0, -fw)
+            elif self.rotation == self.ROT_180:
+                ctxt.rotate (np.pi)
+                ctxt.translate (-fw, -fh)
+            elif self.rotation == self.ROT_CCW90:
+                ctxt.rotate (-np.pi / 2)
+                ctxt.translate (-fh, 0)
+
+        # Here we need to transform in the reverse sense of how we store
+        # `self.rotation`. If self.rotation is CW90, then what the child sees
+        # for `bt` should be our `br`.
+
+        rot = self.rotation
+        if rot == self.ROT_CW90:
+            rot = self.ROT_CCW90
+        elif rot == self.ROT_CCW90:
+            rot = self.ROT_CW90
+        sz = self._rotateSize (rot, w, h, bt, br, bb, bl)
+        li = self.child.tryLayout (ctxt, style, isfinal, *sz)
+
+        if isfinal:
+            ctxt.restore ()
+
+        # Here we do the rotation in the forward sense. If self.rotation is
+        # CW90, what the child reports as `bt` should become our `br`.
+
+        sz = self._rotateSize (self.rotation, *li.asBoxInfo ())
+
+        if li.aspect is None:
+            aspect = None
+        elif self.rotation in (self.ROT_NONE, self.ROT_180):
+            aspect = li.aspect
+        else:
+            aspect = 1. / li.aspect
+
+        minsize = expandAspect (aspect, sz[0], sz[1])
+        li = LayoutInfo (minsize=minsize, minborders=sz[2:], aspect=aspect)
+        print ('li:', li.minsize, li.minborders)
+        return li
+
+
     def doPaint (self, ctxt, style):
         self.child.paint (ctxt, style)
+
+
+class _BoxChild (object):
+    painter = None
+    weight = 1.0 # weight in space allocation.
+    majsz = 0.0 # main area size along major axis
+    minsz = 0.0 # ... along minor axis.
+    bmaj1 = 0.0 # border size along major axis, closer to box front
+    bmaj2 = 0.0 # border size along major axis, closer to end of box
+    bmin1 = 0.0 # border size along minor axis, clockwise from box front on major axis
+    bmin2 = 0.0 # ... counterclockwise from box front on major axis
+    aspect = None # desired aspect ratio as **major/minor**.
+
+    def __init__ (self, painter):
+        self.painter = painter
 
 
 class LinearBox (Painter):
@@ -363,7 +430,7 @@ class LinearBox (Painter):
 
         for i in xrange (0, self.size):
             np = NullPainter ()
-            self._elements[i] = (np, 1.0, 0.0, 0.0, 0.0, None)
+            self._elements[i] = _BoxChild (np)
             np.setParent (self)
 
     # FIXME: when these are changed, need to indicate
@@ -373,201 +440,145 @@ class LinearBox (Painter):
     padSize = 1 # as above for interior padding along major axis
 
     def __getitem__ (self, idx):
-        return self._elements[idx][0]
+        return self._elements[idx].painter
 
     def __setitem__ (self, idx, value):
-        prevptr, prevwt, prevb1, prevmaj, prevb2, prevaspect = self._elements[idx]
+        info = self._elements[idx]
 
-        if prevptr is value:
+        if info.painter is value:
             return
 
         # This will recurse to our own _lostChild
-        if prevptr is not None:
-            prevptr.setParent (None)
+        if info.painter is not None:
+            info.painter.setParent (None)
 
-        # Do this before modifying self._elements, so that
-        # if value is already in _elements and is being
-        # moved to an earlier position, _lostChild doesn't
-        # remove the wrong entry.
+        # Setting the parent of `value` may also recurse into _lostChild, if
+        # it's coming from another location in the box. Doing this before
+        # adjusting `info` makes sure we modify the right list entry.
 
         if value is None:
             value = NullPainter ()
         value.setParent (self)
 
-        self._elements[idx] = (value, prevwt, prevb1, prevmaj, prevb2, prevaspect)
+        info.painter = value
+        info.majsz = info.minsz = info.bmaj1 = info.bmaj2 = info.bmin1 = info.bmin2 = 0.
+        info.aspect = None
+
 
     def appendChild (self, child, weight=1.0):
         if child is None:
             child = NullPainter ()
         child.setParent (self)
 
-        self._elements.append ((None, weight, 0.0, 0.0, 0.0, None))
+        self._elements.append (_BoxChild (child))
+        self._elements[-1].weight = weight
         self.size += 1
-        self[self.size - 1] = child
+
 
     def _lostChild (self, child):
-        for i in xrange (0, self.size):
-            ptr, wt, tmp, tmp, tmp, tmp = self._elements[i]
-
-            if ptr is child:
-                newptr = NullPainter ()
-                self._elements[i] = (newptr, wt, 0.0, 0.0, 0.0, None)
-                newptr.setParent (self)
+        for e in self._elements:
+            if e.painter is child:
+                e.painter = NullPainter ().setParent (self)
 
 
     def setWeight (self, index, wt):
-        ptr, oldwt, bmaj1, majsz, bmaj2, aspect = self._elements[index]
-        self._elements[index] = ptr, wt, bmaj1, majsz, bmaj2, aspect
+        self._elements[index].weight = wt
 
 
-    def _getChildMinSize (self, child, ctxt, style):
-        raise NotImplementedError ()
-
-
-    def _boxGetLayoutInfo (self, ctxt, style):
-        majb = self.majBorderSize * style.smallScale
-        minb = self.minBorderSize * style.smallScale
-
-        minmaj = (self.size - 1) * self.padSize * style.smallScale
-
-        maxSPW = 0 # max size per weight
-        totwt = 0
-        maxbmin1 = maxbmin2 = maxcmin = 0
-
-        for i in xrange (self.size):
-            ptr, wt, tmp, tmp, tmp, tmp = self._elements[i]
-            cmaj, cmin, cbmaj1, cbmin1, cbmaj2, cbmin2, caspect = \
-                self._getChildMinSize (ptr, ctxt, style)
-
-            cmaj, cmin = expandAspect (caspect, cmaj, cmin)
-
-            # Along the major direction, we don't equalize borders at all, so the
-            # effective size of each child includes its borders...
-
-            cfull = cbmaj1 + cmaj + cbmaj2
-            cbmaj1eff = cbmaj1
-            cbmaj2eff = cbmaj2
-
-            # ... except that the borders of the first and last children are
-            # incorporated to the borders of the box as a whole.
-
-            if i == 0:
-                bmaj1 = cbmaj1
-                cfull -= cbmaj1
-                cbmaj1eff = 0
-            if i == self.size - 1:
-                bmaj2 = cbmaj2
-                cfull -= cbmaj2
-                cbmaj2eff = 0
-
-            maxcmin = max (maxcmin, cmin)
-            maxbmin1 = max (maxbmin1, cbmin1)
-            maxbmin2 = max (maxbmin2, cbmin2)
-
-            self._elements[i] = (ptr, wt, cbmaj1eff, cmaj, cbmaj2eff, caspect)
-
-            if wt == 0:
-                minmaj += cfull
-            else:
-                maxSPW = max (maxSPW, 1. * cfull / wt)
-                totwt += wt
-
-            #print (i, childh, minh)
-
-        minmaj += maxSPW * totwt
-
-        return LayoutInfo (minsize=(minmaj, maxcmin),
-                           minborders=(bmaj1 + majb, maxbmin1 + minb,
-                                       bmaj2 + majb, maxbmin2 + minb))
-
+    # ########################################
 
     def _boxTranslate (self, ctxt, major, minor):
         raise NotImplementedError ()
 
 
-    def _boxConfigureChild (self, child, ctxt, style, major, minor, bmaj1, bmin1,
-                            bmaj2, bmin2):
+    def _tryChildLayout (self, info, ctxt, style, isfinal, major, minor, bmaj1, bmin1,
+                         bmaj2, bmin2):
         raise NotImplementedError ()
 
 
-    def _boxConfigurePainting (self, ctxt, style, major, minor, bmaj1, bmin1, bmaj2, bmin2):
-        bmaj = self.majBorderSize * style.smallScale
-        bmin = self.minBorderSize * style.smallScale
+    def _boxTryLayout (self, ctxt, style, isfinal, major, minor, bmaj1, bmin1, bmaj2, bmin2):
+        ##XXX ignoring these for now.
+        ##want_bmaj = self.majBorderSize * style.smallScale
+        ##want_bmin = self.minBorderSize * style.smallScale
         pad = self.padSize * style.smallScale
 
-        # Compensate for our whitespace border.
-        bmin1 -= bmin
-        bmin2 -= bmin
+        # We set our requested bmaj1 and bmaj2 (the "outer" values) to be the
+        # bmaj1 and bmaj2 of our first and last children, respectively (the
+        # "inner" values). Processing is simplified if we just pretend that
+        # the "outer" bmaj1/bmaj2 are zero, and fix up the LayoutInfo at the
+        # end.
 
-        # How much major-axis space do we have to allocate for the
-        # painters that have nonzero weights? It's the total major
-        # axis space including borders except for our whitespace
-        # border, minus the internal padding, minus the size of the
-        # painters with zero weights.
+        major += bmaj1 + bmaj2
 
-        majspace = major - (self.size - 1) * pad + bmaj1 + bmaj2 - 2 * bmaj
+        # Compute some key parameters. We need to make an extra call to
+        # tryLayout on zero-weight children, since we need to know their sizes
+        # before we can allocate leftover space to the non-zero-weight
+        # children.
+
         totwt = 0.0
+        tot_zerowt_major_size = 0.0
 
-        for i in xrange (self.size):
-            e = self._elements[i]
-            wt = e[1]
-            totwt += wt
-
-            if wt == 0:
-                majspace -= e[2] + e[3] + e[4]
-
-        # Allocate space to the painters
-
-        ctxt.save ()
-        self._boxTranslate (ctxt, bmaj, bmin)
-
-        for i in xrange (self.size):
-            ptr, wt, cbmaj1, cmaj, cbmaj2, caspect = self._elements[i]
-
-            if wt == 0:
-                cfullmaj = cbmaj1 + cmaj + cbmaj2
+        for e in self._elements:
+            if e.weight != 0:
+                totwt += e.weight
             else:
-                if totwt > 0:
-                    cfullmaj = majspace * wt / totwt
-                else:
-                    cfullmaj = 0
+                self._tryChildLayout (e, ctxt, style, False, 0., minor,
+                                      e.bmaj2, bmin1, e.bmaj2, bmin2)
 
-                cfullmaj = max (cfullmaj, cbmaj1 + cmaj + cbmaj2)
-                assert cfullmaj <= majspace, 'Not enough room in linear box!'
+                if e.aspect is not None:
+                    e.major = e.minor * e.aspect
+                # otherwise, e.major is the requested minimum size.
 
-            if i == 0:
-                cbmaj1 = bmaj1 - bmaj
-            if i == self.size - 1:
-                cbmaj2 = bmaj2 - bmaj
+                tot_zerowt_major_size += e.major + e.bmaj1 + e.bmaj2
 
-            cmaj = cfullmaj - cbmaj1 - cbmaj2
-            cmin, cbmin1, cbmin2 = minor, bmin1, bmin2
+        # Now we can compute the amount of major-axis space that's available
+        # to allocate to the non-zero-weight children.
 
-            if caspect is not None:
-                delta = cmaj - caspect * minor
+        majspace = major - (self.size - 1) * pad - tot_zerowt_major_size
+        maxSPW = 0. # maximum size per weight.
+        max_minor = max_bmin1 = max_bmin2 = 0.
 
-                if delta > 0:
-                    # FIXME: this can be uneven or possibly break minimum sizing
-                    cmaj -= delta
-                    cbmaj1 += 0.5 * delta
-                    cbmaj2 += 0.5 * delta
-                elif delta < 0:
-                    # This is going to look gross but we need to try as hard as
-                    # we can to honor aspect ratios
-                    delta = minor - cmaj / caspect
-                    cmin -= delta
-                    cbmin1 += 0.5 * delta
-                    cbmin2 += 0.5 * delta
+        # With this, we can attempt a final layout. Information from the
+        # previous layout attempt is reused, so that multiple calls should
+        # iterate us to the right breakdown of the total child size into
+        # bmaj1/main/bmaj2.
 
-            self._boxConfigureChild (ptr, ctxt, style, cmaj, cmin,
-                                     cbmaj1, cbmin1, cbmaj2, cbmin2)
-            self._boxTranslate (ctxt, cfullmaj + pad, 0)
+        if isfinal:
+            ctxt.save ()
+            self._boxTranslate (ctxt, bmaj1, bmin1)
 
-            if wt != 0:
-                majspace -= cfullmaj
-                totwt -= wt
+        for e in self._elements:
+            if e.weight == 0:
+                c_major = e.major
+            else:
+                c_major = e.weight * majspace / totwt - e.bmaj1 - e.bmaj2
 
-        ctxt.restore ()
+            self._tryChildLayout (e, ctxt, style, isfinal, c_major, minor,
+                                  e.bmaj1, bmin1, e.bmaj2, bmin2)
+
+            if isfinal:
+                self._boxTranslate (ctxt, e.bmaj1 + c_major + e.bmaj2 + pad, 0)
+
+            if e.weight != 0:
+                if e.aspect is not None:
+                    raise RuntimeError ('box items with fixed aspect ratios must have zero weights')
+                fullreq = e.bmaj1 + e.bmaj2 + e.major
+                maxSPW = max (maxSPW, 1. * fullreq / e.weight)
+
+            max_minor = max (max_minor, e.minor)
+            max_bmin1 = max (max_bmin1, e.bmin1)
+            max_bmin2 = max (max_bmin2, e.bmin2)
+
+        # Report back results
+
+        if isfinal:
+            ctxt.restore ()
+
+        major = maxSPW * totwt - self._elements[0].bmaj1 - self._elements[-1].bmaj2
+        return LayoutInfo (minsize=(major, max_minor),
+                           minborders=(self._elements[0].bmaj1, max_bmin1,
+                                       self._elements[0].bmaj2, max_bmin2))
+
 
     def doPaint (self, ctxt, style):
         if self.bgStyle is not None:
@@ -577,8 +588,8 @@ class LinearBox (Painter):
             ctxt.fill ()
             ctxt.restore ()
 
-        for i in xrange (self.size):
-            self._elements[i][0].paint (ctxt, style)
+        for e in self._elements:
+            e.painter.paint (ctxt, style)
 
 
 class VBox (LinearBox):
@@ -600,13 +611,23 @@ class VBox (LinearBox):
     vBorderSize = property (_getVBorderSize, _setVBorderSize)
 
 
-    def _getChildMinSize (self, child, ctxt, style):
-        li = child.getLayoutInfo (ctxt, style)
+    def _tryChildLayout (self, info, ctxt, style, isfinal, major, minor,
+                         bmaj1, bmin1, bmaj2, bmin2):
+        li = info.painter.tryLayout (ctxt, style, isfinal,
+                                     minor, major, # w = minor, h = major
+                                     bmaj1, bmin1, bmaj2, bmin2) # top, right, bottom, left
+
+        info.minor, info.major = li.minsize
+
+        info.bmaj1 = li.minborders[0]
+        info.bmin1 = li.minborders[1]
+        info.bmaj2 = li.minborders[2]
+        info.bmin2 = li.minborders[3]
+
         if li.aspect is None:
-            aspect = None
+            info.aspect = None
         else:
-            aspect = 1. / li.aspect # box aspect is major/minor = h/w
-        return (li.minsize[1], li.minsize[0]) + tuple (li.minborders) + (aspect, )
+            info.aspect = 1. / li.aspect # box aspect is major/minor = h/w
 
 
     def getLayoutInfo (self, ctxt, style):
@@ -627,6 +648,11 @@ class VBox (LinearBox):
     def configurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
         super (VBox, self).configurePainting (ctxt, style, w, h, bt, br, bb, bl)
         self._boxConfigurePainting (ctxt, style, h, w, bt, br, bb, bl)
+
+
+    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        super (VBox, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bb, bl)
+        return self._boxTryLayout (ctxt, style, isfinal, h, w, bt, br, bb, bl)
 
 
 class HBox (LinearBox):

@@ -487,6 +487,7 @@ class Painter (object):
             self.parentRef = self._ref (parent)
 
         self.matrix = None
+        return self
 
 
     def getLayoutInfo (self, ctxt, style):
@@ -509,9 +510,29 @@ class Painter (object):
         self.fullh = h + btop + bbot
 
 
+    def tryLayout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
+        p = self._getParent ()
+
+        if p is None:
+            raise Exception ('Cannot configure parentless painter')
+
+        self.width = w
+        self.height = h
+        self.border = (btop, brt, bbot, bleft)
+        self.fullw = w + brt + bleft
+        self.fullh = h + btop + bbot
+
+        if isfinal:
+            self.matrix = ctxt.get_matrix ()
+
+        return LayoutInfo ()
+
+
     def paint (self, ctxt, style):
         if self.matrix is None:
-            raise RuntimeError ('Attempting to paint without having called configurePainting')
+            raise RuntimeError ('attempting to paint without having called tryLayout; ' +
+                                'selfcls=' + self.__class__.__name__ + '; ' +
+                                'parentcls=' + self._getParent ().__class__.__name__)
 
         ctxt.save ()
         ctxt.set_matrix (self.matrix)
@@ -527,33 +548,56 @@ class Painter (object):
     def renderBasic (self, ctxt, style, w, h):
         from .util import doublearray, shrinkAspect, nudgeMargins
 
-        # Must init the context before calling getLayoutInfo
-        # in case we're using the Cairo text backend -- we need
-        # the font size to be set correctly. Hacky; should go away
-        # with better support for multiple text backends.
+        # Must init the context before trying layout so we can get text
+        # extents. This should all be encapsulated in the text backend itself,
+        # and we should give the style a get_extents() function.
 
         style.initContext (ctxt, w, h)
 
-        li = self.getLayoutInfo (ctxt, style)
-        mainw = max (w - li.minborders[1] - li.minborders[3], 0) # fill as much as possible
-        mainh = max (h - li.minborders[0] - li.minborders[2], 0) # by default
-        mainw, mainh = shrinkAspect (li.aspect, mainw, mainh)
-        needw = mainw + li.minborders[1] + li.minborders[3]
-        needh = mainh + li.minborders[0] + li.minborders[2]
+        margin = style.smallScale * 2
+        mainw = w - 2 * margin
+        mainh = h - 2 * margin
+        # this is (mainw, mainh, btop, brt, bbot, bleft):
+        params = np.array ([mainw, mainh, margin, margin, margin, margin])
+        newparams = params.copy ()
+
+        for _ in xrange (10): # TODO: make number of iterations non-arbitrary
+            ##print ('Li:', params)
+            li = self.tryLayout (ctxt, style, False, *params)
+
+            # Reallocate based on most recent info. Fill as much of the plot
+            # area with non-margins as possible, reallocating any leftover space to
+            # make the margins as even as possible.
+            mainw = max (w - li.minborders[1] - li.minborders[3], 0)
+            mainh = max (h - li.minborders[0] - li.minborders[2], 0)
+            mainw, mainh = shrinkAspect (li.aspect, mainw, mainh)
+            marginw = 0.5 * (w - mainw)
+            marginh = 0.5 * (h - mainh)
+            newparams[:2] = (mainw, mainh)
+            newparams[2:] = nudgeMargins (doublearray (marginh, marginw), li.minborders)
+
+            if ((params - newparams)**2).sum () < 0.1:
+                break
+
+            params = newparams
+        else:
+            # This branch is run if we don't break out of the loop.
+            raise RuntimeError ('layout failed to converge; q=%f' % ((params - newparams)**2).sum ())
+
+        # Can we actually do this?
+
+        needw = params[0] + params[3] + params[5]
+        needh = params[1] + params[2] + params[4]
 
         if w < needw or h < needh:
-            raise ContextTooSmallError ('Context too small: got (%s, %s);'
+            raise ContextTooSmallError ('context too small: got (%s, %s);'
                                         ' need (%s, %s)' % \
                                         (w, h, needw, needh))
 
-        # spend extra space on margins, trying to center the main plot
-        # area as much as possible.
+        # Commit to this layout and paint.
 
-        marginw = 0.5 * (w - mainw)
-        marginh = 0.5 * (h - mainh)
-        margins = nudgeMargins (doublearray (marginh, marginw), li.minborders)
-
-        self.configurePainting (ctxt, style, mainw, mainh, *margins)
+        ##print ('Lf:', params)
+        self.tryLayout (ctxt, style, True, *params)
         self.paint (ctxt, style)
 
 
@@ -614,6 +658,15 @@ class DebugPainter (Painter):
     aspect = None
 
     def getLayoutInfo (self, ctxt, style):
+        s = style.smallScale
+        return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
+                           minborders=(self.bTop * s, self.bRight * s,
+                                       self.bBottom * s, self.bLeft * s),
+                           aspect=self.aspect)
+
+
+    def tryLayout (self, ctxt, style, isfinal, width, height, bt, br, bb, bl):
+        super (DebugPainter, self).tryLayout (ctxt, style, isfinal, width, height, bt, br, bb, bl)
         s = style.smallScale
         return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
                            minborders=(self.bTop * s, self.bRight * s,
@@ -693,6 +746,14 @@ class CairoTextPainter (_TextPainterBase):
         if not self.extents:
             self.extents = ctxt.text_extents (self.text)
 
+        return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
+
+
+    def tryLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        super (CairoTextPainter, self).tryLayout (ctxt, style, isfinal, w, h, bt, br, bb, bl)
+
+        if not self.extents:
+            self.extents = ctxt.text_extents (self.text)
         return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
 
 
