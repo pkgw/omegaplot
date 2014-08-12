@@ -159,7 +159,7 @@ class BitmapSizes (Sizes):
 class VectorSizes (Sizes):
     smallScale = 1.5
     largeScale = 4.5
-    fineLine = 0.5
+    fineLine = 2.
     normalFontSize = 12
 
 
