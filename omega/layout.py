@@ -448,10 +448,17 @@ class LinearBox (Painter):
 
 
     def _boxDoLayout (self, ctxt, style, isfinal, major, minor, bmaj1, bmin1, bmaj2, bmin2):
-        ##XXX ignoring these for now.
-        ##want_bmaj = self.majBorderSize * style.smallScale
-        ##want_bmin = self.minBorderSize * style.smallScale
         pad = self.padSize * style.smallScale
+        want_bmaj = self.majBorderSize * style.smallScale
+        want_bmin = self.minBorderSize * style.smallScale
+
+        def enforce_min_bounds (i, e):
+            if i == 0:
+                e.bmaj1 = max (e.bmaj1, want_bmaj)
+            elif i == len (self._elements) - 1:
+                e.bmaj2 = max (e.bmaj2, want_bmaj)
+            e.bmin1 = max (e.bmin1, want_bmin)
+            e.bmin2 = max (e.bmin2, want_bmin)
 
         # We set our requested bmaj1 and bmaj2 (the "outer" values) to be the
         # bmaj1 and bmaj2 of our first and last children, respectively (the
@@ -469,12 +476,13 @@ class LinearBox (Painter):
         totwt = 0.0
         tot_zerowt_major_size = 0.0
 
-        for e in self._elements:
+        for i, e in enumerate (self._elements):
             if e.weight != 0:
                 totwt += e.weight
             else:
                 self._boxDoChildLayout (e, ctxt, style, False, 0., minor,
                                         e.bmaj2, bmin1, e.bmaj2, bmin2)
+                enforce_min_bounds (i, e)
 
                 if e.aspect is not None:
                     e.major = e.minor * e.aspect
@@ -497,14 +505,17 @@ class LinearBox (Painter):
         if isfinal:
             ctxt.save ()
 
-        for e in self._elements:
+        for i, e in enumerate (self._elements):
             if e.weight == 0:
                 c_major = e.major
             else:
                 c_major = e.weight * majspace / totwt - e.bmaj1 - e.bmaj2
 
+            # Enforce before and after; we know better than our children.
+            enforce_min_bounds (i, e)
             self._boxDoChildLayout (e, ctxt, style, isfinal, c_major, minor,
                                     e.bmaj1, bmin1, e.bmaj2, bmin2)
+            enforce_min_bounds (i, e)
 
             if isfinal:
                 self._boxTranslate (ctxt, e.bmaj1 + c_major + e.bmaj2 + pad, 0)
@@ -524,10 +535,11 @@ class LinearBox (Painter):
         if isfinal:
             ctxt.restore ()
 
-        major = maxSPW * totwt - self._elements[0].bmaj1 - self._elements[-1].bmaj2
+        bmaj1 = self._elements[0].bmaj1
+        bmaj2 = self._elements[-1].bmaj2
+        major = maxSPW * totwt - bmaj1 - bmaj2
         return LayoutInfo (minsize=(major, max_minor),
-                           minborders=(self._elements[0].bmaj1, max_bmin1,
-                                       self._elements[0].bmaj2, max_bmin2))
+                           minborders=(bmaj1, max_bmin1, bmaj2, max_bmin2))
 
 
     def doPaint (self, ctxt, style):
