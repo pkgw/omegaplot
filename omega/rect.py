@@ -878,8 +878,16 @@ from .stamps import DataThemedStamp as _DTS
 
 class RectPlot (Painter):
     """A rectangular plot. The workhorse of omegaplot, so it better be
-    good!"""
+    good!
 
+    Field painters have a "zheight" property that determines the Z ordering of
+    drawing -- things with numerically larger Z-heights are drawn on top of
+    things with smaller Z-heights. The default is 0. The axes are drawn at a
+    Z-height of 1000, and the default key is drawn with a Z-height of 2000.
+    Make sure to call things "zheight" since "height" of course refers to
+    the laid-out dimensions of the painter.
+
+    """
     fieldAspect = None # Aspect ratio of the plot field, None for free
     outerPadding = 3 # in smallScale
 
@@ -943,6 +951,10 @@ class RectPlot (Painter):
             from . import layout
             self.defaultKey = layout.VBox (0)
             self.defaultKeyOverlay = AbsoluteFieldOverlay (self.defaultKey)
+            self.defaultKeyOverlay.childBgStyle = {'color': 'faint'}
+            self.defaultKeyOverlay.hPadding = 3
+            self.defaultKeyOverlay.vPadding = 3
+            self.defaultKeyOverlay.zheight = 2000
             self.add (self.defaultKeyOverlay, rebound=False)
 
         if isinstance (item, basestring):
@@ -955,13 +967,17 @@ class RectPlot (Painter):
 
 
     def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
-             dsn=None, field=None, rself=False):
+             dsn=None, field=None, zheight=0., rself=False):
         # FIXME: don't rebound if the FP doesn't have any data.
 
         assert (isinstance (fp, FieldPainter))
 
         fp.setParent (self)
         self.fpainters.append (fp)
+
+        if getattr (fp, 'zheight', None) is None:
+            fp.zheight = zheight
+        self.fpainters.sort (key=lambda fp: fp.zheight)
 
         if field is not None:
             fp.field = field
@@ -1564,27 +1580,40 @@ Examples:
     def doPaint (self, ctxt, style):
         """Paint the rectangular plot: axes and data items."""
 
-        # Clip to the field, then paint the field items.
+        # Needed in case there are no painters:
+        i = 0
+        # Needed in case zheights have been changed after construction:
+        self.fpainters.sort (key=lambda fp: fp.zheight)
+
+        # Clip to the field, then paint the field items that are below the
+        # axes.
 
         ctxt.save ()
-        ctxt.rectangle (self.border[3], self.border[0],
-                        self.width, self.height)
+        ctxt.rectangle (self.border[3], self.border[0], self.width, self.height)
         ctxt.clip ()
-
-        for fp in self.fpainters:
-            fp.paint (ctxt, style)
-
+        for i in xrange (len (self.fpainters)):
+            if self.fpainters[i].zheight >= 1000:
+                break
+            self.fpainters[i].paint (ctxt, style)
         ctxt.restore ()
 
-        # Axes
+        # Now axes
 
         ctxt.save ()
         ctxt.translate (self.border[3], self.border[0])
-        self._axisApplyHelper (self.width, self.height, \
-                               'paint', ctxt, style)
+        self._axisApplyHelper (self.width, self.height, 'paint', ctxt, style)
         ctxt.restore ()
 
-        # Now, outer painters
+        # Now any higher field painters
+
+        ctxt.save ()
+        ctxt.rectangle (self.border[3], self.border[0], self.width, self.height)
+        ctxt.clip ()
+        for i in xrange (i, len (self.fpainters)):
+            self.fpainters[i].paint (ctxt, style)
+        ctxt.restore ()
+
+        # Now, outer painters.
 
         for (op, side, pos) in self.opainters:
             op.paint (ctxt, style)
@@ -2420,12 +2449,25 @@ class SteppedUpperLimitPainter (FieldPainter):
 
 
 class AbsoluteFieldOverlay (FieldPainter):
+    """We hack around a bit with the boundaries here. When we're used to draw an
+    axis key, our inner VBox uses its boundary area to align the drawing of
+    the plot symbols and text. This makes it really hard to get a nice even
+    border around key area if we use the VBox's [hv]BorderSize parameters.
+    Therefore, this object allows some internal padding to be applied outside
+    of the layout/boundary system. This gives us a nice simple even border and
+    avoids having to deal with messy boundary semantics in our containing
+    RectPlot and child VBox.
+
+    For the same reason, we have a childBgStyle and can optionally draw a
+    background.
+
+    """
     child = None
     hAlign = 0.03
     vAlign = 0.03
-    hPadding = 3 # in style.smallScale
-    vPadding = 3 # in style.smallScale
-    scale = 1.
+    hPadding = 0 # in style.smallScale
+    vPadding = 0 # in style.smallScale
+    childBgStyle = None
 
     def __init__ (self, child=None, hAlign=0.03, vAlign=0.03):
         super (AbsoluteFieldOverlay, self).__init__ ()
@@ -2461,15 +2503,24 @@ class AbsoluteFieldOverlay (FieldPainter):
         return None
 
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        hpad = self.hPadding * style.smallScale
+        vpad = self.vPadding * style.smallScale
+
         li = self.child.layout (ctxt, style, False, 0., 0., 0., 0., 0., 0.)
-        fullw = li.minsize[0] + li.minborders[1] + li.minborders[3]
-        fullh = li.minsize[1] + li.minborders[0] + li.minborders[2]
+        fullw = li.minsize[0] + li.minborders[1] + li.minborders[3] + 2 * hpad
+        fullh = li.minsize[1] + li.minborders[0] + li.minborders[2] + 2 * vpad
         dx = self.hAlign * (w - fullw)
         dy = self.vAlign * (h - fullh)
 
+        if self.childBgStyle is not None:
+            # The RectPlot always lays *us* out to the full field size, so we
+            # need to save this information to draw the padded background
+            # around the child.
+            self._cbg_info = (dx, dy, fullw, fullh)
+
         if isfinal:
             ctxt.save ()
-            ctxt.translate (dx, dy)
+            ctxt.translate (dx + hpad, dy + vpad)
 
         li = self.child.layout (ctxt, style, isfinal, *li.asBoxInfo ())
 
@@ -2481,6 +2532,15 @@ class AbsoluteFieldOverlay (FieldPainter):
 
     def doPaint (self, ctxt, style):
         super (AbsoluteFieldOverlay, self).doPaint (ctxt, style)
+
+        if self.childBgStyle is not None:
+            dx, dy, w, h = self._cbg_info
+            ctxt.save ()
+            style.apply (ctxt, self.childBgStyle)
+            ctxt.rectangle (dx, dy, w, h)
+            ctxt.fill ()
+            ctxt.restore ()
+
         self.child.paint (ctxt, style)
 
 
