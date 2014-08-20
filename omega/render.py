@@ -52,9 +52,17 @@ class Pager (object):
 
 
 class DisplayPager (Pager):
-    # This has to be able to page and to be reused
-    def canPage (self): return True
-    def isReusable (self): return True
+    # This has to be able to page and to be reused, and can maybe tell us what
+    # the most recently-shown Painter is.
+
+    def canPage (self):
+        return True
+
+    def isReusable (self):
+        return True
+
+    def getLatestPainter (self):
+        return None
 
 
 # Builtin pagers for various Cairo-supported output formats
@@ -583,3 +591,14 @@ def showPainter (painter, ident, **kwargs):
     pager.send (painter)
     pager.done ()
     return pager
+
+
+def getLatestPainter ():
+    """Return the most recent painter that was rendered, or None if no such
+    painter is defined.
+
+    """
+    pager = _showPagers.get (_lastUsedIdent)
+    if pager is None:
+        return None
+    return pager.getLatestPainter ()

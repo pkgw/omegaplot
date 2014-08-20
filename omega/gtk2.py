@@ -240,6 +240,10 @@ class NoLoopDisplayPager (render.DisplayPager):
         self._killWin ()
 
 
+    def getLatestPainter (self):
+        return self.win.op.getPainter ()
+
+
     def _makeWin (self):
         win = PagerWindow (True, False, self.style, self.parent)
         win.connect (b'destroy', self._winDestroyed)
@@ -292,6 +296,10 @@ class YesLoopDisplayPager (render.DisplayPager):
 
         self.win.setPainter (painter)
         self.win.show_all ()
+
+
+    def getLatestPainter (self):
+        return self.win.op.getPainter ()
 
 
     def done (self):

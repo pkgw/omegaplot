@@ -37,5 +37,4 @@ from .layout import Overlay, Grid
 from .styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
 from .util import (quickXY, quickXYErr, quickDF, quickHist, quickContours,
                    quickImage, quickPager, _demo)
-from .render import makePager, makeDisplayPager
-
+from .render import makePager, makeDisplayPager, getLatestPainter as latest

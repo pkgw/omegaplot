@@ -216,6 +216,10 @@ class Gtk3DisplayPager (render.DisplayPager):
                 self.win.set_painter (None)
 
 
+    def getLatestPainter (self):
+        return self.win.op.tpp.getPainter ()
+
+
     def done (self):
         if self.is_mainloop_running ():
             # Leave the window around for the user to admire.
