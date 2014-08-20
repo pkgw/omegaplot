@@ -1697,6 +1697,39 @@ class FieldPainter (Painter):
     def getKeyPainter (self):
         raise NotImplementedError ()
 
+    # Overrides so that you can do plot.add (foo).show () -- one is never
+    # going to want to show the FieldPainter itself. (Famous last words?)
+
+    def render (self, func):
+        p = self._getParent ()
+        if p is None:
+            raise Exception ('cannot render() parent-less FieldPainter')
+        return p.render (func)
+
+    def sendTo (self, pager):
+        p = self._getParent ()
+        if p is None:
+            raise Exception ('cannot sendTo() parent-less FieldPainter')
+        return p.sendTo (func)
+
+    def show (self, **kwargs):
+        p = self._getParent ()
+        if p is None:
+            raise Exception ('cannot show() parent-less FieldPainter')
+        return p.show (**kwargs)
+
+    def save (self, filename, **kwargs):
+        p = self._getParent ()
+        if p is None:
+            raise Exception ('cannot save() parent-less FieldPainter')
+        return p.save (filename, **kwargs)
+
+    def dump (self, **kwargs):
+        p = self._getParent ()
+        if p is None:
+            raise Exception ('cannot dump() parent-less FieldPainter')
+        return p.dump (**kwargs)
+
 
 class GenericKeyPainter (Painter):
     vDrawSize = 2 # in style.largeScale
