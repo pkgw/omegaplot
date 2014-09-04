@@ -19,8 +19,11 @@ out=
  if unspecified. Format guessed from the file extension; legal ones
  include pdf, eps, ps, png, svg.
 
-fontsize=
- Size of the font to use (default: 10)
+pangofamily=
+ Font family to use in Pango.
+
+pangosize=
+ Size of the font to use in Pango.
 
 subsuperrise=
  Amount to offset subscripts and superscripts in *builtin* text labels,
@@ -100,7 +103,8 @@ class Config (ParseKeywords):
         return v
 
     out = str
-    fontsize = 10.0
+    pangofamily = str
+    pangosize = float
     subsuperrise = 5000
     coloring = 'white_to_black'
     logfactor = float
@@ -245,7 +249,13 @@ def plot (config):
 
 
 def doit (config):
-    om.pango.setFont (size=config.fontsize)
+    fontparams = {}
+    if config.pangofamily is not None:
+        fontparams['family'] = config.pangofamily
+    if config.pangosize is not None:
+        fontparams['size'] = config.pangosize
+    if len (fontparams):
+        omega.pango.setFont (**fontparams)
     om.pango.setBuiltinSubsuperRise (config.subsuperrise)
     p = plot (config)
 
