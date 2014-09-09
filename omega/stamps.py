@@ -253,6 +253,16 @@ def symPlus (ctxt, style, size, fill=False):
 
 # Stamps drawing these symbols
 
+class Nothing (PrimaryRStamp):
+    def __init__ (self, fill=True, **kwargs):
+        PrimaryRStamp.__init__ (self, **kwargs)
+        # we accept the 'fill' argument for API consistency
+
+
+    def _paintOne (self, ctxt, style, size):
+        pass
+
+
 class Circle (PrimaryRStamp):
     def __init__ (self, fill=True, **kwargs):
         PrimaryRStamp.__init__ (self, **kwargs)
