@@ -427,6 +427,7 @@ class LinearAxisPainter (BlankAxisPainter):
     paintLabels = True # draw any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
     everyNthMajor = 1 # draw every Nth major tick label
+    everyNthMinor = 1 # draw every Nth minor tick label, if labelMinorTicks is True
 
     def nudgeBounds (self):
         self.axis.normalize ()
@@ -503,25 +504,45 @@ class LinearAxisPainter (BlankAxisPainter):
         else:
             zeroclamp = None
 
+        # We don't implement this function as a generator because in some
+        # cases there is a nontrivial efficiency gain from bunching up the
+        # transforms.
+
         values = []
         isMajors = []
+        getsLabels = []
+        majorCount = -1
+        minorCount = coeff % self.minorTicks - 1
+
         while self.axis.inbounds (val):
             values.append (val)
-            isMajors.append (coeff % self.minorTicks == 0)
+            isMajor = coeff % self.minorTicks == 0
+            isMajors.append (isMajor)
+
+            minorCount += 1
+            if isMajor:
+                majorCount += 1
+                minorCount = 0
+
+            getsLabel = isMajor and (majorCount % self.everyNthMajor) == 0
+            if self.labelMinorTicks:
+                getsLabel = getsLabel or (minorCount % self.everyNthMinor) == 0
+
+            getsLabels.append (getsLabel)
+
+            # Advance value, adjusting so that the inbounds test gets a better
+            # value to check.
+
             val += inc
             coeff += 1
 
-            # Adjust the value here so that the inbounds
-            # test gets a better value to check.
             if zeroclamp and abs(val) < zeroclamp:
                 val = 0.
             if coeff % self.minorTicks == 0:
                 val = int (round (val / 10.**mip)) * 10**mip
 
-        # In some cases there is a nontrivial efficiency gain
-        # from bunching up the transforms.
         xformed = self.axis.transform (np.asarray (values))
-        return zip (values, xformed, isMajors)
+        return zip (values, xformed, isMajors, getsLabels)
 
 
     def getLabelInfos (self, ctxt, style):
@@ -534,23 +555,14 @@ class LinearAxisPainter (BlankAxisPainter):
         # invocation of getSize.)
 
         labels = []
-        majorCount = -1
 
-        for (val, xformed, isMajor) in self.getTickLocations ():
-            if isMajor:
-                majorCount += 1
-            if not isMajor and not self.labelMinorTicks:
-                continue
-            if isMajor and (majorCount % self.everyNthMajor) != 0:
-                continue
+        for val, xformed, isMajor, getsLabel in self.getTickLocations ():
+            if getsLabel:
+                s = self.formatLabel (val)
+                labels.append ((TextStamper (s), xformed, isMajor))
 
-            s = self.formatLabel (val)
-
-            labels.append ((TextStamper (s), xformed, isMajor))
-
-        for (ts, xformed, isMajor) in labels:
+        for ts, xformed, isMajor in labels:
             w, h = ts.getSize (ctxt, style)
-
             yield (ts, xformed, w, h)
 
 
@@ -574,15 +586,18 @@ class LinearAxisPainter (BlankAxisPainter):
 
         style.apply (ctxt, self.tickStyle)
 
-        for (val, xformed, isMajor) in self.getTickLocations ():
-            if isMajor: len = self.majorTickScale * style.largeScale
-            else: len = self.minorTickScale * style.smallScale
+        for val, xformed, isMajor, getsLabel in self.getTickLocations ():
+            if isMajor:
+                len = self.majorTickScale * style.largeScale
+            else:
+                len = self.minorTickScale * style.smallScale
 
-            # If our tick would land right on the bounds of the plot field,
-            # it might overplot on the baseline of the axis adjacent to ours.
+            # If our tick would land right on the bounds of the plot field, it
+            # might overplot on the baseline of the axis adjacent to ours.
             # This is ugly, so don't do it. However, this behavior can be
-            # disabled by setting avoidBounds to false, so that if the adjacent
-            # axes don't draw their baselines, we'll see the ticks as desired.
+            # disabled by setting avoidBounds to false, so that if the
+            # adjacent axes don't draw their baselines, we'll see the ticks as
+            # desired.
 
             if not self.avoidBounds or (xformed != 0. and xformed != 1.):
                 helper.paintTickIn (ctxt, xformed, len)
