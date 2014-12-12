@@ -167,10 +167,12 @@ class Grid (Painter):
         hbord = self._hborders
         hbord[0] = max (hbord[0], self.hBorderSize * style.smallScale, bl)
         hbord[-1] = max (hbord[-1], self.hBorderSize * style.smallScale, br)
+        hbord[1:-1] = np.maximum (hbord[1:-1], self.hPadSize * style.smallScale)
 
         vbord = self._vborders
         vbord[0] = max (vbord[0], self.vBorderSize * style.smallScale, bt)
         vbord[-1] = max (vbord[-1], self.vBorderSize * style.smallScale, bb)
+        vbord[1:-1] = np.maximum (vbord[1:-1], self.vPadSize * style.smallScale)
 
         cw = (w - hbord[1:-1].sum ()) / self.nw
         ch = (h - vbord[1:-1].sum ()) / self.nh
