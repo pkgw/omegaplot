@@ -101,14 +101,13 @@ class Grid (Painter):
                 self[r,c] = NullPainter ()
                 self[r,c].setParent (self)
 
+        self._hborders = np.zeros (nw + 1)
+        self._vborders = np.zeros (nh + 1)
 
-    # FIXME: when these are changed, need to indicate
-    # that a reconfigure is necessary.
     hBorderSize = 2 # size of horz. border in style.smallScale
     vBorderSize = 2 # as above for vertical border
     hPadSize = 1 # size of interior horz. padding in style.smallScale
     vPadSize = 1 # as above for interior vertical padding
-
 
     def _mapIndex (self, idx):
         try:
@@ -131,9 +130,9 @@ class Grid (Painter):
 
         if prev is value: return
 
-        # HACK: check that 'value' isn't already in us, somewhere.
-        # That can cause MultiPager to fall down in a common use-case.
-        # This is probably not the best fix for that problem.
+        # HACK: check that 'value' isn't already in us, somewhere. That can
+        # cause MultiPager to fall down in a common use-case. This is probably
+        # not the best fix for that problem.
 
         if value is not None and value in self._elements:
             raise ValueError ('Moving child within a grid disallowed. Remove it first.')
@@ -141,10 +140,9 @@ class Grid (Painter):
         # This will recurse to our own _lostChild
         if prev is not None: prev.setParent (None)
 
-        # Do this before modifying self._elements, so that
-        # if value is already in _elements and is being
-        # moved to an earlier position, _lostChild doesn't
-        # remove the wrong entry.
+        # Do this before modifying self._elements, so that if value is already
+        # in _elements and is being moved to an earlier position, _lostChild
+        # doesn't remove the wrong entry.
 
         if value is None: value = NullPainter ()
         value.setParent (self)
@@ -159,99 +157,55 @@ class Grid (Painter):
         p.setParent (self)
 
 
-    ## def XXXgetLayoutInfo (self, ctxt, style):
-    ##     v = np.empty ((self.nh, self.nw, 6))
-    ##     aspect = None
-    ##
-    ##     for r in xrange (self.nh):
-    ##         for c in xrange (self.nw):
-    ##             li = self._elements[r,c].XXXgetLayoutInfo (ctxt, style)
-    ##             v[r,c] = li.asBoxInfo ()
-    ##
-    ##             if aspect is None:
-    ##                 aspect = li.aspect
-    ##             elif li.aspect is not None and li.aspect != aspect:
-    ##                 raise RuntimeError ('cannot grid painters with disagreeing aspect '
-    ##                                     'ratios (%f, %f)' % (aspect, li.aspect))
-    ##
-    ##     # Simple, totally uniform borders and sizes.
-    ##
-    ##     self.maxes = maxes = v.max (0).max (0)
-    ##     self._childaspect = aspect
-    ##     maxes[:2] = expandAspect (aspect, *maxes[:2])
-    ##
-    ##     minw = self.nw * maxes[0]
-    ##     minw += (self.nw - 1) * (maxes[3] + maxes[5] + self.hPadSize * style.smallScale)
-    ##     minh = self.nh * maxes[1]
-    ##     minh += (self.nh - 1) * (maxes[2] + maxes[4] + self.vPadSize * style.smallScale)
-    ##
-    ##     hb = self.hBorderSize * style.smallScale
-    ##     vb = self.vBorderSize * style.smallScale
-    ##
-    ##     return LayoutInfo (minsize=(minw, minh),
-    ##                        minborders=(maxes[2] + vb, maxes[3] + hb,
-    ##                                    maxes[4] + vb, maxes[5] + hb))
-    ##
-    ##
-    ## def XXXconfigurePainting (self, ctxt, style, w, h, bt, br, bb, bl):
-    ##     super (Grid, self).XXXconfigurePainting (ctxt, style, w, h, bt, br, bb, bl)
-    ##
-    ##     hPadReal = self.hPadSize * style.smallScale
-    ##     vPadReal = self.vPadSize * style.smallScale
-    ##     hb = self.hBorderSize * style.smallScale
-    ##     vb = self.vBorderSize * style.smallScale
-    ##
-    ##     # Figure out borders and such. Children get shrunk to provide
-    ##     # the right aspect ratio, with extra space redistributed into
-    ##     # their margins. All the while we account for our extra border
-    ##     # around the whole thing.
-    ##
-    ##     bt -= vb
-    ##     br -= hb
-    ##     bb -= vb
-    ##     bl -= hb
-    ##
-    ##     childw = (w - (self.nw - 1) * (hPadReal + bl + br)) / self.nw
-    ##     childh = (h - (self.nh - 1) * (vPadReal + bt + bb)) / self.nh
-    ##     childw, childh = shrinkAspect (self._childaspect, childw, childh)
-    ##
-    ##     if self.nw == 1:
-    ##         bhextra = w - childw
-    ##     else:
-    ##         bhextra = (w - self.nw * childw) / (self.nw - 1) - (hPadReal + bl + br)
-    ##         bhextra /= self.nw
-    ##
-    ##     if self.nh == 1:
-    ##         bvextra = h - childh
-    ##     else:
-    ##         bvextra = (h - self.nh * childh) / (self.nh - 1) - (vPadReal + bt + bb)
-    ##         bvextra /= self.nw
-    ##
-    ##     bt, br, bb, bl = nudgeMargins ((bt + 0.5 * bvextra, br + 0.5 * bhextra,
-    ##                                     bb + 0.5 * bvextra, bl + 0.5 * bhextra),
-    ##                                    self.maxes[2:])
-    ##
-    ##     fullcw = childw + hPadReal + bl + br
-    ##     fullch = childh + vPadReal + bt + bb
-    ##
-    ##     ctxt.save ()
-    ##     ctxt.translate (hb, vb)
-    ##
-    ##     for r in xrange (self.nh):
-    ##         for c in xrange (self.nw):
-    ##             dx = c * fullcw
-    ##             dy = r * fullch
-    ##
-    ##             ctxt.translate (dx, dy)
-    ##             self._elements[r,c].XXXconfigurePainting (ctxt, style, childw, childh,
-    ##                                                    bt, br, bb, bl)
-    ##             ctxt.translate (-dx, -dy)
-    ##
-    ##     ctxt.restore ()
-
-
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        raise NotImplementedError ('omega.layout.Grid')
+        """Here we collapse the borders of adjacent children à la CSS. We don't
+        currently support fixed child aspect ratios, but it wouldn't be too
+        hard to do. By definition all children will come out with the same
+        aspect ratio.
+
+        """
+        hbord = self._hborders
+        hbord[0] = max (hbord[0], self.hBorderSize * style.smallScale, bl)
+        hbord[-1] = max (hbord[-1], self.hBorderSize * style.smallScale, br)
+
+        vbord = self._vborders
+        vbord[0] = max (vbord[0], self.vBorderSize * style.smallScale, bt)
+        vbord[-1] = max (vbord[-1], self.vBorderSize * style.smallScale, bb)
+
+        cw = (w - hbord[1:-1].sum ()) / self.nw
+        ch = (h - vbord[1:-1].sum ()) / self.nh
+        mincw = minch = 0
+
+        for r in xrange (self.nh):
+            for c in xrange (self.nw):
+                if isfinal:
+                    ctxt.save ()
+                    ctxt.translate (c * cw + hbord[:c].sum (),
+                                    r * ch + vbord[:r].sum ())
+
+                li = self._elements[r,c].layout (ctxt, style, isfinal,
+                                                 cw, ch,
+                                                 vbord[r], hbord[c+1], vbord[r+1], hbord[c])
+                if li.aspect is not None:
+                    raise NotImplementedError ('Grid with fixed-aspect-ratio children')
+
+                if isfinal:
+                    ctxt.restore ()
+
+                mincw = max (mincw, li.minsize[0])
+                minch = max (minch, li.minsize[1])
+
+                vbord[r] = max (vbord[r], li.minborders[0])
+                hbord[c+1] = max (hbord[c+1], li.minborders[1])
+                vbord[r+1] = max (vbord[r+1], li.minborders[2])
+                hbord[c] = max (hbord[c], li.minborders[3])
+
+        minw = mincw * self.nw + hbord[1:-1].sum ()
+        minh = minch * self.nh + vbord[1:-1].sum ()
+
+        return LayoutInfo (minsize=(minw, minh),
+                           minborders=(vbord[0], hbord[-1], vbord[-1], hbord[0]))
+
 
     def doPaint (self, ctxt, style):
         for r in xrange (self.nh):
@@ -298,7 +252,9 @@ class RightRotationPainter (Painter):
         elif rot == self.ROT_CCW90:
             return h, w, br, bb, bl, bt
         else:
-            raise ValueError ('rot')
+            raise ValueError
+
+        ('rot')
 
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         fw, fh = self.fullw, self.fullh
