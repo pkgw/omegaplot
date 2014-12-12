@@ -1125,6 +1125,19 @@ class RectPlot (Painter):
         raise ValueError ('don\'t know what to do with DataFrame input ' + str (df))
 
 
+    def addHist (self, data, bins=10, range=None, **kwargs):
+        """Compute a histogram and add it to the plot."""
+        kcsp = _kwordExtract (kwargs, 'lineStyle', 'connectors', 'keyText')
+
+        values, edges = np.histogram (data, bins, range)
+        if edges.size != values.size + 1:
+            raise RuntimeError ('using too-old numpy? got weird histogram result')
+
+        csp = ContinuousSteppedPainter (**kcsp)
+        csp.setDataHist (edges, values)
+        return self.add (csp, **kwargs)
+
+
     def addContours (self, data, rowcoords, colcoords, keyText='Contours',
                      **kwargs):
         dp = GridContours (keyText=keyText, **_kwordExtract (kwargs, 'lineStyle'))
