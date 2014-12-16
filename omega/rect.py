@@ -1621,6 +1621,7 @@ Examples:
         ctxt.clip ()
         for i in xrange (len (self.fpainters)):
             if self.fpainters[i].zheight >= 1000:
+                i -= 1
                 break
             self.fpainters[i].paint (ctxt, style)
         ctxt.restore ()
@@ -1637,7 +1638,7 @@ Examples:
         ctxt.save ()
         ctxt.rectangle (self.border[3], self.border[0], self.width, self.height)
         ctxt.clip ()
-        for i in xrange (i, len (self.fpainters)):
+        for i in xrange (i + 1, len (self.fpainters)):
             self.fpainters[i].paint (ctxt, style)
         ctxt.restore ()
 
