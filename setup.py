@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup (
     name = 'omegaplot',
-    version = '0.2',
+    version = '0.3',
 
     zip_safe = True,
     packages = ['omega', 'oputil'],
