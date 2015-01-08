@@ -1444,7 +1444,7 @@ Examples:
         # later if it's awkwardly wide.
 
         if not isinstance (val, Painter):
-            val = TextPainter (str (val))
+            val = TextPainter (unicode (val))
 
             if side % 2 == 1:
                 val = RightRotationPainter (val)
