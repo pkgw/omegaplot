@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- mode: python; coding: utf-8 -*-
 # Copyright 2011, 2012, 2014 Peter Williams
 #
 # This file is part of omegaplot.
