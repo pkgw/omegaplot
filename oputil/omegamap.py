@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2012, 2014 Peter Williams
+# Copyright 2012, 2014, 2015 Peter Williams
 # Licensed under the MIT License.
 
 """omegamap [keywords]
@@ -85,12 +85,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import cairo, numpy as np, sys
 
-import pyrap.images
-from pwkit import astutil, cli, ellipses, ndshow_gtk2 as ndshow
+from pwkit import astimage, astutil, cli, data_gui_helpers, ellipses
 from pwkit.kwargv import ParseKeywords, Custom
 
 import omega as om
-import omega.pyrapimage
+import omega.astimage
 
 try:
     import omega.pango_g3 as ompango
@@ -176,55 +175,35 @@ class Config (ParseKeywords):
 
 
 def plot (config):
-    im = pyrap.images.image (config.map)
+    im = astimage.open (config.map, 'r')
+    im = im.simple ()
 
-    if config.subshape is not None: # take a subset of the image?
-        s = np.asarray (im.shape ())
-        mid = 0.5 * (s - 1)
+    if config.subshape is not None:
+        # Take a subset of the image?
+        nw, nh = config.subshape
+        pixofs = [(im.shape[0] - nh) // 2, (im.shape[1] - nw) // 2]
+        im = im.subimage (pixofs, [nh, nw])
 
-        blc = mid.copy ()
-        blc[-1] -= 0.5 * config.subshape[0]
-        blc[-2] -= 0.5 * config.subshape[1]
-        blc = tuple (int (x) for x in blc)
-
-        trc = mid.copy ()
-        trc[-1] += 0.5 * config.subshape[0]
-        trc[-2] += 0.5 * config.subshape[1]
-        trc = tuple (int (x) for x in trc)
-
-        im = im.subimage (blc, trc)
-
-    data = np.flipud (im.getdata ().squeeze ())
+    data = im.read (squeeze=True, flip=True)
     print ('Raw data bounds:', data.min (), data.max ())
-    mask = np.flipud (im.getmask ().squeeze ())
 
-    if config.logfactor is not None: # log scaling ?
+    if config.logfactor is not None:
+        # TODO: switch to using the 'stretch' keyword of data_to_argb32() or
+        # something along those lines.
         q = config.logfactor * (1 - np.median (data))
         print ('Magic q:', q)
         assert data.min () > -q, 'Can\'t logify it'
         data = np.log (data + q)
 
-    # Render image into something Cairo likes
-
-    clipper = ndshow.Clipper ()
-    clipper.alloc_buffer (data)
-    clipper.set_tile_size ()
-    clipper.dmin = config.range[0]
-    clipper.dmax = config.range[1]
-
-    mapper = ndshow.ColorMapper (config.coloring)
-    mapper.alloc_buffer (data)
-    mapper.set_tile_size ()
-
-    clipper.ensure_all_updated (data)
-    mapper.ensure_all_updated (clipper.buffer)
-
-    mapper.buffer *= ~mask # honor the mask
+    argb32 = data_gui_helpers.data_to_argb32 (data,
+                                              cmin=config.range[0],
+                                              cmax=config.range[1],
+                                              cmap=config.coloring)
 
     # Draw!
 
-    p = om.quickImage (cairo.FORMAT_ARGB32, mapper.buffer)
-    coords = omega.pyrapimage.PyrapImageCoordinates (im, p)
+    p = om.quickImage (cairo.FORMAT_ARGB32, argb32)
+    coords = omega.astimage.AstimageCoordinates (im, p)
     p.paintCoordinates (coords)
     p.setLabels (config.xlabel, config.ylabel)
 
@@ -232,10 +211,8 @@ def plot (config):
         p.fieldAspect = config.aspect
 
     if config.ccrad is not None:
-        pc = im.info ()['coordinates'].get ('pointingcenter')
-        assert pc is not None, 'need pointing center info to draw circle'
-        assert not pc['initial'], 'pointing center info is uninitialized'
-        pclon, pclat = pc['value'][:2]
+        assert False, 'need to re-implement pointing center for astimage'
+        pclon, pclat = None, None # IMPLEMENT ME
         lat, lon = astutil.sphofs (pclat, pclon, config.ccrad,
                                    np.linspace (0, 2 * np.pi, 200))
         cx, cy = coords.arb2lin (lon, lat)
