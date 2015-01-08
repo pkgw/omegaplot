@@ -234,7 +234,7 @@ def quickImage (format, data):
     width = ip.surface.get_width ()
     height = ip.surface.get_height ()
     # anchor coordinate system to pixel centers:
-    ip.setLocation (-0.5, width + 0.5, height + 0.5, -0.5)
+    ip.setLocation (-0.5, width - 0.5, height - 0.5, -0.5)
     p.add (ip, nudgex=False, nudgey=False)
     # TODO: square up axes
     return p
