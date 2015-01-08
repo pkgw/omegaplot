@@ -90,7 +90,12 @@ from pwkit import astutil, cli, ellipses, ndshow_gtk2 as ndshow
 from pwkit.kwargv import ParseKeywords, Custom
 
 import omega as om
-import omega.pango, omega.pyrapimage
+import omega.pyrapimage
+
+try:
+    import omega.pango_g3 as ompango
+except ImportError:
+    import omega.pango_g2 as ompango
 
 
 class Config (ParseKeywords):
@@ -255,8 +260,8 @@ def doit (config):
     if config.pangosize is not None:
         fontparams['size'] = config.pangosize
     if len (fontparams):
-        omega.pango.setFont (**fontparams)
-    om.pango.setBuiltinSubsuperRise (config.subsuperrise)
+        ompango.setFont (**fontparams)
+    ompango.setBuiltinSubsuperRise (config.subsuperrise)
     p = plot (config)
 
     if config.out is None:

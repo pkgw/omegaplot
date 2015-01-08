@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2014 Peter Williams
+# Copyright 2011, 2012, 2014, 2015 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -15,9 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
+
+# This version of the pango support module is intended for use with Gtk+ 3.0;
+# it uses the GObject Introspection system.
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import cairo, pango, pangocairo
+from gi.repository import PangoCairo
 
 from . import base
 
@@ -25,9 +29,7 @@ from . import base
 # since we're creating new contexts willy-nilly. Should deal
 # with that at some point.
 
-
-X, Y, W, H = range (4)
-S = pango.SCALE
+S = 1024 # = Pango universal scale factor.
 
 
 def globalLayoutMutate (layout):
@@ -61,20 +63,6 @@ def setFont (family=None, style=None, variant=None,
     globalLayoutMutate = mutate
 
 
-def _copyConstants ():
-    g = globals ()
-
-    for pfx in 'STYLE VARIANT WEIGHT STRETCH'.split ():
-        pfx += '_'
-
-        for item in dir (pango):
-            if item.startswith (pfx):
-                g[item] = getattr (pango, item)
-
-_copyConstants ()
-del _copyConstants
-
-
 class PangoPainter (base._TextPainterBase):
     hAlign = 0.0
     vAlign = 0.0
@@ -88,33 +76,29 @@ class PangoPainter (base._TextPainterBase):
 
 
     def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bl, bb):
-        pcr = pangocairo.CairoContext (ctxt)
-        layout = pcr.create_layout ()
+        layout = PangoCairo.create_layout (ctxt)
+
         globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1] # [1] -> use logical extents
-        e = [v / S for v in e]
-        self._extents = e
+        self._dx = self.hAlign * (w - e.width / S) + e.x / S
+        self._dy = self.vAlign * (h - e.height / S) + e.y / S
 
-        self._dx = self.hAlign * (w - e[W]) + e[X]
-        self._dy = self.vAlign * (h - e[H]) + e[Y]
-
-        return base.LayoutInfo (minsize=(e[W], e[H]))
+        return base.LayoutInfo (minsize=(e.width / S, e.height / S))
 
 
     def doPaint (self, ctxt, style):
-        pcr = pangocairo.CairoContext (ctxt)
+        layout = PangoCairo.create_layout (ctxt)
 
-        layout = pcr.create_layout ()
         globalLayoutMutate (layout)
         layout.set_markup (self.markup)
 
-        pcr.save ()
-        style.apply (pcr, self.style)
-        pcr.set_source_rgb (*style.getColor (self.color))
-        pcr.move_to (self.border[3] + self._dx, self.border[0] + self._dy)
-        pcr.show_layout (layout)
-        pcr.restore ()
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+        ctxt.set_source_rgb (*style.getColor (self.color))
+        ctxt.move_to (self.border[3] + self._dx, self.border[0] + self._dy)
+        PangoCairo.show_layout (ctxt, layout)
+        ctxt.restore ()
 
 
 class PangoStamper (base._TextStamperBase):
@@ -123,27 +107,26 @@ class PangoStamper (base._TextStamperBase):
 
 
     def getSize (self, ctxt, style):
-        pcr = pangocairo.CairoContext (ctxt)
-        layout = pcr.create_layout ()
+        layout = PangoCairo.create_layout (ctxt)
+
         globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1]
-        return e[W] / S, e[H] / S
+        return e.width / S, e.height / S
 
 
     def paintAt (self, ctxt, x, y, color):
-        pcr = pangocairo.CairoContext (ctxt)
+        layout = PangoCairo.create_layout (ctxt)
 
-        layout = pcr.create_layout ()
         globalLayoutMutate (layout)
         layout.set_markup (self.markup)
         e = layout.get_extents ()[1]
 
-        pcr.save ()
-        pcr.set_source_rgb (*color)
-        pcr.move_to (x + e[X] / S, y + e[Y] / S)
-        pcr.show_layout (layout)
-        pcr.restore ()
+        ctxt.save ()
+        ctxt.set_source_rgb (*color)
+        ctxt.move_to (x + e.x / S, y + e.y / S)
+        PangoCairo.show_layout (ctxt, layout)
+        ctxt.restore ()
 
 
 _subsuperRise = 5000
