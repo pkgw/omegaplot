@@ -189,14 +189,19 @@ class BlackOnWhiteColors (Colors):
     muted = (0.3, 0.3, 0.3)
     faint = (0.9, 0.9, 0.9)
 
+    # This is the 6-class "Dark2" qualitative color palette from
+    # ColorBrewer2.org. Unfortunately it's not colorblind- or photocopy-
+    # friendly, but it seems like the best available option. I've reordered
+    # them to line up better with the warmth of my previous palette.
+
     _dataColors = [
-        (0.9, 0.1, 0.1),
-        (0, 0.1, 0.7),
-        (0.1, 0.9, 0.4),
-        (0.2, 0.9, 0.9),
-        (0.7, 0, 0.7),
-        (0.8, 0.6, 0),
-        ]
+        (0.85, 0.37, 0.01),
+        (0.11, 0.62, 0.47),
+        (0.46, 0.44, 0.70),
+        (0.91, 0.16, 0.54),
+        (0.40, 0.65, 0.12),
+        (0.90, 0.67, 0.01),
+    ]
 
     def getDataColor (self, dsn):
         dc = self._dataColors
@@ -216,14 +221,18 @@ class WhiteOnBlackColors (Colors):
     muted = (0.7, 0.7, 0.7)
     faint = (0.15, 0.15, 0.15)
 
+    # This is the 6-class "Set2" qualitative color palette from
+    # ColorBrewer2.org. Unfortunately it's not photocopy-friendly and is only
+    # ranked as moderately colorblind-friendly.
+
     _dataColors = [
-        (0.9, 0.2, 0.2),
-        (0.3, 0.7, 0.8),
-        (0.9, 0.9, 0.5),
-        (0.9, 0.2, 0.9),
-        (0.2, 0.9, 0.2),
-        (0.4, 0.4, 0.9),
-        ]
+        (0.89, 0.10, 0.11),
+        (0.22, 0.49, 0.72),
+        (0.30, 0.69, 0.29),
+        (0.60, 0.31, 0.64),
+        (1.00, 0.50, 0.00),
+        (1.00, 1.00, 0.20),
+    ]
 
     def getDataColor (self, dsn):
         dc = self._dataColors
