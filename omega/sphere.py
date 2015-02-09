@@ -52,10 +52,10 @@ _increments = [
 (30, 2, LEVEL_MIN), # 30 s
 (15, 4, LEVEL_MIN), # 15 s
 (10, 6, LEVEL_MIN), # 10 s
-(5, 12, LEVEL_MIN), # 5 s
 (5, 6, LEVEL_SEC), # 5 s
 (5, 3, LEVEL_SEC), # 5 s
 (1, 5, LEVEL_SEC), # 1 s
+(1, 3, LEVEL_SEC), # 1 s
 ]
 
 _separators = {
