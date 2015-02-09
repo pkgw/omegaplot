@@ -53,6 +53,8 @@ _increments = [
 (15, 4, LEVEL_MIN), # 15 s
 (10, 6, LEVEL_MIN), # 10 s
 (5, 12, LEVEL_MIN), # 5 s
+(5, 6, LEVEL_SEC), # 5 s
+(5, 3, LEVEL_SEC), # 5 s
 (1, 5, LEVEL_SEC), # 1 s
 ]
 
@@ -157,11 +159,14 @@ class AngularAxisPainter (rect.BlankAxisPainter):
             return []
 
         for secincr, majorperminor, detaillev in _increments:
-            axincr = secincr / self.vscale / 3600
-            if axspan / axincr > max (8, 3 * majorperminor):
+            desired_minor_ticks = max (9, 2 * majorperminor + 1)
+            axincr = secincr / (3600. * self.vscale)
+            actual_minor_ticks = axspan / axincr
+            if actual_minor_ticks >= desired_minor_ticks:
                 break
         else:
-            raise Exception ('TODO: fraction-of-arcsec labels')
+            raise Exception ('No appropriate builtin label gradation, or '
+                             'TODO: fraction-of-(arc)sec labels')
 
         coeff = int (np.ceil (axmin / axincr))
         axval = coeff * axincr
