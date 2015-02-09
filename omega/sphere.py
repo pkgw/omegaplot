@@ -160,6 +160,8 @@ class AngularAxisPainter (rect.BlankAxisPainter):
         if axspan == 0:
             return []
 
+        nsecplaces = 0 # number of places of decimal precision in second values
+
         if DEBUG_INCREMENTS:
             print ('INCR:', 'TOP', axspan, self.vscale)
 
@@ -175,11 +177,49 @@ class AngularAxisPainter (rect.BlankAxisPainter):
                     print ('INCR:', 'got it')
                 break
         else:
+            if actual_minor_ticks > 70:
+                # This is just more than you'd ever want in a reasonable plot. In
+                # this case, the _increments table needs to be augmented to add
+                # a setup that is a better match for the axis bounds.
+                raise Exception ('no appropriate builtin label gradation')
+
             if DEBUG_INCREMENTS:
-                print ('INCR:', '*failed* but proceeding anyway')
+                print ('INCR:', 'going into sub-arcsecond mode')
+
+            # We're aiming for something like 7 to 20 minor ticks across this
+            # axis.
+
+            axspan_seconds = 3600. * self.vscale * axspan
+            mip = int (np.floor (np.log10 (1. * axspan_seconds))) # major interval power
+            secincr = 10**mip
+            num_minor = axspan_seconds / secincr
+
+            if num_minor < 7:
+                mip -= 1
+                secincr *= 0.1
+                num_minor *= 10
+
+            if num_minor > 40:
+                secincr *= 5
+                num_minor *= 0.2
+
+            if DEBUG_INCREMENTS:
+                print ('INCR:', 'sub-s1', axspan_seconds, mip, num_minor)
+
+            # Now set majorperminor to get a reasonable number of major ticks.
+
+            if num_minor > 20:
+                majorperminor = 10
+            elif num_minor > 10:
+                majorperminor = 5
             else:
-                raise Exception ('No appropriate builtin label gradation, or '
-                                 'TODO: fraction-of-(arc)sec labels')
+                majorperminor = 2
+
+            axincr = secincr / (3600. * self.vscale)
+            detaillev = LEVEL_SEC
+            nsecplaces = -mip
+            if DEBUG_INCREMENTS:
+                print ('INCR:', 'sub-s2', secincr, majorperminor, nsecplaces)
 
         coeff = int (np.ceil (axmin / axincr))
         axval = coeff * axincr
@@ -207,14 +247,11 @@ class AngularAxisPainter (rect.BlankAxisPainter):
             # a non-reversed axis
 
             if info._label:
+                # Wrap and round.
+
                 sign = ''
-
-                # Wrap and round. TODO: if we implement sub-second
-                # precision, making the rounding level configurable
-                # from _increments, and honor it below with a %.*d.
-
                 effsecval = _wrappers[self.wraptype] (secval)
-                effsecval = round (effsecval, 0)
+                effsecval = round (effsecval, nsecplaces)
 
                 if effsecval < 0:
                     sign = '-'
@@ -265,7 +302,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
             start = min (start, info._lstart)
             items = ['%s%d' % (sign, unit), seps[0],
                      '%02d' % mnt, seps[1],
-                     '%02.0f' % sec, seps[2]]
+                     '%02.*f' % (nsecplaces, sec), seps[2]]
 
             text = ''.join (items[start:detaillev+2])
             info.labelts = TextStamper (text)
