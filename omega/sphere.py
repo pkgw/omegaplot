@@ -115,6 +115,8 @@ _wrappers = {
 }
 
 
+DEBUG_INCREMENTS = False #or True
+
 class AxisInfoHolder (object):
     # xformed, isMajor, labelw, labelh, labelts
     pass
@@ -158,15 +160,26 @@ class AngularAxisPainter (rect.BlankAxisPainter):
         if axspan == 0:
             return []
 
+        if DEBUG_INCREMENTS:
+            print ('INCR:', 'TOP', axspan, self.vscale)
+
         for secincr, majorperminor, detaillev in _increments:
             desired_minor_ticks = max (9, 2 * majorperminor + 1)
             axincr = secincr / (3600. * self.vscale)
             actual_minor_ticks = axspan / axincr
+            if DEBUG_INCREMENTS:
+                print ('INCR:', secincr, majorperminor, desired_minor_ticks,
+                       actual_minor_ticks)
             if actual_minor_ticks >= desired_minor_ticks:
+                if DEBUG_INCREMENTS:
+                    print ('INCR:', 'got it')
                 break
         else:
-            raise Exception ('No appropriate builtin label gradation, or '
-                             'TODO: fraction-of-(arc)sec labels')
+            if DEBUG_INCREMENTS:
+                print ('INCR:', '*failed* but proceeding anyway')
+            else:
+                raise Exception ('No appropriate builtin label gradation, or '
+                                 'TODO: fraction-of-(arc)sec labels')
 
         coeff = int (np.ceil (axmin / axincr))
         axval = coeff * axincr
