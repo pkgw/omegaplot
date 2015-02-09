@@ -33,6 +33,8 @@ pangofamily=[str]
 pangosize=[int]
  The size of the font to use for text; passed to Pango
 
+Set OMEGAFIG_BACKTRACE to a nonempty environment value to get full backtraces
+when the figure-creating code crashes.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
