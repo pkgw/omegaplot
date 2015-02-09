@@ -239,6 +239,14 @@ def doit (config):
     if len (fontparams):
         ompango.setFont (**fontparams)
     ompango.setBuiltinSubsuperRise (config.subsuperrise)
+
+    # Plot bounds and tick marks are drawn in the "muted" color since you want
+    # them to be less prominent than the data. However, when drawing a map,
+    # which fills the plot field, the tick marks should be made more prominent
+    # since they can easily get lost against the image. We achieve this by
+    # redefining "muted".
+    config.omstyle.colors.muted = config.omstyle.colors.foreground
+
     p = plot (config)
 
     if config.out is None:
