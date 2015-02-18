@@ -114,7 +114,7 @@ class PagerWindow (Gtk.Window):
 
 
     def __init__ (self, style=None, parent=None):
-        super (PagerWindow, self).__init__ (Gtk.WindowType.TOPLEVEL)
+        super (PagerWindow, self).__init__ (type=Gtk.WindowType.TOPLEVEL)
 
         self.set_title ('OmegaPlot Pager')
         self.set_default_size (640, 480)
@@ -130,7 +130,7 @@ class PagerWindow (Gtk.Window):
             style = default_style ()
 
         self.op = op = OmegaPainter (None, style, False)
-        self.btn = btn = Gtk.Button ('Next')
+        self.btn = btn = Gtk.Button (label='Next')
 
         vb = Gtk.VBox ()
         vb.pack_start (op, True, True, 4)
