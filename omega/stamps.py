@@ -879,9 +879,14 @@ class MultiStamp (RStamp):
 
             if docnum:
                 if cnums[i] < 0:
-                    ctxt.set_source_rgb (*self.extracolors[-cnums[i] - 1])
+                    c = self.extracolors[-cnums[i] - 1]
                 else:
-                    ctxt.set_source_rgb (*style.colors.getDataColor (cnums[i]))
+                    c = style.colors.getDataColor (cnums[i])
+
+                if len (c) == 4:
+                    ctxt.set_source_rgba (*c)
+                else:
+                    ctxt.set_source_rgb (*c)
 
             if doshape:
                 symfunc = style.data.getStrictSymbolFunc (shapes[i])
