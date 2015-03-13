@@ -673,6 +673,7 @@ class WithRightArrow (_WithArrow):
 _ms_features = {
     'cnum': (1, 0, 0, 0),
     'fill': (1, 0, 0, 0),
+    'mcolor': (0, 1, 0, 0),
     'prepaint': (1, 0, 0, 0),
     'shape': (1, 0, 0, 0),
     'size': (0, 1, 0, 0),
@@ -762,9 +763,11 @@ class MultiStamp (RStamp):
     fixedsize = _defaultStampSize
     extracolors = []
     prepaintfuncs = [lambda c, s, x, y: None]
+    colormap = 'black_to_blue'
 
     _cnum_cinfo = None
     _fill_cinfo = None
+    _mcolor_cinfo = None
     _prepaint_cinfo = None
     _shape_cinfo = None
     _size_cinfo = None
@@ -778,6 +781,9 @@ class MultiStamp (RStamp):
             if f not in _ms_features:
                 raise ValueError ('unrecognized feature "%s"' % f)
         self.features = features
+
+        if 'cnum' in features and 'mcolor' in features:
+            raise ValueError ('"cnum" and "mcolor" features may not be used simultaneously')
 
 
     def setData (self, data):
@@ -798,6 +804,7 @@ class MultiStamp (RStamp):
 
         docnum = self._cnum_cinfo is not None
         dofill = self._fill_cinfo is not None
+        domcolor = self._mcolor_cinfo is not None
         doprepaint = self._prepaint_cinfo is not None
         doshape = self._shape_cinfo is not None
         dosize = self._size_cinfo is not None
@@ -823,6 +830,11 @@ class MultiStamp (RStamp):
             fills = zsort (self.data.get (self._fill_cinfo)[0][0])
         else:
             fill = self.fixedfill
+
+        if domcolor:
+            from pwkit import colormaps
+            colormap = colormaps.factory_map[self.colormap] ()
+            rgbs = colormap (zsort (self.data.get (self._mcolor_cinfo)[1][0]))
 
         if doprepaint:
             ppfuncs = zsort (self.data.get (self._prepaint_cinfo)[0][0])
@@ -887,6 +899,8 @@ class MultiStamp (RStamp):
                     ctxt.set_source_rgba (*c)
                 else:
                     ctxt.set_source_rgb (*c)
+            elif domcolor:
+                ctxt.set_source_rgb (*rgbs[i])
 
             if doshape:
                 symfunc = style.data.getStrictSymbolFunc (shapes[i])
