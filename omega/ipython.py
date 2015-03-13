@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012, 2014 Peter Williams
+# Copyright 2011, 2012, 2014, 2015 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -43,4 +43,5 @@ def gtk_mainloop_running ():
         return False
 
     import IPython.lib.inputhook
-    return IPython.lib.inputhook.inputhook_manager.current_gui () == 'gtk'
+    gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
+    return gui in ('gtk', 'gtk3')
