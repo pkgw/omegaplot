@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012 Peter Williams
+# Copyright 2011, 2012, 2014, 2015 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -19,6 +19,13 @@
 """styles - Graphical styling classes."""
 
 import numpy as N
+
+def apply_color (ctxt, c):
+    if len (c) == 4:
+        ctxt.set_source_rgba (*c)
+    else:
+        ctxt.set_source_rgb (*c)
+
 
 class Style (object):
     def __init__ (self, sizes, colors, data, roles):
@@ -61,23 +68,19 @@ class Style (object):
     def _applyDictStyle (self, ctxt, item):
         v = item.get ('dsline')
         if v is not None:
-            self.applyDataLine (ctxt, v)
+            self.applyDataLine (ctxt, v, item)
 
         v = item.get ('dsregion')
         if v is not None:
-            self.applyDataRegion (ctxt, v)
+            self.applyDataRegion (ctxt, v, item)
 
         v = item.get ('dsstamp')
         if v is not None:
-            self.applyDataStamp (ctxt, v)
+            self.applyDataStamp (ctxt, v, item)
 
         v = item.get ('color')
         if v is not None:
-            c = self.getColor (v)
-            if len (c) == 4:
-                ctxt.set_source_rgba (*c)
-            else:
-                ctxt.set_source_rgb (*c)
+            apply_color (ctxt, self.getColor (v))
 
         v = item.get ('linewidth')
         if v is not None:
@@ -95,23 +98,23 @@ class Style (object):
 
 
     def initContext (self, ctxt, width, height):
-        ctxt.set_source_rgb (*self.colors.background)
+        apply_color (ctxt, self.colors.background)
         ctxt.paint ()
 
         ctxt.set_font_size (self.sizes.normalFontSize)
         ctxt.set_line_width (self.sizes.fineLine)
 
 
-    def applyDataLine (self, ctxt, dsn):
-        self.data.applyLine (self, ctxt, dsn)
+    def applyDataLine (self, ctxt, dsn, modifiers={}):
+        self.data.applyLine (self, ctxt, dsn, modifiers)
 
 
-    def applyDataRegion (self, ctxt, dsn):
-        self.data.applyRegion (self, ctxt, dsn)
+    def applyDataRegion (self, ctxt, dsn, modifiers={}):
+        self.data.applyRegion (self, ctxt, dsn, modifiers)
 
 
-    def applyDataStamp (self, ctxt, dsn):
-        self.data.applyStamp (self, ctxt, dsn)
+    def applyDataStamp (self, ctxt, dsn, modifiers={}):
+        self.data.applyStamp (self, ctxt, dsn, modifiers)
 
 
     # Shortcut accessors for useful properties
@@ -252,13 +255,13 @@ import stamps
 
 
 class DataTheme (object):
-    def applyLine (self, style, ctxt, n):
+    def applyLine (self, style, ctxt, n, modifiers={}):
         raise NotImplementedError ()
 
-    def applyRegion (self, style, ctxt, n):
+    def applyRegion (self, style, ctxt, n, modifiers={}):
         raise NotImplementedError ()
 
-    def applyStamp (self, style, ctxt, n):
+    def applyStamp (self, style, ctxt, n, modifiers={}):
         raise NotImplementedError ()
 
     def getSymbolFunc (self, n):
@@ -299,11 +302,11 @@ class MonochromeDataTheme (DataTheme):
             dlas.append (asarray (t))
 
 
-    def applyLine (self, style, ctxt, dsn):
+    def applyLine (self, style, ctxt, dsn, modifiers={}):
         if dsn is None:
             return
 
-        ctxt.set_source_rgb (*style.colors.foreground)
+        apply_color (ctxt, style.colors.foreground)
 
         dlas = self._dashLengthArrays
         dashlengths = dlas[dsn % len (dlas)]
@@ -312,20 +315,20 @@ class MonochromeDataTheme (DataTheme):
             ctxt.set_dash (dashlengths * style.smallScale, 0.)
 
 
-    def applyRegion (self, style, ctxt, dsn):
+    def applyRegion (self, style, ctxt, dsn, modifiers={}):
         if dsn is None:
             return
 
-        ctxt.set_source_rgb (*style.colors.muted)
+        apply_color (ctxt, style.colors.muted)
         # FIXME: different fill patterns
 
 
-    def applyStamp (self, style, ctxt, dsn):
+    def applyStamp (self, style, ctxt, dsn, modifiers={}):
         if dsn is None:
             return
 
         # No variation based on data style number here.
-        ctxt.set_source_rgb (*style.colors.foreground)
+        apply_color (ctxt, style.colors.foreground)
 
 
     _symFuncs = [_wf (stamps.symCircle, True),
@@ -363,27 +366,45 @@ class ColorDataTheme (DataTheme):
     printers."""
 
 
-    def applyLine (self, style, ctxt, dsn):
-        if dsn is None: return
-
-        c = style.colors.getDataColor (dsn)
-        ctxt.set_source_rgb (*c)
-
-
-    def applyRegion (self, style, ctxt, dsn):
+    def applyLine (self, style, ctxt, dsn, modifiers={}):
         if dsn is None:
             return
 
         c = style.colors.getDataColor (dsn)
-        c = style.colors.towardBG (c, 0.6)
-        ctxt.set_source_rgb (*c)
+        if 'towardbg' in modifiers:
+            c = style.colors.towardBG (c, modifiers['towardbg'])
+        if 'alpha' in modifiers:
+            # This gives us robustness if c already has an alpha:
+            c = (c[0], c[1], c[2], modifiers['alpha'])
+
+        apply_color (ctxt, c)
 
 
-    def applyStamp (self, style, ctxt, dsn):
-        if dsn is None: return
+    def applyRegion (self, style, ctxt, dsn, modifiers={}):
+        if dsn is None:
+            return
 
         c = style.colors.getDataColor (dsn)
-        ctxt.set_source_rgb (*c)
+        tbg = modifiers.get ('towardbg', 0.6)
+        c = style.colors.towardBG (c, tbg)
+        if 'alpha' in modifiers:
+            c = (c[0], c[1], c[2], modifiers['alpha'])
+
+        apply_color (ctxt, c)
+
+
+    def applyStamp (self, style, ctxt, dsn, modifiers={}):
+        if dsn is None:
+            return
+
+        c = style.colors.getDataColor (dsn)
+        if 'towardbg' in modifiers:
+            c = style.colors.towardBG (c, modifiers['towardbg'])
+        if 'alpha' in modifiers:
+            # This gives us robustness if c already has an alpha:
+            c = (c[0], c[1], c[2], modifiers['alpha'])
+
+        apply_color (ctxt, c)
 
 
     def getSymbolFunc (self, dsn):
@@ -408,19 +429,19 @@ class Roles (object):
 class DefaultRoles (Roles):
     def apply_bgLinework (self, ctxt, style):
         ctxt.set_line_width (style.sizes.fineLine)
-        ctxt.set_source_rgb (*style.colors.muted)
+        apply_color (ctxt, style.colors.muted)
 
 
     def apply_strongLine (self, ctxt, style):
         ctxt.set_line_width (2 * style.sizes.fineLine)
-        ctxt.set_source_rgb (*style.colors.foreground)
+        apply_color (ctxt, style.colors.foreground)
 
 
     def apply_genericBand (self, ctxt, style):
         # FIXME: PostScript doesn't support opacity,
         # so it would be best to avoid any use of the
         # alpha channel by default in any of our styles.
-        ctxt.set_source_rgb (*style.colors.faint)
+        apply_color (ctxt, style.colors.faint)
 
 
 # Now put them all together
