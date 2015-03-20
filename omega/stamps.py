@@ -698,7 +698,6 @@ def _single_limit (rot):
 
         ctxt.move_to (-0.5 * s1, 0)
         ctxt.rel_line_to (s1, 0)
-        ctxt.stroke ()
 
         ctxt.move_to (-0.5 * s2, 0)
         ctxt.rel_line_to (0.5 * s2, s3)
