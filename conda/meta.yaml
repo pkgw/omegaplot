@@ -1,11 +1,11 @@
 package:
   name: omegaplot
-  version: !!str 0.5
+  version: "0.5.1"
 
 source:
-  fn: omegaplot-0.5.tar.bz2
-  url: https://pypi.python.org/packages/source/o/omegaplot/omegaplot-0.5.tar.gz
-  md5: bd929ba46f24849dceb635bd5f44c3c6
+  fn: omegaplot-0.5.1.tar.gz
+  url: https://pypi.python.org/packages/source/o/omegaplot/omegaplot-0.5.1.tar.gz
+  md5: 05658b51a18c63b38f26905a63e45ee1
 
 build:
   number: 0
@@ -27,3 +27,4 @@ requirements:
 about:
   home: http://newton.cx/~peter/
   license: GPL
+  summary: A better-than-publication-quality plotting library based on Cairo.
