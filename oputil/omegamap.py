@@ -78,7 +78,8 @@ locator=
  degrees), major axis (arcseconds), minor (arcsec, defaults to major),
  PA (degrees, defaults to 0). An ellipse of the specified shape will
  be drawn at the position. Useful for identifying special sources. PA
- is east from north.
+ is east from north. Can be specified multiple times, in which case
+ multiple locators will be drawn.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -138,7 +139,7 @@ class Config (ParseKeywords):
             v[1] = v[0]
         return v
 
-    @Custom ([str, str, float, float, 0.], minvals=3, default=None)
+    @Custom ([str, str, float, float, 0.], minvals=3, default=None, repeatable=True)
     def locator (v):
         # switch order from ra,dec to lat,lon!
         tmp = astutil.parsehours (v[0])
@@ -218,8 +219,7 @@ def plot (config):
         cx, cy = coords.arb2lin (lon, lat)
         p.addXY (cx, cy, None, dsn=1)
 
-    if config.locator is not None:
-        clat, clon, maj, min, pa = config.locator
+    for clat, clon, maj, min, pa in config.locator:
         # lat = dec = x in astro PA convention
         dlat, dlon = ellipses.ellpoint (maj, min, pa, np.linspace (0, 2 * np.pi, 200))
         lat = clat + dlat
