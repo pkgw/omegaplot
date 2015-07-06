@@ -1027,6 +1027,8 @@ class RectPlot (Painter):
         lineStyle = _kwordDefaulted (kwargs, 'lineStyle', None, None)
         stampStyle = _kwordDefaulted (kwargs, 'stampStyle', None, None)
         pointStamp = _kwordDefaulted (kwargs, 'pointStamp', None, None)
+        mcolor = _kwordDefaulted (kwargs, 'mcolor', None, None)
+        mcolormap = _kwordDefaulted (kwargs, 'mcolormap', None, None)
 
         x, y, label = None, None, 'Data'
 
@@ -1055,8 +1057,21 @@ class RectPlot (Painter):
         else:
             raise Exception ("Don't know how to handle magic addXY() args '%s'" % (args, ))
 
+        if mcolor is not None:
+            from .stamps import MultiStamp
+            pointStamp = MultiStamp ('mcolor')
+            if mcolormap is not None:
+                pointStamp.colormap = mcolormap
+        elif mcolormap is not None:
+            raise ValueError ('"mcolormap" may not be specified without also specifying "mcolor"')
+
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
-        dp.setFloats (x, y)
+
+        if mcolor is not None:
+            dp.setFloats (x, y, mcolor)
+        else:
+            dp.setFloats (x, y)
+
         if lineStyle is not None:
             dp.lineStyle = lineStyle
         if stampStyle is not None:
