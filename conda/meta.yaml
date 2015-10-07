@@ -16,13 +16,17 @@ build:
 requirements:
   build:
     - numpy
-    - py2cairo
+    - py2cairo # [py2k]
+    - py3cairo # [py3k]
     - python
     - setuptools
+    - six
   run:
     - numpy
-    - py2cairo
+    - py2cairo # [py2k]
+    - py3cairo # [py3k]
     - python
+    - six
 
 about:
   home: http://newton.cx/~peter/
