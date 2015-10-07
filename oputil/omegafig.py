@@ -89,7 +89,7 @@ def doit (driver, args):
           '__name__': '__omegafig__'}
 
     try:
-        exec code in ns
+        exec (code, ns)
     except Exception as e:
         if 'OMEGAFIG_BACKTRACE' in os.environ:
             raise

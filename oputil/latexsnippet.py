@@ -55,7 +55,8 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os
+import os, six, sys
+from six.moves import range as xrange
 from os.path import basename, splitext, join, abspath, exists
 import tempfile
 
@@ -460,7 +461,7 @@ def _render_sk (snips, outbase, header, cfg, getbbs=False, checkExists=False):
 _renderMap = {}
 
 def _makeRenderMap ():
-    for (name, val) in globals ().iteritems ():
+    for (name, val) in six.iteritems (globals ()):
         if not name.startswith ('_render_'): continue
         _renderMap[name[8:]] = val
 
@@ -548,7 +549,7 @@ def _scr_makeDoer (func, ctxt):
 _scrGlobals = {}
 
 def _populateScrGlobals ():
-    for (name, val) in globals ().iteritems ():
+    for (name, val) in six.iteritems (globals ()):
         if not name.startswith ('_scrg_'): continue
         rest = name[6:]
         _scrGlobals[rest] = val
@@ -558,7 +559,7 @@ _populateScrGlobals ()
 def _makeScrLocals (ctxt):
     d = {}
 
-    for (name, val) in globals ().iteritems ():
+    for (name, val) in six.iteritems (globals ()):
         if not name.startswith ('_scrl_'): continue
         rest = name[6:]
         d[rest] = _scr_makeDoer (val, ctxt)

@@ -29,6 +29,7 @@ FIXME: more docs.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from six.moves import range as xrange
 import numpy as np
 
 # ArrayGrower class copy&pasted from miriad-python.

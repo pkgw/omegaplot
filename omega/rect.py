@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
+from six.moves import range as xrange
 import cairo
 import numpy as np
 
@@ -973,7 +975,7 @@ class RectPlot (Painter):
             self.defaultKeyOverlay.zheight = 2000
             self.add (self.defaultKeyOverlay, rebound=False)
 
-        if isinstance (item, basestring):
+        if isinstance (item, six.string_types):
             item = TextPainter (item)
             item.hAlign = self.defaultKeyOverlay.hAlign
             item.vAlign = self.defaultKeyOverlay.vAlign
@@ -1308,7 +1310,7 @@ Examples:
         paintlabels = [True] * 4
         plinfo = dict (H=3, V=2, T=0, R=1, B=2, L=3)
 
-        for letter, index in plinfo.iteritems ():
+        for letter, index in six.iteritems (plinfo):
             if letter in spec:
                 paintlabels[index] = False
                 spec = spec.replace (letter, letter.lower ())
@@ -1460,7 +1462,7 @@ Examples:
         # later if it's awkwardly wide.
 
         if not isinstance (val, Painter):
-            val = TextPainter (unicode (val))
+            val = TextPainter (six.text_type (val))
 
             if side % 2 == 1:
                 val = RightRotationPainter (val)
@@ -2952,7 +2954,7 @@ class GridContours (FieldPainter):
 
         xmin = xmax = ymin = ymax = None
 
-        for k, cntrs in self.computed.iteritems ():
+        for k, cntrs in six.iteritems (self.computed):
             for cntr in cntrs:
                 if xmin is None:
                     xmin = cntr[0].min ()
@@ -2983,7 +2985,7 @@ class GridContours (FieldPainter):
         style.applyDataLine (ctxt, self.dsn)
         style.apply (ctxt, self.lineStyle)
 
-        for k, cntrs in self.computed.iteritems ():
+        for k, cntrs in six.iteritems (self.computed):
             for cntr in cntrs:
                 x = self.xform.mapX (cntr[0])
                 y = self.xform.mapY (cntr[1])

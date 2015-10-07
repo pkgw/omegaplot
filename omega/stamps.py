@@ -24,6 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # Import names with underscores so that we don't need
 # to manually specify an __all__.
 
+import six
+from six.moves import range as xrange
 import numpy as np
 from math import pi, sqrt
 
@@ -873,7 +875,7 @@ class MultiStamp (RStamp):
             ctxt.save ()
             style.apply (ctxt, self.fixedlinestyle)
 
-            for points in linegroups.itervalues ():
+            for points in six.itervalues (linegroups):
                 n = len (points)
                 if n < 2:
                     continue

@@ -18,7 +18,10 @@
 
 """styles - Graphical styling classes."""
 
-import numpy as N
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+import numpy as np
 
 def apply_color (ctxt, c):
     if len (c) == 4:
@@ -54,7 +57,7 @@ class Style (object):
             self._applyDictStyle (ctxt, styleItem)
             return
 
-        if isinstance (styleItem, basestring):
+        if isinstance (styleItem, six.string_types):
             fn = 'apply_' + styleItem
 
             if hasattr (self.roles, fn):
@@ -88,7 +91,7 @@ class Style (object):
 
         v = item.get ('dashing')
         if v is not None:
-            ctxt.set_dash (N.asarray (v) * self.sizes.smallScale, 0.)
+            ctxt.set_dash (np.asarray (v) * self.sizes.smallScale, 0.)
 
 
     def getColor (self, color):
@@ -251,7 +254,7 @@ class WhiteOnBlackColors (Colors):
 
 # Themes for different kinds of data in a shared plot
 
-import stamps
+from . import stamps
 
 
 class DataTheme (object):

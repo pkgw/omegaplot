@@ -20,6 +20,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # Basic classes of OmegaPlot.
 
+import six
+from six.moves import range as xrange
 import numpy as np
 
 class DataHolder (object):
@@ -429,7 +431,7 @@ class ToplevelPaintParent (object):
             self._painterRef = None
 
 
-class ContextTooSmallError (StandardError):
+class ContextTooSmallError (Exception):
     pass
 
 
@@ -877,5 +879,5 @@ def _checkKwordsConsumed (kwargs):
     if len (kwargs) == 0:
         return
 
-    args = ', '.join ('%s=%s' % tup for tup in kwargs.iteritems ())
+    args = ', '.join ('%s=%s' % tup for tup in six.iteritems (kwargs))
     raise TypeError ('Unconsumed keyword arguments: ' + args)

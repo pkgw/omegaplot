@@ -27,6 +27,7 @@ well. This is not to imply that these functions aren't important --
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from six.moves import range as xrange
 import numpy as np
 
 from .base import _kwordDefaulted

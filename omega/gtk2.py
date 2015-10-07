@@ -103,7 +103,7 @@ class OmegaPainter (gtk.DrawingArea,ToplevelPaintParent):
 
         try:
             p.renderBasic (ctxt, style, w, h)
-        except ContextTooSmallError, ctse:
+        except ContextTooSmallError as ctse:
             print (ctse)
 
         return False

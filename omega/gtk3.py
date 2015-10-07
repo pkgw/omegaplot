@@ -89,7 +89,7 @@ class OmegaPainter (Gtk.DrawingArea):
 
         try:
             p.renderBasic (ctxt, self.omega_style, w, h)
-        except ContextTooSmallError, ctse:
+        except ContextTooSmallError as ctse:
             print (ctse)
 
 
@@ -106,7 +106,7 @@ class OmegaPainter (Gtk.DrawingArea):
 
 class PagerWindow (Gtk.Window):
     __gtype_name__ = 'PagerWindow'
-    __gsignals__ = {b'key-press-event' : b'override'}
+    __gsignals__ = {str('key-press-event') : str('override')} # Py 2/3 compat
 
     is_fullscreen = GObject.property (type=bool, default=False)
     op = GObject.property (type=OmegaPainter)
@@ -188,8 +188,8 @@ class Gtk3DisplayPager (render.DisplayPager):
 
     def __init__ (self, style=None, parent=None):
         self.win = PagerWindow (style, parent)
-        self.win.connect (b'delete-event', self._window_deleted)
-        self.win.btn.connect (b'clicked', self._next_clicked)
+        self.win.connect (str('delete-event'), self._window_deleted)
+        self.win.btn.connect (str('clicked'), self._next_clicked)
 
 
     def is_mainloop_running (self):

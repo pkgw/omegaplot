@@ -20,7 +20,9 @@ setup (
 
     packages = ['omega', 'oputil'],
 
-    # install_requires = ['docutils >= 0.3'],
+    install_requires = [
+        'six >= 1.9',
+    ],
 
     entry_points = {
         'console_scripts': [
