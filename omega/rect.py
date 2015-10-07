@@ -1070,7 +1070,7 @@ class RectPlot (Painter):
         dp = XYDataPainter (lines=lines, pointStamp=pointStamp, keyText=label)
 
         if mcolor is not None:
-            dp.setFloats (x, y, mcolor)
+            dp.setFloats (mcolor, x, y)
         else:
             dp.setFloats (x, y)
 
