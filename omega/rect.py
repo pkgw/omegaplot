@@ -1150,10 +1150,10 @@ class RectPlot (Painter):
         nc = len (df.columns)
 
         if nc == 2:
-            return self.addXY (df.icol (0), df.icol (1), keyText, **kwargs)
+            return self.addXY (df.iloc[:,0], df.iloc[:,1], keyText, **kwargs)
 
         if nc == 3:
-            return self.addXYErr (df.icol (0), df.icol (1), df.icol (2), keyText, **kwargs)
+            return self.addXYErr (df.iloc[:,0], df.iloc[:,1], df.iloc[:,2], keyText, **kwargs)
 
         raise ValueError ('don\'t know what to do with DataFrame input ' + str (df))
 
