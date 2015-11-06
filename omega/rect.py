@@ -637,7 +637,8 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     paintLabels = True # paint any labels at all?
     labelMinorTicks = False # draw value labels at the minor tick points?
     labelSomeMinorTicks = False # label 3x and 6x minor ticks?
-
+    everyNthMajor = 1 # draw every Nth major tick label
+    everyNthMinor = 1 # draw every Nth minor tick label, if labelMinorTicks is True
 
     def nudgeBounds (self):
         self.axis.normalize ()
@@ -672,11 +673,29 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         coeffs = []
         curpows = []
         isMajors = []
+        getsLabels = []
+        majorCount = -1
+        minorCount = coeff % 9 - 1
 
         while self.axis.inbounds (coeff*10.**curpow):
             coeffs.append (coeff)
             curpows.append (curpow)
-            isMajors.append (coeff == 1)
+            isMajor = (coeff == 1)
+            isMajors.append (isMajor)
+
+            minorCount += 1
+            if isMajor:
+                majorCount += 1
+                minorCount = 0
+
+            getsLabel = isMajor and (majorCount % self.everyNthMajor) == 0
+            if self.labelMinorTicks:
+                getsLabel = getsLabel or (minorCount % self.everyNthMinor) == 0
+            elif self.labelSomeMinorTicks:
+                if not isMajor:
+                    getsLabel = (coeff == 3) or (coeff == 6)
+
+            getsLabels.append (getsLabel)
 
             if coeff == 9:
                 coeff = 1
@@ -685,7 +704,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
                 coeff += 1
 
         xformed = self.axis.transform (np.asarray (coeffs) * 10.**np.asarray (curpows))
-        return zip (coeffs, curpows, xformed, isMajors)
+        return zip (coeffs, curpows, xformed, isMajors, getsLabels)
 
 
     def getLabelInfos (self, ctxt, style):
@@ -698,17 +717,10 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
         labels = []
 
-        for (coeff, exp, xformed, isMajor) in self.getTickLocations ():
-            if self.labelMinorTicks:
-                pass
-            elif self.labelSomeMinorTicks:
-                if not isMajor and coeff != 3 and coeff != 6: continue
-            else:
-                if not isMajor: continue
-
-            s = self.formatLabel (coeff, exp)
-
-            labels.append ((TextStamper (s), xformed, isMajor))
+        for (coeff, exp, xformed, isMajor, getsLabel) in self.getTickLocations ():
+            if getsLabel:
+                s = self.formatLabel (coeff, exp)
+                labels.append ((TextStamper (s), xformed, isMajor))
 
         for (ts, xformed, isMajor) in labels:
             w, h = ts.getSize (ctxt, style)
@@ -736,7 +748,7 @@ class LogarithmicAxisPainter (BlankAxisPainter):
 
         style.apply (ctxt, self.tickStyle)
 
-        for (coeff, exp, xformed, isMajor) in self.getTickLocations ():
+        for (coeff, exp, xformed, isMajor, getsLabel) in self.getTickLocations ():
             if isMajor: len = self.majorTickScale * style.largeScale
             else: len = self.minorTickScale * style.smallScale
 
