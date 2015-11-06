@@ -33,27 +33,22 @@ from .base import Stamp
 
 _defaultStampSize = 5
 
-# import stride_tricks
-# np.broadcast_arrays = stride_tricks.broadcast_arrays
 
 class RStamp (Stamp):
-    # A R(ect)Stamp is a stamp usually associated
-    # with a RectDataHolder and rendered onto a RectPlot.
-    # The paint/paintAt functions paint a data-free
-    # "sample" stamp only. The paintMany function
-    # paints the stamp multiple times according to the data
-    # contained in the RectDataHolder.
+    """A R(ect)Stamp is a stamp usually associated with a RectDataHolder and
+    rendered onto a RectPlot. The paint/paintAt functions paint a data-free
+    "sample" stamp only. The paintMany function paints the stamp multiple
+    times according to the data contained in the RectDataHolder.
 
+    """
     data = None
-
 
     def setData (self, data):
         if self.data is not None:
             raise Exception ('Cannot reuse RStamp instance.')
 
         self.data = data
-        # when overriding: possibly register data columns
-        # and stash cinfo
+        # when overriding: possibly register data columns and stash cinfo
 
 
     def paintAt (self, ctxt, style, x, y):
@@ -82,33 +77,84 @@ class RStamp (Stamp):
 
 
     def _getSampleValues (self, style, x, y):
-        # When implementing, return a tuple of scalars
-        # that can be used by _paintData in array form.
-        # If subclassing, chain to the parent and
-        # combine your tuples and the parent's tuples
+        # When implementing, return a tuple of scalars that can be used by
+        # _paintData in array form. If subclassing, chain to the parent and
+        # combine your tuples and the parent's tuples.
         raise NotImplementedError ()
 
 
     def _getDataValues (self, style, xform):
-        # Implement similalry to _getSampleValues.
-        # It's expected that data values will
-        # come from self.data.getMapped (cinfo, xform)
-        # for some cinfo
+        # Implement similarly to _getSampleValues. It's expected that data
+        # values will come from self.data.getMapped (cinfo, xform) for some
+        # cinfo.
         raise NotImplementedError ()
 
 
-class PrimaryRStamp (RStamp):
-    # A primary RStamp is one that actually draws a plot
-    # symbol. It has builtin properties "size" and "rot"
-    # that can be used to control how the symbol is plotted.
-    # Both can be either specified to be a constant or
-    # be stored in the dataholder.
+class PathPainter (object):
+    """Utility object that allows us to easily abstract between rendering modes
+    with filled or empty symbols, potentially with different styles for the
+    stroke and paint operations.
 
-    def __init__ (self, size=None, rot=0):
-        if size is None: size = _defaultStampSize
+    """
+    def __init__ (self, stroke=True, fill=True, style=None, strokeStyle=None, fillStyle=None):
+        self.stroke = stroke
+        self.fill = fill
+        self.style = None
+        self.strokeStyle = strokeStyle
+        self.fillStyle = fillStyle
+
+
+    def paint (self, linesOnly, ctxt, style):
+        """Assumes that the ctxt has an active path that should be painted now. If
+        linesOnly is true, the path does not contain closed shapes (e.g.: a
+        plus sign) and thus should never be filled.
+
+        """
+        stroke = self.stroke
+        fill = self.fill
+
+        if linesOnly:
+            stroke = True
+            fill = False
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+
+        if stroke:
+            if fill:
+                ctxt.save ()
+                style.apply (ctxt, self.fillStyle)
+                ctxt.fill_preserve ()
+                ctxt.restore ()
+            ctxt.save ()
+            style.apply (ctxt, self.strokeStyle)
+            ctxt.stroke ()
+            ctxt.restore ()
+        elif fill:
+            ctxt.save ()
+            style.apply (ctxt, self.fillStyle)
+            ctxt.fill ()
+            ctxt.restore ()
+
+        ctxt.restore ()
+
+
+
+class PrimaryRStamp (RStamp):
+    """A primary RStamp is one that actually draws a plot symbol. It has builtin
+    properties such as "size" and "rot" that can be used to control how the
+    symbol is plotted. "size" and "rot" can be either specified to be a
+    constant or be stored in the dataholder (as indicated by a negative value
+    passed to __init__).
+
+    """
+    def __init__ (self, size=None, rot=0, stroke=True, fill=True, style=None, strokeStyle=None, fillStyle=None):
+        if size is None:
+            size = _defaultStampSize
 
         self.size = size
         self.rot = rot
+        self._path_painter = PathPainter (stroke, fill, style, strokeStyle, fillStyle)
 
 
     def setData (self, data):
@@ -172,42 +218,45 @@ class PrimaryRStamp (RStamp):
 
 # These functions actually paint a symbol
 
-def symCircle (ctxt, style, size, fill):
+def symCircle (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     ctxt.new_sub_path () # prevents leading line segment to arc beginning
     ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * pi)
-
-    if fill:
-        ctxt.fill_preserve ()
-    ctxt.stroke ()
+    pp.paint (False, ctxt, style)
 
 
-def symUpTriangle (ctxt, style, size, fill):
+def symUpTriangle (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s = size * style.smallScale
 
     ctxt.move_to (0, -0.666666 * s)
     ctxt.rel_line_to (s/2, s)
     ctxt.rel_line_to (-s, 0)
     ctxt.close_path ()
-
-    if fill:
-        ctxt.fill_preserve ()
-    ctxt.stroke ()
+    pp.paint (False, ctxt, style)
 
 
-def symDownTriangle (ctxt, style, size, fill):
+def symDownTriangle (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s = size * style.smallScale
 
     ctxt.move_to (0, s * 0.666666)
     ctxt.rel_line_to (-s/2, -s)
     ctxt.rel_line_to (s, 0)
     ctxt.close_path ()
-
-    if fill:
-        ctxt.fill_preserve ()
-    ctxt.stroke ()
+    pp.paint (False, ctxt, style)
 
 
-def symDiamond (ctxt, style, size, fill):
+def symDiamond (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s2 = size * style.smallScale / 2
 
     ctxt.move_to (0, -s2)
@@ -215,125 +264,98 @@ def symDiamond (ctxt, style, size, fill):
     ctxt.rel_line_to (-s2, s2)
     ctxt.rel_line_to (-s2, -s2)
     ctxt.close_path ()
-
-    if fill:
-        ctxt.fill_preserve ()
-    ctxt.stroke ()
+    pp.paint (False, ctxt, style)
 
 
-def symBox (ctxt, style, size, fill):
+def symBox (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s = size * style.smallScale / sqrt (2)
 
     ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
-
-    if fill:
-        ctxt.fill_preserve ()
-    ctxt.stroke ()
+    pp.paint (False, ctxt, style)
 
 
-def symX (ctxt, style, size, fill=False):
-    # "fill" not honored here, but allow it for signature compatibility.
+def symX (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s = size * style.smallScale / sqrt (2)
 
     ctxt.move_to (-0.5 * s, -0.5 * s)
     ctxt.rel_line_to (s, s)
-    ctxt.stroke ()
+    pp.paint (True, ctxt, style)
     ctxt.move_to (-0.5 * s, 0.5 * s)
     ctxt.rel_line_to (s, -s)
-    ctxt.stroke ()
+    pp.paint (True, ctxt, style)
 
-def symPlus (ctxt, style, size, fill=False):
-    # "fill" not honored here, but allow it for signature compatibility.
+
+def symPlus (ctxt, style, size, pp=None):
+    if pp is None:
+        pp = PathPainter ()
+
     s = size * style.smallScale
 
     ctxt.move_to (-0.5 * s, 0)
     ctxt.rel_line_to (s, 0)
-    ctxt.stroke ()
+    pp.paint (True, ctxt, style)
     ctxt.move_to (0, -0.5 * s)
     ctxt.rel_line_to (0, s)
-    ctxt.stroke ()
+    pp.paint (True, ctxt, style)
 
 
 # Stamps drawing these symbols
 
 class Nothing (PrimaryRStamp):
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        # we accept the 'fill' argument for API consistency
-
-
     def _paintOne (self, ctxt, style, size):
         pass
 
 
 class Circle (PrimaryRStamp):
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        self.fill = fill
-
-
     def _paintOne (self, ctxt, style, size):
-        symCircle (ctxt, style, size, self.fill)
+        symCircle (ctxt, style, size, self._path_painter)
 
 
 class UpTriangle (PrimaryRStamp):
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        self.fill = fill
-
-
     def _paintOne (self, ctxt, style, size):
-        symUpTriangle (ctxt, style, size, self.fill)
+        symUpTriangle (ctxt, style, size, self._path_painter)
 
 
 class DownTriangle (PrimaryRStamp):
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        self.fill = fill
-
-
     def _paintOne (self, ctxt, style, size):
-        symDownTriangle (ctxt, style, size, self.fill)
+        symDownTriangle (ctxt, style, size, self._path_painter)
 
 
 class Diamond (PrimaryRStamp):
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        self.fill = fill
-
-
     def _paintOne (self, ctxt, style, size):
-        symDiamond (ctxt, style, size, self.fill)
+        symDiamond (ctxt, style, size, self._path_painter)
 
 
 class Box (PrimaryRStamp):
-    # size measures the box in style.smallScale; this is
-    # reduced by sqrt(2) so that the area of the Box and
-    # Diamond stamps are the same for the same values of size.
+    """`size` measures the box in style.smallScale; this is reduced by sqrt(2) so
+    that the area of the Box and Diamond stamps are the same for the same
+    values of size.
 
-
-    def __init__ (self, fill=True, **kwargs):
-        PrimaryRStamp.__init__ (self, **kwargs)
-        self.fill = fill
-
-
+    """
     def _paintOne (self, ctxt, style, size):
-        symBox (ctxt, style, size, self.fill)
+        symBox (ctxt, style, size, self._path_painter)
 
 
 class X (PrimaryRStamp):
-    # size gives the length the X in style.smallScale; corrected by
-    # sqrt(2) so that X and Plus lay down the same amount of "ink"
+    """`size` gives the length the X in style.smallScale; corrected by sqrt(2) so
+    that X and Plus lay down the same amount of "ink"
 
+    """
     def _paintOne (self, ctxt, style, size):
-        symX (ctxt, style, size)
+        symX (ctxt, style, size, self._path_painter)
 
 
 class Plus (PrimaryRStamp):
-    # size gives the side length of the plus in style.smallScale
+    "`size` gives the side length of the plus in style.smallScale."""
 
     def _paintOne (self, ctxt, style, size):
-        symPlus (ctxt, style, size)
+        symPlus (ctxt, style, size, self._path_painter)
 
 
 # This special PrimaryRStamp plots a symbol that's a function of

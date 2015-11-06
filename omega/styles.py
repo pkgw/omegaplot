@@ -123,11 +123,13 @@ class Style (object):
     # Shortcut accessors for useful properties
 
     @property
-    def smallScale (self): return self.sizes.smallScale
+    def smallScale (self):
+        return self.sizes.smallScale
 
 
     @property
-    def largeScale (self): return self.sizes.largeScale
+    def largeScale (self):
+        return self.sizes.largeScale
 
 
 # Sizes of graphical elements and coordinate transforms
@@ -278,9 +280,15 @@ class DataTheme (object):
 
 
 
-def _wf (func, fill):
-    # "with fill"
-    return lambda c, sty, sz: func (c, sty, sz, fill)
+def _wfa (func):
+    # "with fill argument"
+    from .stamps import PathPainter
+    return lambda c, sty, sz, fill: func (c, sty, sz, PathPainter (fill=fill))
+
+def _wff (func, fill):
+    # "with fixed fill"
+    from .stamps import PathPainter
+    return lambda c, sty, sz: func (c, sty, sz, PathPainter (fill=fill))
 
 
 class MonochromeDataTheme (DataTheme):
@@ -334,27 +342,27 @@ class MonochromeDataTheme (DataTheme):
         apply_color (ctxt, style.colors.foreground)
 
 
-    _symFuncs = [_wf (stamps.symCircle, True),
-                 _wf (stamps.symUpTriangle, True),
-                 _wf (stamps.symBox, True),
-                 _wf (stamps.symDiamond, True),
-                 _wf (stamps.symDownTriangle, True),
+    _symFuncs = [_wff (stamps.symCircle, True),
+                 _wff (stamps.symUpTriangle, True),
+                 _wff (stamps.symBox, True),
+                 _wff (stamps.symDiamond, True),
+                 _wff (stamps.symDownTriangle, True),
                  stamps.symX,
                  stamps.symPlus,
-                 _wf (stamps.symCircle, False),
-                 _wf (stamps.symUpTriangle, False),
-                 _wf (stamps.symBox, False),
-                 _wf (stamps.symDiamond, False),
-                 _wf (stamps.symDownTriangle, False)]
+                 _wff (stamps.symCircle, False),
+                 _wff (stamps.symUpTriangle, False),
+                 _wff (stamps.symBox, False),
+                 _wff (stamps.symDiamond, False),
+                 _wff (stamps.symDownTriangle, False)]
 
     def getSymbolFunc (self, dsn):
         return self._symFuncs[dsn % len (self._symFuncs)]
 
-    _strictSymFuncs = [stamps.symCircle,
-                       stamps.symBox,
-                       stamps.symDiamond,
-                       stamps.symX,
-                       stamps.symPlus]
+    _strictSymFuncs = [_wfa (stamps.symCircle),
+                       _wfa (stamps.symBox),
+                       _wfa (stamps.symDiamond),
+                       _wfa (stamps.symX),
+                       _wfa (stamps.symPlus)]
 
     def getStrictSymbolFunc (self, dsn):
         return self._strictSymFuncs[dsn % len (self._strictSymFuncs)]
