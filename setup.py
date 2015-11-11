@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup (
     name = 'omegaplot',
-    version = '0.5.99',
+    version = '0.6.0',
 
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
