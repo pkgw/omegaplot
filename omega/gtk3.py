@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012, 2014 Peter Williams
+# Copyright 2011, 2012, 2014, 2015 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -24,16 +24,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
   and they revert to their default values on destruction. This means
   that GObject-derived classes are best kept simple.
 
-- If you're in IPython and you do "%gui gtk3", show some plots, then "%gui"
-  (-> no GUI), bad things will happen. This seems to be IPython's problem, not
-  mine.
+- If you're in Jupyter/IPython and you do "%gui gtk3", show some plots, then
+  "%gui" (-> no GUI), bad things will happen. This seems to be Jupyter's
+  problem, not mine.
 
 """
 
+import gi
+gi.require_version ('Gdk', '3.0')
+gi.require_version ('Gtk', '3.0')
 from gi.repository import GObject, Gdk, Gtk
 
 from .base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
-from . import ipython, styles, render
+from . import jupyter, styles, render
 
 
 default_style = styles.ColorOnBlackBitmap
@@ -180,10 +183,11 @@ class PagerWindow (Gtk.Window):
 
 class Gtk3DisplayPager (render.DisplayPager):
     """Page plots through a window. There's a wrinkle because we try to
-    auto-detect when running in IPython with a Glib main loop running in the
-    background; if so, send() returns instantly. If not, we block until the
-    user hits Next."""
+    auto-detect when running in Jupyter/IPython with a Glib main loop running
+    in the background; if so, send() returns instantly. If not, we block until
+    the user hits Next.
 
+    """
     _in_modal_loop = False
 
     def __init__ (self, style=None, parent=None):
@@ -255,9 +259,9 @@ class Gtk3DisplayPager (render.DisplayPager):
             self._in_modal_loop = False
 
 
-class Gtk3IPythonDisplayPager (Gtk3DisplayPager):
+class Gtk3JupyterDisplayPager (Gtk3DisplayPager):
     def is_mainloop_running (self):
-        return ipython.gtk_mainloop_running ()
+        return jupyter.gtk_mainloop_running ()
 
 
-render.setDisplayPagerClass (Gtk3IPythonDisplayPager)
+render.setDisplayPagerClass (Gtk3JupyterDisplayPager)

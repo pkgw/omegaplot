@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012, 2014 Peter Williams
+# Copyright 2011, 2012, 2014, 2015 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -31,7 +31,7 @@ _defaultStyle = styles.ColorOnBlackBitmap
 
 # This is needed to know what to do about mainloop integration with the pager
 # (XXX: should have a generic architecture, blah blah).
-from . import ipython
+from . import jupyter
 
 
 interactiveAutoRepaint = False
@@ -318,7 +318,7 @@ class YesLoopDisplayPager (render.DisplayPager):
 
 
 def makeGtkPager (**kwargs):
-    if ipython.gtk_mainloop_running ():
+    if jupyter.gtk_mainloop_running ():
         return YesLoopDisplayPager (**kwargs)
     return NoLoopDisplayPager (**kwargs)
 

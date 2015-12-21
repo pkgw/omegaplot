@@ -1,4 +1,4 @@
-.. Copyright 2011, 2012 Peter Williams
+.. Copyright 2011, 2012, 2015 Peter Williams
 
    This file is part of Omegaplot.
 
@@ -39,9 +39,10 @@ package.
 
 Features currently supported by OmegaPlot include:
 
-* Interactive plotting with rendering via the `GTK+
-  <http://www.gtk.org/>`_ toolkit. Special integration with the
-  `IPython <http://ipython.scipy.org/>`_ interactive shell is included.
+* Interactive plotting with rendering via the `GTK+ <http://www.gtk.org/>`_
+  toolkit. Special integration with the `Jupyter <https://jupyter.org/>`_
+  (previously `IPython <http://ipython.scipy.org/>`_) interactive shell is
+  included.
 * Paginated output to PostScript, PDF, SVG, and PNG files. Generally,
   any output target supported by Cairo can easily be used by OmegaPlot.
 * Sophisticated rectangular (X, Y) plots.

@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""IPython integration for OmegaPlot.
+"""Jupyter/IPython integration for OmegaPlot.
 
-This only works for versions >=0.11, I think.
+For simplicity we try to maintain compatibility with both Jupyter and
+pre-split IPython when possible. The current code should work for Jupyter
+around 4.0 and IPython works for versions >=0.11, I think.
+
 """
-
 from __future__ import absolute_import, division, print_function, unicode_literals
-
-# Are we being run inside IPython?
 
 try:
     __IPYTHON__
@@ -39,9 +39,19 @@ def shell ():
 
 
 def gtk_mainloop_running ():
-    if not inIPython:
+    sh = shell ()
+    if shell is None:
         return False
 
-    import IPython.lib.inputhook
-    gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
-    return gui in ('gtk', 'gtk3')
+    try:
+        eventloop = sh.kernel.eventloop
+        # If we didn't crash, then we must be in Jupyter.
+
+        if eventloop is None:
+            return False
+        return 'gtk' in eventloop.func_name
+    except AttributeError:
+        # We must be in IPython.
+        import IPython.lib.inputhook
+        gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
+        return gui in ('gtk', 'gtk3')

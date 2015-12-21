@@ -14,7 +14,7 @@ setup (
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
     # "bad local file header", and reloading a module after a reinstall in
-    # IPython gives an ImportError with the same message. These are annoying
+    # Jupyter gives an ImportError with the same message. These are annoying
     # enough and I don't really care so we just install it as flat files.
     zip_safe = False,
 
