@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012, 2014, 2015 Peter Williams
+# Copyright 2011-2016 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -22,6 +22,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import gi
+gi.require_version ('PangoCairo', '1.0')
 from gi.repository import PangoCairo
 
 from . import base
