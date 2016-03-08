@@ -1,1 +1,1 @@
-include AUTHORS COPYING README Makefile.in devconfig.sh devnotes.rst 
+include AUTHORS COPYING README Makefile.in devconfig.sh DEVNOTES.rst 
