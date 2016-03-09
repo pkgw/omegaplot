@@ -2689,13 +2689,17 @@ class XBand (FieldPainter):
     fill = True
 
 
-    def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText='Band'):
+    def __init__ (self, xmin, xmax, stroke=False, fill=True, keyText='Band', style=None):
         super (XBand, self).__init__ ()
 
         self.stroke = stroke
         self.fill = fill
 
-        if xmin > xmax: xmin, xmax = xmax, xmin
+        if style is not None:
+            self.style = style
+
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
         self.xmin, self.xmax = xmin, xmax
 
         self.keyText = keyText
@@ -2741,11 +2745,14 @@ class YBand (FieldPainter):
     fill = True
 
 
-    def __init__ (self, ymin, ymax, stroke=False, fill=True, keyText='Band'):
+    def __init__ (self, ymin, ymax, stroke=False, fill=True, keyText='Band', style=None):
         super (YBand, self).__init__ ()
 
         self.stroke = stroke
         self.fill = fill
+
+        if style is not None:
+            self.style = style
 
         if ymin > ymax:
             ymin, ymax = ymax, ymin
