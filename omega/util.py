@@ -190,7 +190,7 @@ def quickDF (*args, **kwargs):
     return rp
 
 
-def quickHist (data, bins=10, range=None, **kwargs):
+def quickHist (data, bins=10, range=None, weights=None, density=None, filled=False, **kwargs):
     from numpy import concatenate, histogram
 
     xmin = _kwordDefaulted (kwargs, 'xmin', float, None)
@@ -198,16 +198,19 @@ def quickHist (data, bins=10, range=None, **kwargs):
     ymin = _kwordDefaulted (kwargs, 'ymin', float, 0.0)
     ymax = _kwordDefaulted (kwargs, 'ymax', float, None)
 
-    values, edges = histogram (data, bins, range)
+    values, edges = histogram (data, bins, range, weights=weights, density=density)
     if edges.size != values.size + 1:
         raise RuntimeError ('using too-old numpy? got weird histogram result')
 
     from . import rect
-    csp = rect.ContinuousSteppedPainter (**kwargs)
-    csp.setDataHist (edges, values)
+    if filled:
+        dp = rect.FilledHistogram (**kwargs)
+    else:
+        dp = rect.ContinuousSteppedPainter (**kwargs)
+    dp.setDataHist (edges, values)
 
     rp = rect.RectPlot ()
-    rp.add (csp)
+    rp.add (dp)
     rp.setBounds (xmin, xmax, ymin, ymax)
     return rp
 

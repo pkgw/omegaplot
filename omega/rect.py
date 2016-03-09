@@ -1170,17 +1170,24 @@ class RectPlot (Painter):
         raise ValueError ('don\'t know what to do with DataFrame input ' + str (df))
 
 
-    def addHist (self, data, bins=10, range=None, **kwargs):
+    def addHist (self, data, bins=10, range=None, weights=None, density=None, filled=False, **kwargs):
         """Compute a histogram and add it to the plot."""
-        kcsp = _kwordExtract (kwargs, 'lineStyle', 'connectors', 'keyText')
+        if filled:
+            dpkw = _kwordExtract (kwargs, 'keyText', 'style')
+        else:
+            dpkw = _kwordExtract (kwargs, 'lineStyle', 'connectors', 'keyText')
 
-        values, edges = np.histogram (data, bins, range)
+        values, edges = np.histogram (data, bins, range, weights=weights, density=density)
         if edges.size != values.size + 1:
             raise RuntimeError ('using too-old numpy? got weird histogram result')
 
-        csp = ContinuousSteppedPainter (**kcsp)
-        csp.setDataHist (edges, values)
-        return self.add (csp, **kwargs)
+        if filled:
+            dp = FilledHistogram (**dpkw)
+        else:
+            dp = ContinuousSteppedPainter (**dpkw)
+
+        dp.setDataHist (edges, values)
+        return self.add (dp, **kwargs)
 
 
     def addContours (self, data, rowcoords, colcoords, keyText='Contours',
@@ -2038,107 +2045,6 @@ class XYDataPainter (FieldPainter):
         ctxt.restore ()
 
 
-class OldContinuousSteppedPainter (FieldPainter):
-    """Like ContinuousSteppedPainter, but takes N data points if you have N
-    y-values, and guesses the rightmost bin edge. I.e., the X values are the
-    left edges of the bins."""
-
-    lineStyle = None
-    needsDataStyle = True
-    dsn = None
-    connectors = True
-
-
-    def __init__ (self, lineStyle=None, connectors=True, keyText='Histogram'):
-        super (OldContinuousSteppedPainter, self).__init__ ()
-
-        self.lineStyle = lineStyle
-        self.connectors = connectors
-
-        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
-                                    DataHolder.AxisTypeFloat)
-        self.data.exportIface (self)
-        self.cinfo = self.data.register (0, 0, 1, 1)
-
-        self.keyText = keyText
-
-
-    def _calcMaxX (self, d):
-        # FIXME: assuming data are sorted in X. We check in doPaint ()
-        # but could stand to check here too.
-
-        if d.size == 1:
-            return 2 * d[0]
-        elif d.size == 0:
-            return 0.0
-
-        return 2 * d[-1] - d[-2]
-
-
-    def getDataBounds (self):
-        imisc, fmisc, xs, ys = self.data.getAll ()
-
-        return xs.min (), self._calcMaxX (xs[0]), ys.min (), ys.max ()
-
-
-    def getKeyPainter (self):
-        if self.keyText is None:
-            return None
-        return GenericDataKeyPainter (self, True, False, False)
-
-
-    def doPaint (self, ctxt, style):
-        super (OldContinuousSteppedPainter, self).doPaint (ctxt, style)
-
-        xs, ys = self.data.getRawXY (self.cinfo)
-        finalx = self.xform.mapX (self._calcMaxX (xs))
-        xs = self.xform.mapX (xs)
-        ys = self.xform.mapY (ys)
-
-        if xs.size < 1: return
-
-        style.applyDataLine (ctxt, self.dsn)
-        style.apply (ctxt, self.lineStyle)
-
-        prevx, prevy = xs[0], ys[0]
-        ctxt.move_to (prevx, prevy)
-        cmpval = None
-
-        if self.connectors:
-            for i in xrange (1, xs.size):
-                x, y = xs[i], ys[i]
-                c = cmp (x, prevx)
-                if cmpval is None and c != 0:
-                    cmpval = c
-                elif c != cmpval and c != 0:
-                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
-                                     % (prevx, x, cmpval, c))
-
-                ctxt.line_to (x, prevy)
-                ctxt.line_to (x, y)
-
-                prevx, prevy = x, y
-        else:
-            for i in xrange (1, xs.size):
-                x, y = xs[i], ys[i]
-                c = cmp (x, prevx)
-                if cmpval is None and c != 0:
-                    cmpval = c
-                elif c != cmpval and c != 0:
-                    raise Exception ('arguments must be sorted in X (%s %s %s %s)'
-                                     % (prevx, x, cmpval, c))
-
-                ctxt.line_to (x, prevy)
-                ctxt.stroke ()
-
-                ctxt.move_to (x, y)
-
-                prevx, prevy = x, y
-
-        ctxt.line_to (finalx, prevy)
-        ctxt.stroke ()
-
-
 class ContinuousSteppedPainter (FieldPainter):
     """Draws histogram-style lines. If you have N horizontal segments that you
     want to plot, provide N+1 data points, with the X values giving all of the
@@ -2271,6 +2177,71 @@ class ContinuousSteppedPainter (FieldPainter):
 
         ctxt.line_to (xs[-1], prevy)
         ctxt.stroke ()
+
+
+class FilledHistogram (FieldPainter):
+    style = 'genericBand'
+    needsDataStyle = False
+    dsn = None
+    stroke = False
+    fill = True # needed for RegionKeyPainter
+
+    def __init__ (self, keyText='Data', style='genericBand'):
+        super (FilledHistogram, self).__init__ ()
+
+        self.style = style
+        self.keyText = keyText
+        self.data = RectDataHolder (DataHolder.AxisTypeFloat,
+                                    DataHolder.AxisTypeFloat)
+        self.data.exportIface (self)
+        self.cinfo = self.data.register (0, 0, 1, 1)
+
+    def setDataHist (self, edges, values):
+        edges = np.atleast_1d (edges)
+        values = np.atleast_1d (values)
+
+        if edges.size != values.size + 1:
+            raise ValueError ('for %d y-values, need %d edges; got %d' %
+                              (values.size, values.size + 1, edges.size))
+
+        deltas = edges[1:] - edges[:-1]
+        if np.any (deltas > 0) and np.any (deltas < 0):
+            raise ValueError ('bin edges are not sorted')
+
+        self.setFloats (edges, np.concatenate ((values, [0])))
+        return self
+
+    def getDataBounds (self):
+        ign, ign, x, y = self.data.get (self.cinfo)
+        return x.min (), x.max (), min (y.min (), 0), max (y.max (), 0)
+
+    def getKeyPainter (self):
+        if self.keyText is None:
+            return None
+        return RegionKeyPainter (self)
+
+    def doPaint (self, ctxt, style):
+        super (FilledHistogram, self).doPaint (ctxt, style)
+
+        ign, ign, x, y = self.data.getMapped (self.cinfo, self.xform)
+        x, y = x[0], y[0]
+        yzero = self.xform.mapY (0)
+
+        ctxt.save ()
+        style.apply (ctxt, self.style)
+
+        ctxt.move_to (x[0], yzero)
+
+        for i in xrange (1, y.size):
+            if x[i] < x[i-1]:
+                raise RuntimeError ('x values must be sorted')
+            ctxt.line_to (x[i-1], y[i-1])
+            ctxt.line_to (x[i], y[i-1])
+
+        ctxt.line_to (x[i], yzero)
+        ctxt.close_path ()
+        ctxt.fill ()
+        ctxt.restore ()
 
 
 def _paintSteppedLines (ctxt, xls, xrs, ys, connectors):
