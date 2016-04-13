@@ -141,7 +141,7 @@ class AngularAxisPainter (rect.BlankAxisPainter):
     labelMinorTicks = False
     angleLabels = False
 
-    def nudgeBounds (self):
+    def nudgeBounds (self, nudgeMode=True):
         self.axis.normalize ()
         # TODO: implement something clever
 

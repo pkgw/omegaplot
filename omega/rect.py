@@ -194,7 +194,7 @@ class BlankAxisPainter (object):
         return 0, 0, 0
 
 
-    def nudgeBounds (self):
+    def nudgeBounds (self, nudgeMode=True):
         """Modify the bounds of our axis to a superset of the inputs.
         The new bounds should be "nice" for this axis, i.e., rounded off
         to some reasonable value. For instance, for a regular base-10 linear
@@ -432,7 +432,7 @@ class LinearAxisPainter (BlankAxisPainter):
     everyNthMajor = 1 # draw every Nth major tick label
     everyNthMinor = 1 # draw every Nth minor tick label, if labelMinorTicks is True
 
-    def nudgeBounds (self):
+    def nudgeBounds (self, nudgeMode=True):
         self.axis.normalize ()
         span = self.axis.max - self.axis.min
 
@@ -446,10 +446,19 @@ class LinearAxisPainter (BlankAxisPainter):
             self.axis.max *= 1.05
             return
 
-        # Large integer axis bounds can cause problems: np.log10 (long (1e19))
-        # works fine, but np.log10 (long (1e20)) raises an AttributeError. I
-        # imagine there's some internal conversion to bignum representation.
-        # Anyway, we avoid any problems by coercing to floating-point.
+        # "tight" mode sticks close to the data span
+
+        if 'tight' == nudgeMode:
+            self.axis.max += 0.05 * span
+            self.axis.min -= 0.05 * span
+            return
+
+        # Otherwise, we're in the standard mode where we adjust the bounds to
+        # the nearest round numbers. Large integer axis bounds can cause
+        # problems: np.log10 (long (1e19)) works fine, but np.log10 (long
+        # (1e20)) raises an AttributeError. I imagine there's some internal
+        # conversion to bignum representation. Anyway, we avoid any problems
+        # by coercing to floating-point.
 
         mip = int (np.floor (np.log10 (1. * span))) # major interval power
         step = 10 ** mip
@@ -640,8 +649,20 @@ class LogarithmicAxisPainter (BlankAxisPainter):
     everyNthMajor = 1 # draw every Nth major tick label
     everyNthMinor = 1 # draw every Nth minor tick label, if labelMinorTicks is True
 
-    def nudgeBounds (self):
+    def nudgeBounds (self, nudgeMode=True):
         self.axis.normalize ()
+
+        # "tight" mode sticks close to the data span
+
+        if 'tight' == nudgeMode:
+            span = self.axis.logmax - self.axis.logmin
+            self.axis.logmax += 0.05 * span
+            self.axis.logmin -= 0.05 * span
+            return
+
+        # Otherwise, we're in the standard mode where we adjust the bounds
+        # to the nearest whole powers.
+
         self.axis.logmin = np.floor (self.axis.logmin)
         self.axis.logmax = np.ceil (self.axis.logmax)
 
@@ -1458,11 +1479,11 @@ Examples:
 
     def nudgeBounds (self, nudgex=True, nudgey=True):
         if nudgex:
-            self.bpainter.nudgeBounds ()
-            self.tpainter.nudgeBounds ()
+            self.bpainter.nudgeBounds (nudgex)
+            self.tpainter.nudgeBounds (nudgex)
         if nudgey:
-            self.lpainter.nudgeBounds ()
-            self.rpainter.nudgeBounds ()
+            self.lpainter.nudgeBounds (nudgey)
+            self.rpainter.nudgeBounds (nudgey)
         return self
 
 
