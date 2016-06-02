@@ -39,7 +39,29 @@ from .base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallErro
 from . import jupyter, styles, render
 
 
-default_style = styles.ColorOnBlackBitmap
+_base_default_style = styles.ColorOnBlackBitmap
+_default_size_request = (600, 480)
+
+def default_style (widget=None):
+    if widget is None:
+        screen = Gdk.Screen.get_default ()
+    else:
+        screen = widget.get_screen ()
+
+    settings = Gtk.Settings.get_for_screen (screen)
+    dpi = settings.get_property ('gtk-xft-dpi') / 1024.
+    hidpi = (dpi > 120)
+
+    style = _base_default_style ()
+
+    if hidpi:
+        style._gtk_size_request = (2 * _default_size_request[0], 2 * _default_size_request[1])
+        style.sizes.smallScale *= 2
+        style.sizes.largeScale *= 2
+        # we do NOT double fineLine
+        style.sizes.normalFontSize *= 2
+
+    return style
 
 
 # A GTK widget that renders a Painter
@@ -59,7 +81,8 @@ class OmegaPainter (Gtk.DrawingArea):
         self.tpp = ToplevelPaintParent (weak)
         self.tpp.setPainter (painter)
 
-        self.set_size_request (300, 240)
+        sr = getattr (style, '_gtk_size_request', _default_size_request)
+        self.set_size_request (*sr)
 
 
     def setPainter (self, painter):
@@ -130,7 +153,7 @@ class PagerWindow (Gtk.Window):
             self.set_transient_for (parent)
 
         if style is None:
-            style = default_style ()
+            style = default_style (widget=self)
 
         self.op = op = OmegaPainter (None, style, False)
         self.btn = btn = Gtk.Button (label='Next')
