@@ -1017,7 +1017,7 @@ class RectPlot (Painter):
         return item
 
 
-    def add (self, fp, autokey=True, rebound=True, nudgex=True, nudgey=True,
+    def add (self, fp, autokey=True, rebound=True, nudgex='tight', nudgey='tight',
              dsn=None, field=None, zheight=0., rself=False):
         # FIXME: don't rebound if the FP doesn't have any data.
 
@@ -1233,7 +1233,7 @@ class RectPlot (Painter):
         return self.add (dp, **kwargs)
 
 
-    def rebound (self, nudgex=True, nudgey=True, field=None):
+    def rebound (self, nudgex='tight', nudgey='tight', field=None):
         """Recalculate the bounds of the default field based on the data
         that it contains."""
 
@@ -1477,7 +1477,7 @@ Examples:
         return self
 
 
-    def nudgeBounds (self, nudgex=True, nudgey=True):
+    def nudgeBounds (self, nudgex='tight', nudgey='tight'):
         if nudgex:
             self.bpainter.nudgeBounds (nudgex)
             self.tpainter.nudgeBounds (nudgex)
