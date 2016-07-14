@@ -1,5 +1,5 @@
 # -*- mode: python; coding: utf-8 -*-
-# Copyright 2011, 2012, 2014, 2015 Peter Williams
+# Copyright 2011-2016 Peter Williams
 #
 # This file is part of omegaplot.
 #
@@ -18,9 +18,14 @@
 
 """Jupyter/IPython integration for OmegaPlot.
 
-For simplicity we try to maintain compatibility with both Jupyter and
-pre-split IPython when possible. The current code should work for Jupyter
-around 4.0 and IPython works for versions >=0.11, I think.
+For simplicity we try to maintain compatibility with pre-split IPython, later
+versions of IPython, and the Jupyter consoe mode, when possible. The current
+code should work for Jupyter around 4.0 and IPython works for versions >=0.11,
+I think.
+
+Note that for a while I assumed that the "ipython" command was deprecated
+after the Jupyter split. That is not in fact the case. The focus of
+development is just a bit different.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -40,7 +45,7 @@ def shell ():
 
 def gtk_mainloop_running ():
     sh = shell ()
-    if shell is None:
+    if sh is None:
         return False
 
     try:
@@ -51,7 +56,16 @@ def gtk_mainloop_running ():
             return False
         return 'gtk' in eventloop.func_name
     except AttributeError:
-        # We must be in IPython.
-        import IPython.lib.inputhook
-        gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
-        return gui in ('gtk', 'gtk3')
+        try:
+            curhook = sh._inputhook
+            # If we didn't crash, we seem to be in IPython >= 5.0 ... I think?
+            # I'm not sure if older versions of IPython have this attribute.
+
+            if curhook is None:
+                return False
+            return 'gtk' in curhook.__module__
+        except AttributeError:
+            # We must be in an older IPython.
+            import IPython.lib.inputhook
+            gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
+            return gui in ('gtk', 'gtk3')
