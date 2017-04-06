@@ -2166,11 +2166,14 @@ class ContinuousSteppedPainter (FieldPainter):
         ctxt.move_to (prevx, prevy)
         cmpval = None
 
+        def mycmp(a, b): # Python 3 removed cmp()
+            return (a > b) - (a < b)
+
         if self.connectors:
             for i in xrange (1, xs.size - 1):
                 x, y = xs[i], ys[i]
 
-                c = cmp (x, prevx)
+                c = mycmp(x, prevx)
                 if cmpval is None and c != 0:
                     cmpval = c
                 elif c != cmpval and c != 0:
@@ -2184,7 +2187,7 @@ class ContinuousSteppedPainter (FieldPainter):
             for i in xrange (1, xs.size - 1):
                 x, y = xs[i], ys[i]
 
-                c = cmp (x, prevx)
+                c = mycmp(x, prevx)
                 if cmpval is None and c != 0:
                     cmpval = c
                 elif c != cmpval and c != 0:
