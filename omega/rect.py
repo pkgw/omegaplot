@@ -22,8 +22,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 from six.moves import range as xrange
-import cairo
 import numpy as np
+
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
 
 from .base import *
 from .base import (_TextPainterBase, _kwordDefaulted,

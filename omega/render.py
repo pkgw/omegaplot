@@ -19,8 +19,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from six.moves import range as xrange
-import cairo
 from numpy import pi
+
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
 
 from . import styles
 

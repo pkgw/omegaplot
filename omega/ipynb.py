@@ -22,8 +22,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # output with multiple plots in a notebook. See the history for SVG-writing
 # code.
 
-import cairo, os, StringIO, tempfile
+import os, StringIO, tempfile
 from IPython.display import display, Image
+
+try:
+    import cairocffi as cairo
+except ImportError:
+    import cairo
 
 from . import styles, render
 
