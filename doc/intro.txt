@@ -32,10 +32,10 @@ following key goals:
 * Presenting a clean, usable API to users.
 
 The rendering backend of OmegaPlot is the `Cairo
-<http://www.cairographics.org/>`_ graphics library, via the `cairocffi
-<https://pypi.python.org/pypi/cairocffi>`_ or `PyCairo
-<http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot stores and
-accesses data using the `NumPy <http://numpy.scipy.org/>`_ package.
+<http://www.cairographics.org/>`_ graphics library, via the
+`PyCairo <http://www.cairographics.org/pycairo/>`_ bindings. OmegaPlot
+stores and accesses data using the `NumPy <http://numpy.scipy.org/>`_
+package.
 
 Features currently supported by OmegaPlot include:
 

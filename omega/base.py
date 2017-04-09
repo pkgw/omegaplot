@@ -705,10 +705,7 @@ class _TextStamperBase (object):
 
 # Our simple default backend
 
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairo
 
 class CairoTextPainter (_TextPainterBase):
     hAlign = 0.5

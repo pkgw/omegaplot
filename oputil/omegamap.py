@@ -84,12 +84,7 @@ locator=
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np, sys
-
-try:
-    import cairocffi as cairo
-except ImportError:
-    import cairo
+import cairo, numpy as np, sys
 
 from pwkit import astimage, astutil, cli, data_gui_helpers, ellipses
 from pwkit.kwargv import ParseKeywords, Custom
