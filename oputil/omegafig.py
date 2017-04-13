@@ -104,8 +104,13 @@ def doit (driver, args):
 
     # Deal with args
 
-    nargs = pfunc.func_code.co_argcount
-    argnames = pfunc.func_code.co_varnames
+    try:
+        code = pfunc.__code__
+    except AttributeError:
+        code = pfunc.func_code
+
+    nargs = code.co_argcount
+    argnames = code.co_varnames
 
     keywords = []
     nonkeywords = []
