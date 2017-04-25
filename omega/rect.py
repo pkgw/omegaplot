@@ -690,6 +690,9 @@ class LogarithmicAxisPainter (BlankAxisPainter):
         self.axis.normalize ()
         curpow = int (np.floor (self.axis.logmin))
         coeff = int (np.ceil (10. ** (self.axis.logmin - curpow)))
+        if coeff == 10:
+            curpow += 1
+            coeff = 1
 
         coeffs = []
         curpows = []
