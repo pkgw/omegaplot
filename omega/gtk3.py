@@ -71,8 +71,8 @@ class OmegaPainter (Gtk.DrawingArea):
 
     # We can't just call the style "style" since that conflicts with the Gtk
     # style property.
-    omega_style = GObject.property (type=GObject.TYPE_PYOBJECT)
-    tpp = GObject.property (type=GObject.TYPE_PYOBJECT)
+    omega_style = GObject.Property (type=GObject.TYPE_PYOBJECT)
+    tpp = GObject.Property (type=GObject.TYPE_PYOBJECT)
 
     def __init__ (self, painter, style, weak=False):
         super (OmegaPainter, self).__init__ ()
@@ -134,9 +134,9 @@ class PagerWindow (Gtk.Window):
     __gtype_name__ = 'PagerWindow'
     __gsignals__ = {str('key-press-event') : str('override')} # Py 2/3 compat
 
-    is_fullscreen = GObject.property (type=bool, default=False)
-    op = GObject.property (type=OmegaPainter)
-    btn = GObject.property (type=Gtk.Button)
+    is_fullscreen = GObject.Property (type=bool, default=False)
+    op = GObject.Property (type=OmegaPainter)
+    btn = GObject.Property (type=Gtk.Button)
 
 
     def __init__ (self, style=None, parent=None):
