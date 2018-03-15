@@ -2170,6 +2170,8 @@ class ContinuousSteppedPainter (FieldPainter):
         cmpval = None
 
         def mycmp(a, b): # Python 3 removed cmp()
+            a = float(a) # Numpy floats yield numpy bools which don't subtract
+            b = float(b)
             return (a > b) - (a < b)
 
         if self.connectors:
