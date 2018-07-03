@@ -436,7 +436,22 @@ class LinearAxisPainter (BlankAxisPainter):
         self.axis.normalize ()
         span = self.axis.max - self.axis.min
 
-        if span == 0:
+        range_is_effectively_zero = (span == 0)
+
+        if not range_is_effectively_zero:
+            # It can happen that the span is not exactly zero, but that if we
+            # further subdivide the span so as to draw ticks, we saturate our
+            # floating-point precision. Check for that here, reproducing the
+            # calculation of "inc" in getTickLocations; if it happens, act as
+            # if the span were effecively zero.
+
+            mip = int(np.floor(np.log10(1.0 * span)))
+            if np.log10(1.0 * span) - mip < self.autoBumpThreshold:
+                mip -= 1
+            inc = 10.**mip / self.minorTicks
+            range_is_effectively_zero = (self.axis.max - inc == self.axis.max)
+
+        if range_is_effectively_zero:
             if self.axis.max == 0:
                 self.axis.min = -1
                 self.axis.max = 1
@@ -503,6 +518,12 @@ class LinearAxisPainter (BlankAxisPainter):
             # exteme edge of the axis, so we know what value it
             # ought to have: exactly axis.min.
             val = self.axis.min
+
+        if val + inc == val:
+            # It can happen that the values are not all identical, but that
+            # their dynamic range is too fine to resolve in our numerical
+            # precision. If that happens here, let's just give up.
+            return []
 
         # If we cross zero, floating-point rounding errors cause the
         # ticks to be placed at points like 6.3e-16. Detect this case
