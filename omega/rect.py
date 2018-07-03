@@ -1092,18 +1092,26 @@ class RectPlot (Painter):
         x, y, label = None, None, 'Data'
 
         if l == 3:
-            x, y = map (np.asarray, args[0:2])
+            if args[0] is None: # addXY(None, yvals, label)
+                y = np.asarray(args[1])
+                x = np.arange(y.size)
+            else:
+                x, y = map (np.asarray, args[0:2])
             label = args[2]
         elif l == 2:
-            x = np.asarray (args[0])
-
-            if x.ndim != 2 or x.shape[0] != 2:
+            if args[0] is None: # addXY(None, yvals)
                 y = np.asarray (args[1])
-            else:
-                # User has done 'addXY (data, label)', where data is 2xnp.
-                y = x[1]
-                x = x[0]
-                label = args[1]
+                x = np.arange(y.size)
+            else: # addXY(x, y) or addXY(y, label)
+                x = np.asarray(args[0])
+
+                if x.ndim != 2 or x.shape[0] != 2:
+                    y = np.asarray(args[1])
+                else:
+                    # User has done 'addXY (data, label)', where data is 2xnp.
+                    y = x[1]
+                    x = x[0]
+                    label = args[1]
         elif l == 1:
             y = np.asarray (args[0])
 
