@@ -318,7 +318,7 @@ class DataHolder(object):
         they must be integer-type and compatible with N.int.
         """
 
-        self.intdata = self._setGeneric(self.AxisTypeInt, np.int, args)
+        self.intdata = self._setGeneric(self.AxisTypeInt, int, args)
         return self
 
     def setFloats(self, *args):
@@ -340,7 +340,7 @@ class DataHolder(object):
         floating-point arrays.
         """
 
-        self.fltdata = self._setGeneric(self.AxisTypeFloat, np.float, args)
+        self.fltdata = self._setGeneric(self.AxisTypeFloat, float, args)
         return self
 
     def exportIface(self, other):

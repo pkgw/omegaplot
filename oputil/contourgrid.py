@@ -38,7 +38,7 @@ import numpy as np
 class _ArrayGrower(object):
     __slots__ = ["dtype", "ncols", "chunkSize", "_nextIdx", "_arr"]
 
-    def __init__(self, ncols, dtype=np.float, chunkSize=128):
+    def __init__(self, ncols, dtype=float, chunkSize=128):
         self.dtype = dtype
         self.ncols = ncols
         self.chunkSize = chunkSize
