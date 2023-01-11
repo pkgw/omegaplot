@@ -24,7 +24,8 @@ import six
 from six.moves import range as xrange
 import numpy as np
 
-class DataHolder (object):
+
+class DataHolder(object):
     """Stores a set of data inputs.
 
     A DataHolder stores data that will (most likely) be used to render
@@ -100,15 +101,14 @@ class DataHolder (object):
     AxisMiscInt = 0
     AxisMiscFloat = 1
 
-    axistypes = (AxisTypeInt, AxisTypeFloat) # tuple of AxisType* values
+    axistypes = (AxisTypeInt, AxisTypeFloat)  # tuple of AxisType* values
 
     allocations = None
     intdata = None
     fltdata = None
     dlen = 0
 
-
-    def register (self, *widths):
+    def register(self, *widths):
         """Register a consumer with this DataHolder.
 
         Arguments:
@@ -129,37 +129,33 @@ class DataHolder (object):
         """
 
         if self.intdata is not None or self.fltdata is not None:
-            raise Exception ("Can't register new consumer now.")
+            raise Exception("Can't register new consumer now.")
 
         if self.allocations is None:
-            self.allocations = [0] * len (self.axistypes)
+            self.allocations = [0] * len(self.axistypes)
 
-        if len (widths) != len (self.axistypes):
-            raise Exception ("Consumer expects different number of axes")
+        if len(widths) != len(self.axistypes):
+            raise Exception("Consumer expects different number of axes")
 
         offsets = ()
 
-        for i in xrange (0, len (widths)):
-            offsets += (self.allocations[i], )
+        for i in xrange(0, len(widths)):
+            offsets += (self.allocations[i],)
             self.allocations[i] += widths[i]
 
         return (offsets, widths)
 
-
-    def _checkLengths (self):
+    def _checkLengths(self):
         if self.intdata is None and self.fltdata is None:
-            raise Exception ('No data yet!')
+            raise Exception("No data yet!")
 
-        if self.intdata is not None and \
-           self.intdata.shape[1] != self.dlen:
-            raise Exception ('Disagreeing int and float data lengths')
+        if self.intdata is not None and self.intdata.shape[1] != self.dlen:
+            raise Exception("Disagreeing int and float data lengths")
 
-        if self.fltdata is not None and \
-           self.fltdata.shape[1] != self.dlen:
-            raise Exception ('Disagreeing int and float data lengths')
+        if self.fltdata is not None and self.fltdata.shape[1] != self.dlen:
+            raise Exception("Disagreeing int and float data lengths")
 
-
-    def get (self, cinfo):
+    def get(self, cinfo):
         """Retrieve the data requested by a particular consumer.
 
         Arguments:
@@ -180,17 +176,17 @@ class DataHolder (object):
         intofs = fltofs = 0
         ret = ()
 
-        self._checkLengths ()
+        self._checkLengths()
 
-        for i in xrange (0, len (widths)):
+        for i in xrange(0, len(widths)):
             type, ofs, w = self.axistypes[i], offsets[i], widths[i]
 
             if w == 0:
-                ret += (np.ndarray ((0,self.dlen)), )
+                ret += (np.ndarray((0, self.dlen)),)
             elif type == self.AxisTypeInt:
-                ret += (self.intdata[intofs+ofs:intofs+ofs+w,:], )
+                ret += (self.intdata[intofs + ofs : intofs + ofs + w, :],)
             elif type == self.AxisTypeFloat:
-                ret += (self.fltdata[fltofs+ofs:fltofs+ofs+w,:], )
+                ret += (self.fltdata[fltofs + ofs : fltofs + ofs + w, :],)
 
             if type == self.AxisTypeInt:
                 intofs += self.allocations[i]
@@ -199,8 +195,7 @@ class DataHolder (object):
 
         return ret
 
-
-    def getAll (self):
+    def getAll(self):
         """Retrieve all data stored in this DataHolder.
 
         Arguments: None.
@@ -214,17 +209,17 @@ class DataHolder (object):
         intofs = fltofs = 0
         ret = ()
 
-        self._checkLengths ()
+        self._checkLengths()
 
-        for i in xrange (0, len (self.allocations)):
+        for i in xrange(0, len(self.allocations)):
             type, w = self.axistypes[i], self.allocations[i]
 
             if w == 0:
-                ret += (np.ndarray ((0,self.dlen)), )
+                ret += (np.ndarray((0, self.dlen)),)
             elif type == self.AxisTypeInt:
-                ret += (self.intdata[intofs:intofs+w,:], )
+                ret += (self.intdata[intofs : intofs + w, :],)
             elif type == self.AxisTypeFloat:
-                ret += (self.fltdata[fltofs:fltofs+w,:], )
+                ret += (self.fltdata[fltofs : fltofs + w, :],)
 
             if type == self.AxisTypeInt:
                 intofs += w
@@ -233,8 +228,7 @@ class DataHolder (object):
 
         return ret
 
-
-    def totalWidth (self):
+    def totalWidth(self):
         """Get the total number of columns in this DataHolder.
 
         Arguments: None.
@@ -242,59 +236,57 @@ class DataHolder (object):
         Returns: The total number of columns in this DataHolder.
         """
 
-        return reduce (lambda x, y: x + y, self.allocations)
+        return reduce(lambda x, y: x + y, self.allocations)
 
-
-    def _allocMerged (self, type, dtype, len):
+    def _allocMerged(self, type, dtype, len):
         totw = 0
 
-        for atype, w in zip (self.axistypes, self.allocations):
-            if atype == type: totw += w
+        for atype, w in zip(self.axistypes, self.allocations):
+            if atype == type:
+                totw += w
 
-        return np.ndarray ((totw, len), dtype=dtype)
+        return np.ndarray((totw, len), dtype=dtype)
 
-
-    def _setGeneric (self, type, dtype, arrays):
-        arrays = [np.asarray (x) for x in arrays]
+    def _setGeneric(self, type, dtype, arrays):
+        arrays = [np.asarray(x) for x in arrays]
         mergedofs = 0
         l = -1
-        naxes = len (self.axistypes)
+        naxes = len(self.axistypes)
 
-        for i in xrange (0, len (arrays)):
+        for i in xrange(0, len(arrays)):
             a = arrays[i]
 
             if a.ndim == 1:
-                a = a[np.newaxis,:]
+                a = a[np.newaxis, :]
             elif a.ndim != 2:
-                raise Exception ('Expect 1- or 2-D arrays only')
+                raise Exception("Expect 1- or 2-D arrays only")
 
-            if type == self.AxisTypeInt and a.dtype.kind not in 'ib':
-                raise Exception ('Need to pass ints to for int data (%s)' % a.dtype)
+            if type == self.AxisTypeInt and a.dtype.kind not in "ib":
+                raise Exception("Need to pass ints to for int data (%s)" % a.dtype)
 
             w = a.shape[0]
             dataofs = 0
 
             if l < 0:
                 l = a.shape[1]
-                merged = self._allocMerged (type, dtype, l)
+                merged = self._allocMerged(type, dtype, l)
                 totw = merged.shape[0]
             elif a.shape[1] != l:
-                raise Exception ('Expect same-length arrays')
+                raise Exception("Expect same-length arrays")
 
             if mergedofs + w > totw:
-                raise Exception ('More input data than expected')
+                raise Exception("More input data than expected")
 
-            merged[mergedofs:mergedofs+w,:] = a
+            merged[mergedofs : mergedofs + w, :] = a
             mergedofs += w
 
         if mergedofs != totw:
-            raise Exception ('Less input data than required')
+            raise Exception("Less input data than required")
 
         self.dlen = l
         return merged
 
-
-    def setInts (self, *args):
+    def setInts(self, *args):
         """Set the integer data of this DataHolder.
 
         Arguments:
@@ -326,11 +318,10 @@ class DataHolder (object):
         they must be integer-type and compatible with N.int.
         """
 
-        self.intdata = self._setGeneric (self.AxisTypeInt, np.int, args)
+        self.intdata = self._setGeneric(self.AxisTypeInt, np.int, args)
         return self
 
-
-    def setFloats (self, *args):
+    def setFloats(self, *args):
         """Set the float data of this DataHolder.
 
         Arguments:
@@ -349,11 +340,10 @@ class DataHolder (object):
         floating-point arrays.
         """
 
-        self.fltdata = self._setGeneric (self.AxisTypeFloat, np.float, args)
+        self.fltdata = self._setGeneric(self.AxisTypeFloat, np.float, args)
         return self
 
-
-    def exportIface (self, other):
+    def exportIface(self, other):
         """Export the data-setting interface of this object to another.
 
         Arguments:
@@ -382,23 +372,24 @@ class DataHolder (object):
 
 # Painting and useful utilities for painting
 
-class ToplevelPaintParent (object):
+
+class ToplevelPaintParent(object):
     _painter = None
     _painterRef = None
 
     from weakref import ref as _ref
 
-    def __init__ (self, weakRef):
-        self._weakRef = bool (weakRef)
+    def __init__(self, weakRef):
+        self._weakRef = bool(weakRef)
 
-
-    def getPainter (self):
+    def getPainter(self):
         if not self._weakRef:
             return self._painter
 
-        if self._painterRef is None: return None
+        if self._painterRef is None:
+            return None
 
-        p = self._painterRef ()
+        p = self._painterRef()
 
         if p is None:
             self._painterRef = None
@@ -406,70 +397,66 @@ class ToplevelPaintParent (object):
 
         return p
 
-
-    def setPainter (self, painter):
-        pCur = self.getPainter ()
+    def setPainter(self, painter):
+        pCur = self.getPainter()
 
         if pCur is not None:
-            pCur.setParent (None)
+            pCur.setParent(None)
 
         if painter is not None:
-            painter.setParent (self)
+            painter.setParent(self)
 
         if not self._weakRef:
             self._painter = painter
         elif painter is not None:
-            self._painterRef = self._ref (painter)
+            self._painterRef = self._ref(painter)
         else:
             self._painterRef = None
 
-
-    def _lostChild (self, child):
+    def _lostChild(self, child):
         if not self._weakRef:
             self._painter = None
         else:
             self._painterRef = None
 
 
-class ContextTooSmallError (Exception):
+class ContextTooSmallError(Exception):
     pass
 
 
-class LayoutInfo (object):
+class LayoutInfo(object):
     minsize = (0, 0)
     minborders = (0, 0, 0, 0)
     aspect = None
 
-    def __init__ (self, minsize=None, minborders=None, aspect=None):
+    def __init__(self, minsize=None, minborders=None, aspect=None):
         if minsize is not None:
             self.minsize = minsize
         if minborders is not None:
             self.minborders = minborders
         self.aspect = aspect
 
-
-    def asBoxInfo (self):
-        a = np.asarray (list (self.minsize) + list (self.minborders))
-        assert a.size == 6 # seems like a good place for sanity checking
+    def asBoxInfo(self):
+        a = np.asarray(list(self.minsize) + list(self.minborders))
+        assert a.size == 6  # seems like a good place for sanity checking
         return a
 
 
-class Painter (object):
+class Painter(object):
     mainStyle = None
     parentRef = None
     _toplevel_render_aspect = None
 
     from weakref import ref as _ref
 
-
-    def __init__ (self):
+    def __init__(self):
         self.matrix = None
 
+    def _getParent(self):
+        if self.parentRef is None:
+            return None
 
-    def _getParent (self):
-        if self.parentRef is None: return None
-
-        p = self.parentRef ()
+        p = self.parentRef()
 
         if p is None:
             self.parentRef = None
@@ -477,31 +464,28 @@ class Painter (object):
 
         return p
 
-
-    def setParent (self, parent):
-        p = self._getParent ()
+    def setParent(self, parent):
+        p = self._getParent()
 
         if p is not None:
-                p._lostChild (self)
+            p._lostChild(self)
 
         if parent is None:
             self.parentRef = None
         else:
-            self.parentRef = self._ref (parent)
+            self.parentRef = self._ref(parent)
 
         self.matrix = None
         return self
 
+    def doLayout(self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
+        return LayoutInfo()
 
-    def doLayout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
-        return LayoutInfo ()
-
-
-    def layout (self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
-        p = self._getParent ()
+    def layout(self, ctxt, style, isfinal, w, h, btop, brt, bbot, bleft):
+        p = self._getParent()
 
         if p is None:
-            raise Exception ('cannot layout parentless painter')
+            raise Exception("cannot layout parentless painter")
 
         self.width = w
         self.height = h
@@ -510,66 +494,70 @@ class Painter (object):
         self.fullh = h + btop + bbot
 
         if isfinal:
-            self.matrix = ctxt.get_matrix ()
+            self.matrix = ctxt.get_matrix()
 
-        return self.doLayout (ctxt, style, isfinal, w, h, btop, brt, bbot, bleft)
+        return self.doLayout(ctxt, style, isfinal, w, h, btop, brt, bbot, bleft)
 
-
-    def paint (self, ctxt, style):
+    def paint(self, ctxt, style):
         if self.matrix is None:
-            raise RuntimeError ('attempting to paint without having called tryLayout; ' +
-                                'selfcls=' + self.__class__.__name__ + '; ' +
-                                'parentcls=' + self._getParent ().__class__.__name__)
+            raise RuntimeError(
+                "attempting to paint without having called tryLayout; "
+                + "selfcls="
+                + self.__class__.__name__
+                + "; "
+                + "parentcls="
+                + self._getParent().__class__.__name__
+            )
 
-        ctxt.save ()
-        ctxt.set_matrix (self.matrix)
-        style.apply (ctxt, self.mainStyle)
-        self.doPaint (ctxt, style)
-        ctxt.restore ()
+        ctxt.save()
+        ctxt.set_matrix(self.matrix)
+        style.apply(ctxt, self.mainStyle)
+        self.doPaint(ctxt, style)
+        ctxt.restore()
 
+    def doPaint(self, ctxt, style):
+        raise NotImplementedError()
 
-    def doPaint (self, ctxt, style):
-        raise NotImplementedError ()
-
-
-    def renderBasic (self, ctxt, style, w, h):
+    def renderBasic(self, ctxt, style, w, h):
         from .util import doublearray, shrinkAspect, nudgeMargins
 
         # Must init the context before trying layout so we can get text
         # extents. This should all be encapsulated in the text backend itself,
         # and we should give the style a get_extents() function.
 
-        style.initContext (ctxt, w, h)
+        style.initContext(ctxt, w, h)
 
         margin = style.smallScale * 2
         mainw = w - 2 * margin
         mainh = h - 2 * margin
         # this is (mainw, mainh, btop, brt, bbot, bleft):
-        params = np.array ([mainw, mainh, margin, margin, margin, margin])
-        newparams = params.copy ()
+        params = np.array([mainw, mainh, margin, margin, margin, margin])
+        newparams = params.copy()
 
-        for _ in xrange (10): # TODO: make number of iterations non-arbitrary
+        for _ in xrange(10):  # TODO: make number of iterations non-arbitrary
             ##print ('Li:', params)
-            li = self.layout (ctxt, style, False, *params)
+            li = self.layout(ctxt, style, False, *params)
 
             # Reallocate based on most recent info. Fill as much of the plot
             # area with non-margins as possible, reallocating any leftover space to
             # make the margins as even as possible.
-            mainw = max (w - li.minborders[1] - li.minborders[3], 0)
-            mainh = max (h - li.minborders[0] - li.minborders[2], 0)
-            mainw, mainh = shrinkAspect (li.aspect, mainw, mainh)
+            mainw = max(w - li.minborders[1] - li.minborders[3], 0)
+            mainh = max(h - li.minborders[0] - li.minborders[2], 0)
+            mainw, mainh = shrinkAspect(li.aspect, mainw, mainh)
             marginw = 0.5 * (w - mainw)
             marginh = 0.5 * (h - mainh)
             newparams[:2] = (mainw, mainh)
-            newparams[2:] = nudgeMargins (doublearray (marginh, marginw), li.minborders)
+            newparams[2:] = nudgeMargins(doublearray(marginh, marginw), li.minborders)
 
-            if ((params - newparams)**2).sum () < 0.1:
-                break # XXX FIXME: I totally made up this stop criterion.
+            if ((params - newparams) ** 2).sum() < 0.1:
+                break  # XXX FIXME: I totally made up this stop criterion.
 
             params = newparams
         else:
             # This branch is run if we don't break out of the loop.
-            raise RuntimeError ('layout failed to converge; q=%f' % ((params - newparams)**2).sum ())
+            raise RuntimeError(
+                "layout failed to converge; q=%f" % ((params - newparams) ** 2).sum()
+            )
 
         # Can we actually do this?
 
@@ -577,64 +565,63 @@ class Painter (object):
         needh = params[1] + params[2] + params[4]
 
         if w < needw or h < needh:
-            raise ContextTooSmallError ('context too small: got (%s, %s);'
-                                        ' need (%s, %s)' % \
-                                        (w, h, needw, needh))
+            raise ContextTooSmallError(
+                "context too small: got (%s, %s);"
+                " need (%s, %s)" % (w, h, needw, needh)
+            )
 
         # Commit to this layout and paint.
 
         ##print ('Lf:', params)
-        self.layout (ctxt, style, True, *params)
-        self.paint (ctxt, style)
+        self.layout(ctxt, style, True, *params)
+        self.paint(ctxt, style)
 
-
-    def render (self, func):
-        p = self._getParent ()
+    def render(self, func):
+        p = self._getParent()
 
         if p is not None:
-            raise Exception ("Can't render in-use Painter")
+            raise Exception("Can't render in-use Painter")
 
         # We have to hold a ref to tpp in this function because setParent
         # only references it weakly! That shit is bananas.
 
-        tpp = ToplevelPaintParent (False)
-        self.setParent (tpp)
+        tpp = ToplevelPaintParent(False)
+        self.setParent(tpp)
         try:
-            func (self.renderBasic)
+            func(self.renderBasic)
         finally:
-            self.setParent (None)
+            self.setParent(None)
 
-
-    def sendTo (self, pager):
-        pager.send (self)
+    def sendTo(self, pager):
+        pager.send(self)
         return self
 
-
-    def show (self, ident=None, **kwargs):
+    def show(self, ident=None, **kwargs):
         from .render import showPainter
-        showPainter (self, ident, **kwargs)
+
+        showPainter(self, ident, **kwargs)
         return self
 
-
-    def save (self, filename, **kwargs):
+    def save(self, filename, **kwargs):
         from .render import savePainter
-        savePainter (self, filename, **kwargs)
+
+        savePainter(self, filename, **kwargs)
         return self
 
-
-    def dump (self, **kwargs):
+    def dump(self, **kwargs):
         from .util import dumpPainter
-        dumpPainter (self, **kwargs)
+
+        dumpPainter(self, **kwargs)
         return self
 
 
-class NullPainter (Painter):
-    def doPaint (self, ctxt, style):
+class NullPainter(Painter):
+    def doPaint(self, ctxt, style):
         pass
 
 
-class DebugPainter (Painter):
-    lineStyle = 'strongLine'
+class DebugPainter(Painter):
+    lineStyle = "strongLine"
 
     minWidth = 0
     minHeight = 0
@@ -644,26 +631,31 @@ class DebugPainter (Painter):
     bLeft = 0
     aspect = None
 
-    def doLayout (self, ctxt, style, isfinal, width, height, bt, br, bb, bl):
+    def doLayout(self, ctxt, style, isfinal, width, height, bt, br, bb, bl):
         s = style.smallScale
-        return LayoutInfo (minsize=(self.minWidth * s, self.minHeight * s),
-                           minborders=(self.bTop * s, self.bRight * s,
-                                       self.bBottom * s, self.bLeft * s),
-                           aspect=self.aspect)
+        return LayoutInfo(
+            minsize=(self.minWidth * s, self.minHeight * s),
+            minborders=(
+                self.bTop * s,
+                self.bRight * s,
+                self.bBottom * s,
+                self.bLeft * s,
+            ),
+            aspect=self.aspect,
+        )
 
+    def doPaint(self, ctxt, style):
+        style.apply(ctxt, self.lineStyle)
 
-    def doPaint (self, ctxt, style):
-        style.apply (ctxt, self.lineStyle)
+        ctxt.move_to(0, 0)
+        ctxt.line_to(self.fullw, self.fullh)
+        ctxt.stroke()
+        ctxt.move_to(0, self.fullh)
+        ctxt.line_to(self.fullw, 0)
+        ctxt.stroke()
 
-        ctxt.move_to (0, 0)
-        ctxt.line_to (self.fullw, self.fullh)
-        ctxt.stroke ()
-        ctxt.move_to (0, self.fullh)
-        ctxt.line_to (self.fullw, 0)
-        ctxt.stroke ()
-
-        ctxt.rectangle (self.border[3], self.border[0], self.width, self.height)
-        ctxt.stroke ()
+        ctxt.rectangle(self.border[3], self.border[0], self.width, self.height)
+        ctxt.stroke()
 
 
 # Stamps -- things that draw some shape but are
@@ -671,13 +663,14 @@ class DebugPainter (Painter):
 # Stamps do not have access to a style; they use
 # whatever values the current context has.
 
-class Stamp (object):
-    def paintAt (self, ctxt, x, y):
-        raise NotImplementedError ()
 
-    def paintHere (self, ctxt):
-        x, y = ctxt.get_current_point ()
-        self.paintAt (ctxt, x, y)
+class Stamp(object):
+    def paintAt(self, ctxt, x, y):
+        raise NotImplementedError()
+
+    def paintHere(self, ctxt):
+        x, y = ctxt.get_current_point()
+        self.paintAt(ctxt, x, y)
 
 
 # Text handling routines. Possible backends are Cairo text
@@ -687,74 +680,74 @@ class Stamp (object):
 # rendered via different mechanisms (for aesthetic reasons), so here
 # we are.
 
-class _TextPainterBase (Painter):
-    color = 'foreground'
+
+class _TextPainterBase(Painter):
+    color = "foreground"
 
 
-class _TextStamperBase (object):
-    def getSize (self, ctxt, style):
-        raise NotImplementedError ()
+class _TextStamperBase(object):
+    def getSize(self, ctxt, style):
+        raise NotImplementedError()
 
-    def paintAt (self, ctxt, x, y, color):
-        raise NotImplementedError ()
+    def paintAt(self, ctxt, x, y, color):
+        raise NotImplementedError()
 
-    def paintHere (self, ctxt, color):
-        x, y = ctxt.get_current_point ()
-        self.paintAt (ctxt, x, y, color)
+    def paintHere(self, ctxt, color):
+        x, y = ctxt.get_current_point()
+        self.paintAt(ctxt, x, y, color)
 
 
 # Our simple default backend
 
 import cairo
 
-class CairoTextPainter (_TextPainterBase):
+
+class CairoTextPainter(_TextPainterBase):
     hAlign = 0.5
     vAlign = 0.5
 
-    def __init__ (self, text, hAlign=None, vAlign=None):
-        _TextPainterBase.__init__ (self)
+    def __init__(self, text, hAlign=None, vAlign=None):
+        _TextPainterBase.__init__(self)
         self.text = text
         self.extents = None
 
-        if hAlign is not None: self.hAlign = hAlign
-        if vAlign is not None: self.vAlign = vAlign
+        if hAlign is not None:
+            self.hAlign = hAlign
+        if vAlign is not None:
+            self.vAlign = vAlign
 
-
-    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+    def doLayout(self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
         if not self.extents:
-            self.extents = ctxt.text_extents (self.text)
-        return LayoutInfo (minsize=(self.extents[2], self.extents[3]))
+            self.extents = ctxt.text_extents(self.text)
+        return LayoutInfo(minsize=(self.extents[2], self.extents[3]))
 
-
-    def doPaint (self, ctxt, style):
+    def doPaint(self, ctxt, style):
         dx = self.border[3] + (self.width - self.extents[2]) * self.hAlign
         dy = self.border[0] + (self.height - self.extents[3]) * self.vAlign
 
-        ctxt.move_to (dx - self.extents[0], dy - self.extents[1])
-        ctxt.set_source_rgb (*style.getColor (self.color))
-        ctxt.show_text (self.text)
+        ctxt.move_to(dx - self.extents[0], dy - self.extents[1])
+        ctxt.set_source_rgb(*style.getColor(self.color))
+        ctxt.show_text(self.text)
 
 
-class CairoTextStamper (_TextStamperBase):
-    def __init__ (self, text):
+class CairoTextStamper(_TextStamperBase):
+    def __init__(self, text):
         self.text = text
         self.extents = None
 
-
-    def getSize (self, ctxt, style):
+    def getSize(self, ctxt, style):
         if not self.extents:
-            self.extents = ctxt.text_extents (self.text)
+            self.extents = ctxt.text_extents(self.text)
 
         return self.extents[2:4]
 
-
-    def paintAt (self, ctxt, x, y, color):
-        ctxt.save ()
-        ctxt.move_to (x, y)
-        ctxt.rel_move_to (-self.extents[0], -self.extents[1])
-        ctxt.set_source_rgb (*color)
-        ctxt.show_text (self.text)
-        ctxt.restore ()
+    def paintAt(self, ctxt, x, y, color):
+        ctxt.save()
+        ctxt.move_to(x, y)
+        ctxt.rel_move_to(-self.extents[0], -self.extents[1])
+        ctxt.set_source_rgb(*color)
+        ctxt.show_text(self.text)
+        ctxt.restore()
 
 
 _textPainterClass = CairoTextPainter
@@ -762,32 +755,34 @@ _textStamperClass = CairoTextStamper
 _textMarkupFunc = lambda t: t
 
 
-def TextPainter (text, **kwargs):
-    return _textPainterClass (text, **kwargs)
+def TextPainter(text, **kwargs):
+    return _textPainterClass(text, **kwargs)
 
 
-def TextStamper (text, **kwargs):
-    return _textStamperClass (text, **kwargs)
+def TextStamper(text, **kwargs):
+    return _textStamperClass(text, **kwargs)
 
 
-def textMarkup (text, **kwargs):
+def textMarkup(text, **kwargs):
     # This is a little silly-seeming, but it lets code import the
     # textMarkup name and still see changes to the text markup
     # function if a new text backend is subsequently imported.
-    return _textMarkupFunc (text, **kwargs)
+    return _textMarkupFunc(text, **kwargs)
 
 
-def _setTextBackend (painterClass, stamperClass, markupFunc):
+def _setTextBackend(painterClass, stamperClass, markupFunc):
     global _textPainterClass, _textStamperClass, _textMarkupFunc
 
-    if not issubclass (painterClass, _TextPainterBase):
-        raise ValueError ('Text backend class %s is not a TextPainterBase subclass' %
-                          painterClass)
-    if not issubclass (stamperClass, _TextStamperBase):
-        raise ValueError ('Text backend class %s is not a TextStamperBase subclass' %
-                          stamperClass)
-    if not callable (markupFunc):
-        raise ValueError ('text markup function %r is not callable' % markupFunc)
+    if not issubclass(painterClass, _TextPainterBase):
+        raise ValueError(
+            "Text backend class %s is not a TextPainterBase subclass" % painterClass
+        )
+    if not issubclass(stamperClass, _TextStamperBase):
+        raise ValueError(
+            "Text backend class %s is not a TextStamperBase subclass" % stamperClass
+        )
+    if not callable(markupFunc):
+        raise ValueError("text markup function %r is not callable" % markupFunc)
 
     _textPainterClass = painterClass
     _textStamperClass = stamperClass
@@ -796,51 +791,53 @@ def _setTextBackend (painterClass, stamperClass, markupFunc):
 
 # Generic painting of ImageSurfaces
 
-class _ImagePainterBase (Painter):
+
+class _ImagePainterBase(Painter):
     pixelAspect = None
 
-    def getSurf (self, style):
-        raise NotImplementedError ()
+    def getSurf(self, style):
+        raise NotImplementedError()
 
+    def doLayout(self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
+        surf = self.getSurf(style)
 
-    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bb, bl):
-        surf = self.getSurf (style)
+        if not isinstance(surf, cairo.ImageSurface):
+            raise Exception(
+                "Need to specify an ImageSurface for ImagePainter, got %s" % surf
+            )
 
-        if not isinstance (surf, cairo.ImageSurface):
-            raise Exception ('Need to specify an ImageSurface for ImagePainter, got %s' % surf)
-
-        w, h = surf.get_width (), surf.get_height ()
+        w, h = surf.get_width(), surf.get_height()
 
         if self.pixelAspect is None:
             aspect = None
         else:
-            aspect = self.pixelAspect * float (w) / h
+            aspect = self.pixelAspect * float(w) / h
 
-        return LayoutInfo (minsize=(w, h), aspect=aspect)
+        return LayoutInfo(minsize=(w, h), aspect=aspect)
 
+    def doPaint(self, ctxt, style):
+        surf = self.getSurf(style)
 
-    def doPaint (self, ctxt, style):
-        surf = self.getSurf (style)
-
-        ctxt.set_source_surface (surf)
+        ctxt.set_source_surface(surf)
         # Whatever the default is, it seems to do the right thing.
-        #ctxt.set_operator (cairo.OPERATOR_ATOP)
-        ctxt.translate (self.border[3], self.border[0])
-        ctxt.paint ()
+        # ctxt.set_operator (cairo.OPERATOR_ATOP)
+        ctxt.translate(self.border[3], self.border[0])
+        ctxt.paint()
 
-class ImagePainter (_ImagePainterBase):
-    def __init__ (self, surf):
-        _ImagePainterBase.__init__ (self)
+
+class ImagePainter(_ImagePainterBase):
+    def __init__(self, surf):
+        _ImagePainterBase.__init__(self)
         self.surf = surf
 
-
-    def getSurf (self, style):
+    def getSurf(self, style):
         return self.surf
 
 
 # Expandable keyword arg handling
 
-def _kwordDefaulted (kwargs, name, coerce, default):
+
+def _kwordDefaulted(kwargs, name, coerce, default):
     # This routine is useful if we want our routine to
     # accept keyword arguments, but we also want to take
     # *args arguments, which preclude standard keyword
@@ -850,7 +847,7 @@ def _kwordDefaulted (kwargs, name, coerce, default):
         return default
 
     if coerce is not None:
-        val = coerce (kwargs[name])
+        val = coerce(kwargs[name])
     else:
         val = kwargs[name]
 
@@ -858,7 +855,7 @@ def _kwordDefaulted (kwargs, name, coerce, default):
     return val
 
 
-def _kwordExtract (kwargs, *names):
+def _kwordExtract(kwargs, *names):
     # This routine is useful if we want to pass parts
     # of **kwargs on to different subroutines. It will
     # extract the named keywords into a separate dictionary
@@ -875,9 +872,9 @@ def _kwordExtract (kwargs, *names):
     return retval
 
 
-def _checkKwordsConsumed (kwargs):
-    if len (kwargs) == 0:
+def _checkKwordsConsumed(kwargs):
+    if len(kwargs) == 0:
         return
 
-    args = ', '.join ('%s=%s' % tup for tup in six.iteritems (kwargs))
-    raise TypeError ('Unconsumed keyword arguments: ' + args)
+    args = ", ".join("%s=%s" % tup for tup in six.iteritems(kwargs))
+    raise TypeError("Unconsumed keyword arguments: " + args)
