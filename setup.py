@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name="omegaplot",  # cranko project-name
-    version="0.dev0",  # cranko project-version
+    version="0.8.0",  # cranko project-version
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
     # "bad local file header", and reloading a module after a reinstall in

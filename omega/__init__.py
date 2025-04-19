@@ -28,7 +28,7 @@ general introduction to OmegaPlot, please see the
 :ref:`full documentation <index>`.
 """
 
-__version__ = "0.dev0"  # cranko project-version
+__version__ = "0.8.0"  # cranko project-version
 
 from .base import *
 from .rect import *

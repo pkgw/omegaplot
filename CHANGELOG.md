@@ -1,4 +1,4 @@
-# rc: minor bump
+# omegaplot 0.8.0 (2025-04-19)
 
 - Compatibility updates for Numpy >= 2
 - Refresh the codebase, reformatting and ripping out extremely old stuff. This

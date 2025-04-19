@@ -16,4 +16,4 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "0.dev0"  # cranko project-version
+__version__ = "0.8.0"  # cranko project-version
