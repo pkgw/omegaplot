@@ -98,7 +98,7 @@ class RenderConfig(object):
 
     midamble -- The text that is written after the user header and before
       the snippets. Sets the pagestyle to empty, a \\usepackage{preview},
-      and a \begin{document}.
+      and a \\begin{document}.
     """
 
     # FIXME: the -D 100 parameter sets the DPI used by dvipng, sort of.
@@ -770,7 +770,7 @@ class CairoCache(object):
 
         snip -- The snippet text. It is converted into a string and
           stripped before processing. Note that equations must be
-          surrounded by $$ or \[\] in order to be processed as such.
+          surrounded by $$ or \\[\\] in order to be processed as such.
 
         Returns: A handle object. Current implementation makes that
         object an integer, but this should not be relied upon.
