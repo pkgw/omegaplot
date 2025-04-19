@@ -2,7 +2,8 @@
 # Copyright 2012, 2014, 2015 Peter Williams
 # Licensed under the MIT License.
 
-"""omegamap [keywords]
+"""
+omegamap [keywords]
 
 Render an image attractively into vector or bitmap output.
 
@@ -82,163 +83,160 @@ locator=
  multiple locators will be drawn.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import cairo, numpy as np, sys
+import sys
 
+import cairo
+import numpy as np
 from pwkit import astimage, astutil, cli, data_gui_helpers, ellipses
 from pwkit.kwargv import ParseKeywords, Custom
 
 import omega as om
 import omega.astimage
-
-try:
-    import omega.pango_g3 as ompango
-except ImportError:
-    import omega.pango_g2 as ompango
+import omega.pango_g3 as ompango
 
 
-class Config (ParseKeywords):
-    map = Custom (str, required=True)
+class Config(ParseKeywords):
+    map = Custom(str, required=True)
 
-    @Custom ([float, float], required=True)
-    def range (v):
+    @Custom([float, float], required=True)
+    def range(v):
         if v[0] >= v[1]:
-            cli.wrong_usage (__doc__, 'data range must have min < max')
+            cli.wrong_usage(__doc__, "data range must have min < max")
         return v
 
     out = str
     pangofamily = str
     pangosize = float
     subsuperrise = 5000
-    coloring = 'white_to_black'
+    coloring = "white_to_black"
     logfactor = float
-    xlabel = 'Right Ascension (J2000)'
-    ylabel = 'Declination (J2000)'
-    ccrad = Custom (float, scale=astutil.A2R)
+    xlabel = "Right Ascension (J2000)"
+    ylabel = "Declination (J2000)"
+    ccrad = Custom(float, scale=astutil.A2R)
 
-    @Custom ([int, int], default=None)
-    def subshape (v):
+    @Custom([int, int], default=None)
+    def subshape(v):
         if v[1] is None:
             v[1] = v[0]
         return v
 
-    @Custom (float)
-    def aspect (v):
+    @Custom(float)
+    def aspect(v):
         if v <= 0:
-            cli.wrong_usage (__doc__, 'aspect ratio must be greater than zero')
+            cli.wrong_usage(__doc__, "aspect ratio must be greater than zero")
         return v
 
-    @Custom (2.0)
-    def margin (v):
+    @Custom(2.0)
+    def margin(v):
         return [v] * 4
 
-    @Custom ([256.0, float])
-    def dims (v):
+    @Custom([256.0, float])
+    def dims(v):
         if v[1] is None:
             v[1] = v[0]
         return v
 
-    @Custom ([str, str, float, float, 0.], minvals=3, default=None, repeatable=True)
-    def locator (v):
+    @Custom([str, str, float, float, 0.0], minvals=3, default=None, repeatable=True)
+    def locator(v):
         # switch order from ra,dec to lat,lon!
-        tmp = astutil.parsehours (v[0])
-        v[0] = astutil.parsedeglat (v[1])
+        tmp = astutil.parsehours(v[0])
+        v[0] = astutil.parsedeglat(v[1])
         v[1] = tmp
 
-        v[2] *= astutil.A2R # major axis
+        v[2] *= astutil.A2R  # major axis
 
         if v[2] <= 0:
-            die ('locator major axis must be greater than zero')
+            cli.die("locator major axis must be greater than zero")
 
         if v[3] is None:
             v[3] = v[2]
         else:
-            v[3] *= astutil.A2R # minor axis
+            v[3] *= astutil.A2R  # minor axis
 
         if v[3] <= 0:
-            die ('locator minor axis must be greater than zero')
+            cli.die("locator minor axis must be greater than zero")
 
-        v[4] *= astutil.D2R # PA
+        v[4] *= astutil.D2R  # PA
 
-        if v[3] > v[2]: # try to be sensible if minor > major
+        if v[3] > v[2]:  # try to be sensible if minor > major
             v[2], v[3] = v[3], v[2]
             v[4] += 0.5 * np.pi
 
         return v
 
-    @Custom ('ColorOnWhiteVector')
-    def omstyle (v):
+    @Custom("ColorOnWhiteVector")
+    def omstyle(v):
         try:
-            return getattr (om.styles, v) ()
+            return getattr(om.styles, v)()
         except:
-            die ('can\'t load/instantiate OmegaPlot style "%s"', v)
+            cli.die('can\'t load/instantiate OmegaPlot style "%s"', v)
 
 
-def plot (config):
-    im = astimage.open (config.map, 'r')
-    im = im.simple ()
+def plot(config):
+    im = astimage.open(config.map, "r")
+    im = im.simple()
 
     if config.subshape is not None:
         # Take a subset of the image?
         nw, nh = config.subshape
         pixofs = [(im.shape[0] - nh) // 2, (im.shape[1] - nw) // 2]
-        im = im.subimage (pixofs, [nh, nw])
+        im = im.subimage(pixofs, [nh, nw])
 
-    data = im.read (squeeze=True, flip=True)
-    print ('Raw data bounds:', data.min (), data.max ())
+    data = im.read(squeeze=True, flip=True)
+    print("Raw data bounds:", data.min(), data.max())
 
     if config.logfactor is not None:
         # TODO: switch to using the 'stretch' keyword of data_to_argb32() or
         # something along those lines.
-        q = config.logfactor * (1 - np.median (data))
-        print ('Magic q:', q)
-        assert data.min () > -q, 'Can\'t logify it'
-        data = np.log (data + q)
+        q = config.logfactor * (1 - np.median(data))
+        print("Magic q:", q)
+        assert data.min() > -q, "Can't logify it"
+        data = np.log(data + q)
 
-    argb32 = data_gui_helpers.data_to_argb32 (data,
-                                              cmin=config.range[0],
-                                              cmax=config.range[1],
-                                              cmap=config.coloring)
+    argb32 = data_gui_helpers.data_to_argb32(
+        data, cmin=config.range[0], cmax=config.range[1], cmap=config.coloring
+    )
 
     # Draw!
 
-    p = om.quickImage (cairo.FORMAT_ARGB32, argb32)
-    coords = omega.astimage.AstimageCoordinates (im, p)
-    p.paintCoordinates (coords)
-    p.setLabels (config.xlabel, config.ylabel)
+    p = om.quickImage(cairo.FORMAT_ARGB32, argb32)
+    coords = omega.astimage.AstimageCoordinates(im, p)
+    p.paintCoordinates(coords)
+    p.setLabels(config.xlabel, config.ylabel)
 
     if config.aspect is not None:
         p.fieldAspect = config.aspect
 
     if config.ccrad is not None:
-        assert False, 'need to re-implement pointing center for astimage'
-        pclon, pclat = None, None # IMPLEMENT ME
-        lat, lon = astutil.sphofs (pclat, pclon, config.ccrad,
-                                   np.linspace (0, 2 * np.pi, 200))
-        cx, cy = coords.arb2lin (lon, lat)
-        p.addXY (cx, cy, None, dsn=1)
+        assert False, "need to re-implement pointing center for astimage"
+        pclon, pclat = None, None  # IMPLEMENT ME
+        lat, lon = astutil.sphofs(
+            pclat, pclon, config.ccrad, np.linspace(0, 2 * np.pi, 200)
+        )
+        cx, cy = coords.arb2lin(lon, lat)
+        p.addXY(cx, cy, None, dsn=1)
 
     for clat, clon, maj, min, pa in config.locator:
         # lat = dec = x in astro PA convention
-        dlat, dlon = ellipses.ellpoint (maj, min, pa, np.linspace (0, 2 * np.pi, 200))
+        dlat, dlon = ellipses.ellpoint(maj, min, pa, np.linspace(0, 2 * np.pi, 200))
         lat = clat + dlat
-        lon = clon + dlon / np.cos (lat) # ignore pole issues
-        ex, ey = coords.arb2lin (lon, lat)
-        p.addXY (ex, ey, None, dsn=1)
+        lon = clon + dlon / np.cos(lat)  # ignore pole issues
+        ex, ey = coords.arb2lin(lon, lat)
+        p.addXY(ex, ey, None, dsn=1)
 
     return p
 
 
-def doit (config):
+def doit(config):
     fontparams = {}
     if config.pangofamily is not None:
-        fontparams['family'] = config.pangofamily
+        fontparams["family"] = config.pangofamily
     if config.pangosize is not None:
-        fontparams['size'] = config.pangosize
-    if len (fontparams):
-        ompango.setFont (**fontparams)
-    ompango.setBuiltinSubsuperRise (config.subsuperrise)
+        fontparams["size"] = config.pangosize
+    if len(fontparams):
+        ompango.setFont(**fontparams)
+    ompango.setBuiltinSubsuperRise(config.subsuperrise)
 
     # Plot bounds and tick marks are drawn in the "muted" color since you want
     # them to be less prominent than the data. However, when drawing a map,
@@ -247,19 +245,20 @@ def doit (config):
     # redefining "muted".
     config.omstyle.colors.muted = config.omstyle.colors.foreground
 
-    p = plot (config)
+    p = plot(config)
 
     if config.out is None:
-        p.show (style=config.omstyle)
+        p.show(style=config.omstyle)
     else:
-        p.save (config.out, style=config.omstyle, dims=config.dims,
-                margins=config.margin)
+        p.save(
+            config.out, style=config.omstyle, dims=config.dims, margins=config.margin
+        )
 
 
-def cmdline (argv=None):
+def cmdline(argv=None):
     if argv is None:
         argv = sys.argv
-        cli.unicode_stdio ()
+        cli.unicode_stdio()
 
-    cli.check_usage (__doc__, argv, usageifnoargs='long')
-    doit (Config ().parse (argv[1:]))
+    cli.check_usage(__doc__, argv, usageifnoargs="long")
+    doit(Config().parse(argv[1:]))

@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Basic classes of OmegaPlot.
+"""
 
-# Basic classes of OmegaPlot.
-
-import six
-from six.moves import range as xrange
 import numpy as np
 
 
@@ -139,7 +137,7 @@ class DataHolder(object):
 
         offsets = ()
 
-        for i in xrange(0, len(widths)):
+        for i in range(0, len(widths)):
             offsets += (self.allocations[i],)
             self.allocations[i] += widths[i]
 
@@ -178,7 +176,7 @@ class DataHolder(object):
 
         self._checkLengths()
 
-        for i in xrange(0, len(widths)):
+        for i in range(0, len(widths)):
             type, ofs, w = self.axistypes[i], offsets[i], widths[i]
 
             if w == 0:
@@ -211,7 +209,7 @@ class DataHolder(object):
 
         self._checkLengths()
 
-        for i in xrange(0, len(self.allocations)):
+        for i in range(0, len(self.allocations)):
             type, w = self.axistypes[i], self.allocations[i]
 
             if w == 0:
@@ -236,7 +234,7 @@ class DataHolder(object):
         Returns: The total number of columns in this DataHolder.
         """
 
-        return reduce(lambda x, y: x + y, self.allocations)
+        return sum(self.allocations)
 
     def _allocMerged(self, type, dtype, len):
         totw = 0
@@ -253,7 +251,7 @@ class DataHolder(object):
         l = -1
         naxes = len(self.axistypes)
 
-        for i in xrange(0, len(arrays)):
+        for i in range(0, len(arrays)):
             a = arrays[i]
 
             if a.ndim == 1:
@@ -534,7 +532,7 @@ class Painter(object):
         params = np.array([mainw, mainh, margin, margin, margin, margin])
         newparams = params.copy()
 
-        for _ in xrange(10):  # TODO: make number of iterations non-arbitrary
+        for _ in range(10):  # TODO: make number of iterations non-arbitrary
             ##print ('Li:', params)
             li = self.layout(ctxt, style, False, *params)
 
@@ -876,5 +874,5 @@ def _checkKwordsConsumed(kwargs):
     if len(kwargs) == 0:
         return
 
-    args = ", ".join("%s=%s" % tup for tup in six.iteritems(kwargs))
+    args = ", ".join("%s=%s" % tup for tup in kwargs.items())
     raise TypeError("Unconsumed keyword arguments: " + args)

@@ -16,9 +16,4 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# We need this file to get "oputil" to appear as a module. Nothing
-# here, though.
-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 __version__ = "0.dev0"  # cranko project-version

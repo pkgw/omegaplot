@@ -1,9 +1,6 @@
 #! /usr/bin/env python
-# Copyright 2014-2018 Peter Williams <peter@newton.cx> and collaborators.
-# Licensed under the MIT License.
-
-# I don't use the ez_setup module because it causes us to automatically build
-# and install a new setuptools module, which I'm not interested in doing.
+# Copyright Peter Williams <peter@newton.cx> and collaborators.
+# (This file) Licensed under the MIT License.
 
 from setuptools import setup
 
@@ -18,7 +15,8 @@ setup(
     zip_safe=False,
     packages=["omega", "oputil"],
     install_requires=[
-        "six >= 1.9",
+        "numpy >= 1.10",
+        "pycairo >= 1.14",
     ],
     entry_points={
         "console_scripts": [
@@ -40,8 +38,7 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Astronomy",
     ],
 )
