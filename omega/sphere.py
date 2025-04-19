@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import numpy as np
 
 from . import rect, TextStamper, textMarkup as TM
@@ -294,7 +293,7 @@ class AngularAxisPainter(rect.BlankAxisPainter):
         lastunit = lastmin = lastsec = None
         seps = [TM(x)[5:] for x in _separators[self.disptype]]
 
-        for i in xrange(len(infos) - 1, -1, -1):
+        for i in range(len(infos) - 1, -1, -1):
             info = infos[i]
             if not info._label:
                 continue

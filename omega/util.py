@@ -27,7 +27,6 @@ well. This is not to imply that these functions aren't important --
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import numpy as np
 
 from .base import _kwordDefaulted
@@ -430,7 +429,7 @@ def nudgeMargins(current, minima):
     if np.any(result < 0):
         raise ValueError("some margin sizes were negative (%s, %s)" % (result, minima))
 
-    for i in xrange(4):
+    for i in range(4):
         if result[i] < minima[i]:
             delta = minima[i] - result[i]
             result[i] += delta

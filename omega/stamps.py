@@ -24,8 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # Import names with underscores so that we don't need
 # to manually specify an __all__.
 
-import six
-from six.moves import range as xrange
 import numpy as np
 from math import pi, sqrt
 
@@ -206,7 +204,7 @@ class PrimaryRStamp(RStamp):
     def _paintData(self, ctxt, style, x, y, mydata):
         sizes, rots = mydata
 
-        for i in xrange(0, x.size):
+        for i in range(0, x.size):
             ctxt.save()
             ctxt.translate(x[i], y[i])
             ctxt.rotate(rots[i])
@@ -410,7 +408,7 @@ class WithYErrorBars(RStamp):
 
         self.substamp._paintData(ctxt, style, x, y, subdata)
 
-        for i in xrange(0, x.size):
+        for i in range(0, x.size):
             ctxt.move_to(x[i], y1[i])
             ctxt.line_to(x[i], y2[i])
             ctxt.stroke()
@@ -449,7 +447,7 @@ class WithXErrorBars(RStamp):
 
         self.substamp._paintData(ctxt, style, x, y, subdata)
 
-        for i in xrange(0, x.size):
+        for i in range(0, x.size):
             ctxt.move_to(x1[i], y[i])
             ctxt.line_to(x2[i], y[i])
             ctxt.stroke()
@@ -641,7 +639,7 @@ class _WithArrow(RStamp):
             ref = y
             dirs = ["top", "bottom"]
 
-        for i in xrange(x.size):
+        for i in range(x.size):
             if self.substamp is None:
                 # Draw our little perpendicular bar, copying the sizing logic
                 # used in arrow ()
@@ -885,7 +883,7 @@ class MultiStamp(RStamp):
             lineinfo = zsort(self.data.get(self._tlines_cinfo)[0][0])
             linegroups = {}
 
-            for i in xrange(x.size):
+            for i in range(x.size):
                 idx = lineinfo[i]
                 if idx == 0:
                     continue
@@ -894,19 +892,19 @@ class MultiStamp(RStamp):
             ctxt.save()
             style.apply(ctxt, self.fixedlinestyle)
 
-            for points in six.itervalues(linegroups):
+            for points in linegroups.values():
                 n = len(points)
                 if n < 2:
                     continue
 
                 ctxt.move_to(x[points[0]], y[points[0]])
-                for i in xrange(1, n):
+                for i in range(1, n):
                     ctxt.line_to(x[points[i]], y[points[i]])
                 ctxt.stroke()
 
             ctxt.restore()
 
-        for i in xrange(x.size):
+        for i in range(x.size):
             ctxt.save()
 
             if docnum:

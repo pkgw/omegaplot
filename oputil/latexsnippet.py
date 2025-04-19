@@ -55,8 +55,7 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, six, sys
-from six.moves import range as xrange
+import os, sys
 from os.path import basename, splitext, join, abspath, exists
 import tempfile
 
@@ -223,7 +222,7 @@ def _recklessMultiUnlink(count, tmpl, cfg):
     if count == 1:
         _recklessUnlink(tmpl)
     else:
-        for i in xrange(0, count):
+        for i in range(0, count):
             _recklessUnlink(tmpl % i)
 
 
@@ -327,7 +326,7 @@ def _makePngs(dvifile, pngtmpl, count, cfg):
     )
 
     if "%" in pngtmpl:
-        return [pngtmpl % i for i in xrange(0, count)]
+        return [pngtmpl % i for i in range(0, count)]
     assert count == 1
     return [pngtmpl]
 
@@ -352,7 +351,7 @@ def _makeEpss(dvifile, epsbase, count, cfg):
     if count == 1:
         return [epsbase + ".eps"]
     else:
-        return ["%s.%03d" % (epsbase, i + 1) for i in xrange(0, count)]
+        return ["%s.%03d" % (epsbase, i + 1) for i in range(0, count)]
 
 
 def _makeSvgs(dvifile, epsbase, svgtmpl, count, cfg):
@@ -371,7 +370,7 @@ def _makeSvgs(dvifile, epsbase, svgtmpl, count, cfg):
         svgfiles = [svgtmpl]
     else:
         svgfiles = []
-        for i in xrange(0, count):
+        for i in range(0, count):
             fout = svgtmpl % i
             _run(
                 "%s -f svg '%s' '%s' %s" % (cfg.pstoedit, epsfiles[i], fout, shutflag),
@@ -425,7 +424,7 @@ def _makeSks(dvifile, epsbase, sktmpl, count, checkExists, cfg):
     else:
         skfiles = []
         bboxes = []
-        for i in xrange(0, count):
+        for i in range(0, count):
             fout = sktmpl % i
             if not checkExists or not exists(fout):
                 _run(
@@ -528,7 +527,7 @@ _renderMap = {}
 
 
 def _makeRenderMap():
-    for name, val in six.iteritems(globals()):
+    for name, val in globals().items():
         if not name.startswith("_render_"):
             continue
         _renderMap[name[8:]] = val
@@ -639,7 +638,7 @@ _scrGlobals = {}
 
 
 def _populateScrGlobals():
-    for name, val in six.iteritems(globals()):
+    for name, val in globals().items():
         if not name.startswith("_scrg_"):
             continue
         rest = name[6:]
@@ -652,7 +651,7 @@ _populateScrGlobals()
 def _makeScrLocals(ctxt):
     d = {}
 
-    for name, val in six.iteritems(globals()):
+    for name, val in globals().items():
         if not name.startswith("_scrl_"):
             continue
         rest = name[6:]
@@ -826,7 +825,7 @@ class CairoCache(object):
         # print (self.renderers)
 
         # for all new snippets ...
-        for i in xrange(len(self.renderers), len(self.snips)):
+        for i in range(len(self.renderers), len(self.snips)):
             self.renderers.append(SkencilCairoRenderer(self.outputs[i], *self.bbs[i]))
 
     def expire(self, handle):

@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import numpy as np
 
 from .base import LayoutInfo, Painter, NullPainter
@@ -98,8 +97,8 @@ class Grid(Painter):
         self.nh = int(nh)
         self._elements = np.empty((nh, nw), np.object)
 
-        for r in xrange(self.nh):
-            for c in xrange(self.nw):
+        for r in range(self.nh):
+            for c in range(self.nw):
                 self[r, c] = NullPainter()
                 self[r, c].setParent(self)
 
@@ -181,8 +180,8 @@ class Grid(Painter):
         ch = (h - vbord[1:-1].sum()) / self.nh
         mincw = minch = 0
 
-        for r in xrange(self.nh):
-            for c in xrange(self.nw):
+        for r in range(self.nh):
+            for c in range(self.nw):
                 if isfinal:
                     ctxt.save()
                     ctxt.translate(c * cw + hbord[:c].sum(), r * ch + vbord[:r].sum())
@@ -220,8 +219,8 @@ class Grid(Painter):
         )
 
     def doPaint(self, ctxt, style):
-        for r in xrange(self.nh):
-            for c in xrange(self.nw):
+        for r in range(self.nh):
+            for c in range(self.nw):
                 self._elements[r, c].paint(ctxt, style)
 
 
@@ -347,7 +346,7 @@ class LinearBox(Painter):
 
         self._elements = [None] * self.size
 
-        for i in xrange(0, self.size):
+        for i in range(0, self.size):
             np = NullPainter()
             self._elements[i] = _BoxChild(np)
             np.setParent(self)

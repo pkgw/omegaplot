@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import cairo
 from numpy import pi
 
@@ -296,8 +295,8 @@ class GridPager(Pager):
     def _initPage(self):
         self.row = self.col = 0
 
-        for r in xrange(0, self.nh):
-            for c in xrange(0, self.nw):
+        for r in range(0, self.nh):
+            for c in range(0, self.nw):
                 self.grid[c, r] = None
 
     def canPage(self):

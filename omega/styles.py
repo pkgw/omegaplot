@@ -20,7 +20,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
 import numpy as np
 
 
@@ -57,7 +56,7 @@ class Style(object):
             self._applyDictStyle(ctxt, styleItem)
             return
 
-        if isinstance(styleItem, six.string_types):
+        if isinstance(styleItem, str):
             fn = "apply_" + styleItem
 
             if hasattr(self.roles, fn):

@@ -20,8 +20,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
-from six.moves import range as xrange
 import cairo
 import numpy as np
 
@@ -1009,7 +1007,7 @@ class RectPlot(Painter):
             self.defaultKeyOverlay.zheight = 2000
             self.add(self.defaultKeyOverlay, rebound=False)
 
-        if isinstance(item, six.string_types):
+        if isinstance(item, str):
             item = TextPainter(item)
             item.hAlign = self.defaultKeyOverlay.hAlign
             item.vAlign = self.defaultKeyOverlay.vAlign
@@ -1282,7 +1280,7 @@ class RectPlot(Painter):
                 continue
 
             b = fp.getDataBounds()
-            for i in xrange(4):
+            for i in range(4):
                 if b[i] is None:
                     continue
                 if bounds[i] is None:
@@ -1300,7 +1298,7 @@ class RectPlot(Painter):
         return self
 
     def _outerPainterIndex(self, op):
-        for i in xrange(0, len(self.opainters)):
+        for i in range(0, len(self.opainters)):
             if self.opainters[i][0] is op:
                 return i
 
@@ -1376,7 +1374,7 @@ class RectPlot(Painter):
         paintlabels = [True] * 4
         plinfo = dict(H=3, V=2, T=0, R=1, B=2, L=3)
 
-        for letter, index in six.iteritems(plinfo):
+        for letter, index in plinfo.items():
             if letter in spec:
                 paintlabels[index] = False
                 spec = spec.replace(letter, letter.lower())
@@ -1525,7 +1523,7 @@ class RectPlot(Painter):
         # later if it's awkwardly wide.
 
         if not isinstance(val, Painter):
-            val = TextPainter(six.text_type(val))
+            val = TextPainter(str(val))
 
             if side % 2 == 1:
                 val = RightRotationPainter(val)
@@ -1601,7 +1599,7 @@ class RectPlot(Painter):
         s = self._axisApplyHelper(w, h, "spaceExterior", ctxt, style)
         axisWidths = [0.0] * 4
 
-        for i in xrange(4):  # for each side ...
+        for i in range(4):  # for each side ...
             # Compute axis width:
             aw = s[i][1]  # at least amount of 'outside' space needed on that axis
             aw = max(aw, s[(i + 1) % 4][2])  # or 'backward' space on next axis
@@ -1613,7 +1611,7 @@ class RectPlot(Painter):
         minbb = max(minbb, axisWidths[2])
         minbl = max(minbl, axisWidths[3])
 
-        owidths = [self.border[i] - axisWidths[i] - opad for i in xrange(4)]
+        owidths = [self.border[i] - axisWidths[i] - opad for i in range(4)]
 
         # Now we need to do the outer painters. Getting their positions and
         # borders right is obnoxious.
@@ -1700,7 +1698,7 @@ class RectPlot(Painter):
         ctxt.save()
         ctxt.rectangle(self.border[3], self.border[0], self.width, self.height)
         ctxt.clip()
-        for i in xrange(len(self.fpainters)):
+        for i in range(len(self.fpainters)):
             if self.fpainters[i].zheight >= 1000:
                 i -= 1
                 break
@@ -1719,7 +1717,7 @@ class RectPlot(Painter):
         ctxt.save()
         ctxt.rectangle(self.border[3], self.border[0], self.width, self.height)
         ctxt.clip()
-        for i in xrange(i + 1, len(self.fpainters)):
+        for i in range(i + 1, len(self.fpainters)):
             self.fpainters[i].paint(ctxt, style)
         ctxt.restore()
 
@@ -2063,7 +2061,7 @@ class XYDataPainter(FieldPainter):
         ctxt.move_to(x[0], y[0])
 
         if self.lines:
-            for i in xrange(1, x.size):
+            for i in range(1, x.size):
                 ctxt.line_to(x[i], y[i])
 
                 if i > 0 and i % 100 == 0:
@@ -2184,7 +2182,7 @@ class ContinuousSteppedPainter(FieldPainter):
             return (a > b) - (a < b)
 
         if self.connectors:
-            for i in xrange(1, xs.size - 1):
+            for i in range(1, xs.size - 1):
                 x, y = xs[i], ys[i]
 
                 c = mycmp(x, prevx)
@@ -2200,7 +2198,7 @@ class ContinuousSteppedPainter(FieldPainter):
                 ctxt.line_to(x, y)
                 prevx, prevy = x, y
         else:
-            for i in xrange(1, xs.size - 1):
+            for i in range(1, xs.size - 1):
                 x, y = xs[i], ys[i]
 
                 c = mycmp(x, prevx)
@@ -2275,7 +2273,7 @@ class FilledHistogram(FieldPainter):
 
         ctxt.move_to(x[0], yzero)
 
-        for i in xrange(1, y.size):
+        for i in range(1, y.size):
             if x[i] < x[i - 1]:
                 raise RuntimeError("x values must be sorted")
             ctxt.line_to(x[i - 1], y[i - 1])
@@ -2291,14 +2289,14 @@ def _paintSteppedLines(ctxt, xls, xrs, ys, connectors):
     n = ys.size
 
     if not connectors:
-        for i in xrange(n):
+        for i in range(n):
             ctxt.move_to(xls[i], ys[i])
             ctxt.line_to(xrs[i], ys[i])
             ctxt.stroke()
     else:
         prevxr = None
 
-        for i in xrange(n):
+        for i in range(n):
             xl = xls[i]
             xr = xrs[i]
             ys = ys[i]
@@ -2403,7 +2401,7 @@ class SteppedBoundedPainter(FieldPainter):
             style.applyDataRegion(ctxt, self.dsn)
             style.apply(ctxt, self.fillStyle)
 
-            for i in xrange(n):
+            for i in range(n):
                 xl, xr = allx[:, i]
                 y, yup, ydn = ally[:, i]
 
@@ -2508,7 +2506,7 @@ class SteppedUpperLimitPainter(FieldPainter):
             style.applyDataRegion(ctxt, self.dsn)
             style.apply(ctxt, self.fillStyle)
 
-            for i in xrange(n):
+            for i in range(n):
                 xl, xr = xls[i], xrs[i]
                 yul = yuls[i]
 
@@ -2533,7 +2531,7 @@ class SteppedUpperLimitPainter(FieldPainter):
         hackdx = hacklen * 0.3
         hackdy = hacklen * 0.95
 
-        for i in xrange(n):
+        for i in range(n):
             xl, xr = xls[i], xrs[i]
             yul = yuls[i]
             xmid = 0.5 * (xl + xr)
@@ -2868,12 +2866,12 @@ class VEnvelope(FieldPainter):
 
         ctxt.move_to(x[0], yhi[0])
 
-        for i in xrange(1, yhi.size):
+        for i in range(1, yhi.size):
             if x[i] < x[i - 1]:
                 raise RuntimeError("x values must be sorted")
             ctxt.line_to(x[i], yhi[i])
 
-        for i in xrange(yhi.size - 1, -1, -1):
+        for i in range(yhi.size - 1, -1, -1):
             ctxt.line_to(x[i], ylo[i])
 
         ctxt.close_path()
@@ -2928,7 +2926,7 @@ class Polygon(FieldPainter):
 
         ctxt.move_to(x[0], y[0])
 
-        for i in xrange(1, y.size):
+        for i in range(1, y.size):
             ctxt.line_to(x[i], y[i])
 
         ctxt.close_path()
@@ -2970,7 +2968,7 @@ class GridContours(FieldPainter):
 
         xmin = xmax = ymin = ymax = None
 
-        for k, cntrs in six.iteritems(self.computed):
+        for k, cntrs in self.computed.items():
             for cntr in cntrs:
                 if xmin is None:
                     xmin = cntr[0].min()
@@ -2999,14 +2997,14 @@ class GridContours(FieldPainter):
         style.applyDataLine(ctxt, self.dsn)
         style.apply(ctxt, self.lineStyle)
 
-        for k, cntrs in six.iteritems(self.computed):
+        for k, cntrs in self.computed.items():
             for cntr in cntrs:
                 x = self.xform.mapX(cntr[0])
                 y = self.xform.mapY(cntr[1])
 
                 ctxt.move_to(x[0], y[0])
 
-                for i in xrange(1, x.size):
+                for i in range(1, x.size):
                     ctxt.line_to(x[i], y[i])
 
                     if i > 0 and i % 100 == 0:
@@ -3287,7 +3285,7 @@ class CoordinateAxis(RectAxis):
             arbscale = arb.copy()
             arbscale[np.where(arb == 0)] = np.abs(arb[w]).min()
 
-        for iternum in xrange(64):
+        for iternum in range(64):
             err = arb - lin2arb(lin)
 
             if not np.any(np.abs(err) / arbscale > 1e-6):

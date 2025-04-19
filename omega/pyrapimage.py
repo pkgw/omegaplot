@@ -23,7 +23,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import numpy as np
 
 from . import rect, sphere
@@ -216,7 +215,7 @@ class PyrapImageCoordinates(rect.RectCoordinates):
         result = np.empty((2, linx.size))
         coords = np.zeros(self.image.ndim())
 
-        for i in xrange(linx.size):
+        for i in range(linx.size):
             coords[-1] = linx[i]  # longitude is last coord
             coords[-2] = liny[i]
             r = self.image.toworld(coords)
@@ -244,7 +243,7 @@ class PyrapImageCoordinates(rect.RectCoordinates):
         result = np.empty((2, arbx.size))
         coords = np.array(self.refworld)
 
-        for i in xrange(arbx.size):
+        for i in range(arbx.size):
             coords[-1] = arbx[i]  # x is last coord
             coords[-2] = arby[i]
             r = self.image.topixel(coords)

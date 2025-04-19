@@ -29,7 +29,6 @@ FIXME: more docs.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import range as xrange
 import numpy as np
 
 # ArrayGrower class copy&pasted from miriad-python.
@@ -286,8 +285,8 @@ def contourValue(data, rowcoords, colcoords, value):
         value > min(z1, z2) and value <= max(z1, z2) and z1 != z2
     )
 
-    for i in xrange(NR):
-        for j in xrange(NC):
+    for i in range(NR):
+        for j in range(NC):
             z0 = data[i, j]
 
             if i < NR - 1:
@@ -305,25 +304,25 @@ def contourValue(data, rowcoords, colcoords, value):
     # contains a maximum, or counterclocks along it as seen from its
     # interior if it contains a minimum.
 
-    for j in xrange(NC - 1):
+    for j in range(NC - 1):
         # Top
         if vflags[0, j] and data[0, j] > data[0, j + 1]:
             # print ('follow from top:', 0, j)
             follow(0, j, DN)
 
-    for i in xrange(NR - 1):
+    for i in range(NR - 1):
         # Right
         if hflags[i, NC - 1] and data[i, NC - 1] > data[i + 1, NC - 1]:
             # print ('follow from right:', i, NC-1)
             follow(i, NC - 1, LF)
 
-    for j in xrange(NC - 1):
+    for j in range(NC - 1):
         # Bottom
         if vflags[NR - 1, j] and data[NR - 1, j] < data[NR - 1, j + 1]:
             # print ('follow from bot:', NR-1, j)
             follow(NR - 1, j, UP)
 
-    for i in xrange(NR - 1):
+    for i in range(NR - 1):
         # Left
         if hflags[i, 0] and data[i, 0] < data[i + 1, 0]:
             # print ('follow from left:', i, 0)
@@ -331,8 +330,8 @@ def contourValue(data, rowcoords, colcoords, value):
 
     # Now search for interior contours.
 
-    for i in xrange(NR - 1):
-        for j in xrange(NC):
+    for i in range(NR - 1):
+        for j in range(NC):
             if hflags[i, j]:
                 # print ('follow interior:', i, j, '=>', colcoords[j], rinterp_dn_to_y (i, j))
                 if data[i, j] > data[i + 1, j]:
