@@ -31,8 +31,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 """
 
 import gi
-gi.require_version('Gdk', '3.0')
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gdk, Gtk
 
 from .base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
@@ -42,6 +43,7 @@ from . import jupyter, styles, render
 _base_default_style = styles.ColorOnBlackBitmap
 _default_size_request = (600, 480)
 
+
 def default_style(widget=None):
     if widget is None:
         screen = Gdk.Screen.get_default()
@@ -49,13 +51,16 @@ def default_style(widget=None):
         screen = widget.get_screen()
 
     settings = Gtk.Settings.get_for_screen(screen)
-    dpi = settings.get_property('gtk-xft-dpi') / 1024.
-    hidpi = (dpi > 120)
+    dpi = settings.get_property("gtk-xft-dpi") / 1024.0
+    hidpi = dpi > 120
 
     style = _base_default_style()
 
     if hidpi:
-        style._gtk_size_request = (2 * _default_size_request[0], 2 * _default_size_request[1])
+        style._gtk_size_request = (
+            2 * _default_size_request[0],
+            2 * _default_size_request[1],
+        )
         style.sizes.smallScale *= 2
         style.sizes.largeScale *= 2
         # we do NOT double fineLine
@@ -66,8 +71,9 @@ def default_style(widget=None):
 
 # A GTK widget that renders a Painter
 
+
 class OmegaPainter(Gtk.DrawingArea):
-    __gtype_name__ = 'OmegaPainter'
+    __gtype_name__ = "OmegaPainter"
 
     # We can't just call the style "style" since that conflicts with the Gtk
     # style property.
@@ -81,9 +87,8 @@ class OmegaPainter(Gtk.DrawingArea):
         self.tpp = ToplevelPaintParent(weak)
         self.tpp.setPainter(painter)
 
-        sr = getattr(style, '_gtk_size_request', _default_size_request)
+        sr = getattr(style, "_gtk_size_request", _default_size_request)
         self.set_size_request(*sr)
-
 
     def setPainter(self, painter):
         # Don't check to see if painter is the same object as our current
@@ -94,11 +99,9 @@ class OmegaPainter(Gtk.DrawingArea):
         self.queue_draw()
         self.tpp.setPainter(painter)
 
-
     def setStyle(self, style):
         self.queue_draw()
         self.omega_style = style
-
 
     def do_draw(self, ctxt):
         w = self.get_allocated_width()
@@ -118,7 +121,6 @@ class OmegaPainter(Gtk.DrawingArea):
         except ContextTooSmallError as ctse:
             print(ctse)
 
-
     def do_destroy(self):
         # This function must be careful since it can be called
         # from the Python destructor.
@@ -130,24 +132,24 @@ class OmegaPainter(Gtk.DrawingArea):
 
 # Display pager implementation -- first, a custom window.
 
+
 class PagerWindow(Gtk.Window):
-    __gtype_name__ = 'PagerWindow'
-    __gsignals__ = {str('key-press-event') : str('override')} # Py 2/3 compat
+    __gtype_name__ = "PagerWindow"
+    __gsignals__ = {str("key-press-event"): str("override")}  # Py 2/3 compat
 
     is_fullscreen = GObject.Property(type=bool, default=False)
     op = GObject.Property(type=OmegaPainter)
     btn = GObject.Property(type=Gtk.Button)
 
-
     def __init__(self, style=None, parent=None):
         super(PagerWindow, self).__init__(type=Gtk.WindowType.TOPLEVEL)
 
-        self.set_title('OmegaPlot Pager')
+        self.set_title("OmegaPlot Pager")
         self.set_default_size(640, 480)
         self.set_border_width(4)
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         self.set_type_hint(Gdk.WindowTypeHint.NORMAL)
-        #self.set_urgency_hint(True)
+        # self.set_urgency_hint(True)
 
         if parent is not None:
             self.set_transient_for(parent)
@@ -156,7 +158,7 @@ class PagerWindow(Gtk.Window):
             style = default_style(widget=self)
 
         self.op = op = OmegaPainter(None, style, False)
-        self.btn = btn = Gtk.Button(label='Next')
+        self.btn = btn = Gtk.Button(label="Next")
 
         vb = Gtk.VBox()
         vb.pack_start(op, True, True, 4)
@@ -164,17 +166,14 @@ class PagerWindow(Gtk.Window):
 
         self.add(vb)
 
-
     def set_painter(self, p):
         self.op.setPainter(p)
-
 
     def set_show_button(self, show_button):
         if show_button:
             self.btn.show()
         else:
             self.btn.hide()
-
 
     def do_key_press_event(self, event):
         if not self.is_fullscreen and event.keyval == Gdk.KEY_F11:
@@ -211,18 +210,17 @@ class Gtk3DisplayPager(render.DisplayPager):
     the user hits Next.
 
     """
+
     _in_modal_loop = False
 
     def __init__(self, style=None, parent=None):
         self.win = PagerWindow(style, parent)
-        self.win.connect(str('delete-event'), self._window_deleted)
-        self.win.btn.connect(str('clicked'), self._next_clicked)
-
+        self.win.connect(str("delete-event"), self._window_deleted)
+        self.win.btn.connect(str("clicked"), self._next_clicked)
 
     def is_mainloop_running(self):
         # This is intended to be overridden or replaced.
         return False
-
 
     def send(self, painter):
         self.win.set_painter(painter)
@@ -243,10 +241,8 @@ class Gtk3DisplayPager(render.DisplayPager):
                 self._in_modal_loop = False
                 self.win.set_painter(None)
 
-
     def getLatestPainter(self):
         return self.win.op.tpp.getPainter()
-
 
     def done(self):
         if self.is_mainloop_running():
@@ -261,7 +257,6 @@ class Gtk3DisplayPager(render.DisplayPager):
         while Gtk.events_pending():
             Gtk.main_iteration()
 
-
     def _window_deleted(self, win, event):
         self.win.hide()
         self.win.set_painter(None)
@@ -272,7 +267,6 @@ class Gtk3DisplayPager(render.DisplayPager):
 
         # True -> do not destroy window.
         return True
-
 
     def _next_clicked(self, event):
         # This function shouldn't be called with _in_modal_loop = False,

@@ -34,77 +34,74 @@ from .base import Stamp
 _defaultStampSize = 5
 
 
-class RStamp (Stamp):
+class RStamp(Stamp):
     """A R(ect)Stamp is a stamp usually associated with a RectDataHolder and
     rendered onto a RectPlot. The paint/paintAt functions paint a data-free
     "sample" stamp only. The paintMany function paints the stamp multiple
     times according to the data contained in the RectDataHolder.
 
     """
+
     data = None
 
-    def setData (self, data):
+    def setData(self, data):
         if self.data is not None:
-            raise Exception ('Cannot reuse RStamp instance.')
+            raise Exception("Cannot reuse RStamp instance.")
 
         self.data = data
         # when overriding: possibly register data columns and stash cinfo
 
-
-    def paintAt (self, ctxt, style, x, y):
+    def paintAt(self, ctxt, style, x, y):
         # This paints a data-free "sample" version of
         # the stamp.
-        data = self._getSampleValues (style, x, y)
-        data = [np.atleast_1d (q) for q in data]
+        data = self._getSampleValues(style, x, y)
+        data = [np.atleast_1d(q) for q in data]
 
-        self._paintData (ctxt, style, np.atleast_1d (x),
-                         np.atleast_1d (y), data)
+        self._paintData(ctxt, style, np.atleast_1d(x), np.atleast_1d(y), data)
 
-
-    def paintMany (self, ctxt, style, xform):
-        imisc, fmisc, allx, ally = self.data.getAllMapped (xform)
+    def paintMany(self, ctxt, style, xform):
+        imisc, fmisc, allx, ally = self.data.getAllMapped(xform)
         x = allx[0]
         y = ally[0]
 
-        data = self._getDataValues (style, xform)
-        data = np.broadcast_arrays (x, *data)[1:]
+        data = self._getDataValues(style, xform)
+        data = np.broadcast_arrays(x, *data)[1:]
 
-        self._paintData (ctxt, style, x, y, data)
+        self._paintData(ctxt, style, x, y, data)
 
+    def _paintData(self, ctxt, style, x, y, data):
+        raise NotImplementedError()
 
-    def _paintData (self, ctxt, style, x, y, data):
-        raise NotImplementedError ()
-
-
-    def _getSampleValues (self, style, x, y):
+    def _getSampleValues(self, style, x, y):
         # When implementing, return a tuple of scalars that can be used by
         # _paintData in array form. If subclassing, chain to the parent and
         # combine your tuples and the parent's tuples.
-        raise NotImplementedError ()
+        raise NotImplementedError()
 
-
-    def _getDataValues (self, style, xform):
+    def _getDataValues(self, style, xform):
         # Implement similarly to _getSampleValues. It's expected that data
         # values will come from self.data.getMapped (cinfo, xform) for some
         # cinfo.
-        raise NotImplementedError ()
+        raise NotImplementedError()
 
 
-class PathPainter (object):
+class PathPainter(object):
     """Utility object that allows us to easily abstract between rendering modes
     with filled or empty symbols, potentially with different styles for the
     stroke and paint operations.
 
     """
-    def __init__ (self, stroke=True, fill=True, style=None, strokeStyle=None, fillStyle=None):
+
+    def __init__(
+        self, stroke=True, fill=True, style=None, strokeStyle=None, fillStyle=None
+    ):
         self.stroke = stroke
         self.fill = fill
         self.style = None
         self.strokeStyle = strokeStyle
         self.fillStyle = fillStyle
 
-
-    def paint (self, linesOnly, ctxt, style):
+    def paint(self, linesOnly, ctxt, style):
         """Assumes that the ctxt has an active path that should be painted now. If
         linesOnly is true, the path does not contain closed shapes (e.g.: a
         plus sign) and thus should never be filled.
@@ -117,30 +114,29 @@ class PathPainter (object):
             stroke = True
             fill = False
 
-        ctxt.save ()
-        style.apply (ctxt, self.style)
+        ctxt.save()
+        style.apply(ctxt, self.style)
 
         if stroke:
             if fill:
-                ctxt.save ()
-                style.apply (ctxt, self.fillStyle)
-                ctxt.fill_preserve ()
-                ctxt.restore ()
-            ctxt.save ()
-            style.apply (ctxt, self.strokeStyle)
-            ctxt.stroke ()
-            ctxt.restore ()
+                ctxt.save()
+                style.apply(ctxt, self.fillStyle)
+                ctxt.fill_preserve()
+                ctxt.restore()
+            ctxt.save()
+            style.apply(ctxt, self.strokeStyle)
+            ctxt.stroke()
+            ctxt.restore()
         elif fill:
-            ctxt.save ()
-            style.apply (ctxt, self.fillStyle)
-            ctxt.fill ()
-            ctxt.restore ()
+            ctxt.save()
+            style.apply(ctxt, self.fillStyle)
+            ctxt.fill()
+            ctxt.restore()
 
-        ctxt.restore ()
+        ctxt.restore()
 
 
-
-class PrimaryRStamp (RStamp):
+class PrimaryRStamp(RStamp):
     """A primary RStamp is one that actually draws a plot symbol. It has builtin
     properties such as "size" and "rot" that can be used to control how the
     symbol is plotted. "size" and "rot" can be either specified to be a
@@ -148,30 +144,38 @@ class PrimaryRStamp (RStamp):
     passed to __init__).
 
     """
-    def __init__ (self, size=None, rot=0, stroke=True, fill=True, style=None, strokeStyle=None, fillStyle=None):
+
+    def __init__(
+        self,
+        size=None,
+        rot=0,
+        stroke=True,
+        fill=True,
+        style=None,
+        strokeStyle=None,
+        fillStyle=None,
+    ):
         if size is None:
             size = _defaultStampSize
 
         self.size = size
         self.rot = rot
-        self._path_painter = PathPainter (stroke, fill, style, strokeStyle, fillStyle)
+        self._path_painter = PathPainter(stroke, fill, style, strokeStyle, fillStyle)
 
-
-    def setData (self, data):
-        RStamp.setData (self, data)
+    def setData(self, data):
+        RStamp.setData(self, data)
 
         if self.size < 0:
-            self.sizeCInfo = data.register (0, 1, 0, 0)
+            self.sizeCInfo = data.register(0, 1, 0, 0)
         else:
             self.sizeCInfo = None
 
         if self.rot < 0:
-            self.rotCInfo = data.register (0, 1, 0, 0)
+            self.rotCInfo = data.register(0, 1, 0, 0)
         else:
             self.rotCInfo = None
 
-
-    def _getSampleValues (self, style, x, y):
+    def _getSampleValues(self, style, x, y):
         if self.sizeCInfo is None:
             s = self.size
         else:
@@ -184,345 +188,340 @@ class PrimaryRStamp (RStamp):
 
         return (s, r)
 
-
-    def _getDataValues (self, style, xform):
+    def _getDataValues(self, style, xform):
         if self.sizeCInfo is None:
             s = self.size
         else:
-            imisc, fmisc, x, y = self.data.get (self.sizeCInfo)
+            imisc, fmisc, x, y = self.data.get(self.sizeCInfo)
             s = -self.size * fmisc[0]
 
         if self.rotCInfo is None:
             r = self.rot
         else:
-            imisc, fmisc, x, y = self.data.get (self.rotCInfo)
+            imisc, fmisc, x, y = self.data.get(self.rotCInfo)
             r = -self.rot * fmisc[0]
 
         return (s, r)
 
-
-    def _paintData (self, ctxt, style, x, y, mydata):
+    def _paintData(self, ctxt, style, x, y, mydata):
         sizes, rots = mydata
 
-        for i in xrange (0, x.size):
-            ctxt.save ()
-            ctxt.translate (x[i], y[i])
-            ctxt.rotate (rots[i])
-            self._paintOne (ctxt, style, sizes[i])
-            ctxt.restore ()
+        for i in xrange(0, x.size):
+            ctxt.save()
+            ctxt.translate(x[i], y[i])
+            ctxt.rotate(rots[i])
+            self._paintOne(ctxt, style, sizes[i])
+            ctxt.restore()
 
-
-    def _paintOne (self, ctxt, style, size):
-        raise NotImplementedError ()
+    def _paintOne(self, ctxt, style, size):
+        raise NotImplementedError()
 
 
 # These functions actually paint a symbol
 
-def symCircle (ctxt, style, size, pp=None):
+
+def symCircle(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
-    ctxt.new_sub_path () # prevents leading line segment to arc beginning
-    ctxt.arc (0, 0, size * style.smallScale / 2, 0, 2 * pi)
-    pp.paint (False, ctxt, style)
+    ctxt.new_sub_path()  # prevents leading line segment to arc beginning
+    ctxt.arc(0, 0, size * style.smallScale / 2, 0, 2 * pi)
+    pp.paint(False, ctxt, style)
 
 
-def symUpTriangle (ctxt, style, size, pp=None):
+def symUpTriangle(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
     s = size * style.smallScale
 
-    ctxt.move_to (0, -0.666666 * s)
-    ctxt.rel_line_to (s/2, s)
-    ctxt.rel_line_to (-s, 0)
-    ctxt.close_path ()
-    pp.paint (False, ctxt, style)
+    ctxt.move_to(0, -0.666666 * s)
+    ctxt.rel_line_to(s / 2, s)
+    ctxt.rel_line_to(-s, 0)
+    ctxt.close_path()
+    pp.paint(False, ctxt, style)
 
 
-def symDownTriangle (ctxt, style, size, pp=None):
+def symDownTriangle(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
     s = size * style.smallScale
 
-    ctxt.move_to (0, s * 0.666666)
-    ctxt.rel_line_to (-s/2, -s)
-    ctxt.rel_line_to (s, 0)
-    ctxt.close_path ()
-    pp.paint (False, ctxt, style)
+    ctxt.move_to(0, s * 0.666666)
+    ctxt.rel_line_to(-s / 2, -s)
+    ctxt.rel_line_to(s, 0)
+    ctxt.close_path()
+    pp.paint(False, ctxt, style)
 
 
-def symDiamond (ctxt, style, size, pp=None):
+def symDiamond(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
     s2 = size * style.smallScale / 2
 
-    ctxt.move_to (0, -s2)
-    ctxt.rel_line_to (s2, s2)
-    ctxt.rel_line_to (-s2, s2)
-    ctxt.rel_line_to (-s2, -s2)
-    ctxt.close_path ()
-    pp.paint (False, ctxt, style)
+    ctxt.move_to(0, -s2)
+    ctxt.rel_line_to(s2, s2)
+    ctxt.rel_line_to(-s2, s2)
+    ctxt.rel_line_to(-s2, -s2)
+    ctxt.close_path()
+    pp.paint(False, ctxt, style)
 
 
-def symBox (ctxt, style, size, pp=None):
+def symBox(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
-    s = size * style.smallScale / sqrt (2)
+    s = size * style.smallScale / sqrt(2)
 
-    ctxt.rectangle (-0.5 * s, -0.5 * s, s, s)
-    pp.paint (False, ctxt, style)
+    ctxt.rectangle(-0.5 * s, -0.5 * s, s, s)
+    pp.paint(False, ctxt, style)
 
 
-def symX (ctxt, style, size, pp=None):
+def symX(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
-    s = size * style.smallScale / sqrt (2)
+    s = size * style.smallScale / sqrt(2)
 
-    ctxt.move_to (-0.5 * s, -0.5 * s)
-    ctxt.rel_line_to (s, s)
-    pp.paint (True, ctxt, style)
-    ctxt.move_to (-0.5 * s, 0.5 * s)
-    ctxt.rel_line_to (s, -s)
-    pp.paint (True, ctxt, style)
+    ctxt.move_to(-0.5 * s, -0.5 * s)
+    ctxt.rel_line_to(s, s)
+    pp.paint(True, ctxt, style)
+    ctxt.move_to(-0.5 * s, 0.5 * s)
+    ctxt.rel_line_to(s, -s)
+    pp.paint(True, ctxt, style)
 
 
-def symPlus (ctxt, style, size, pp=None):
+def symPlus(ctxt, style, size, pp=None):
     if pp is None:
-        pp = PathPainter ()
+        pp = PathPainter()
 
     s = size * style.smallScale
 
-    ctxt.move_to (-0.5 * s, 0)
-    ctxt.rel_line_to (s, 0)
-    pp.paint (True, ctxt, style)
-    ctxt.move_to (0, -0.5 * s)
-    ctxt.rel_line_to (0, s)
-    pp.paint (True, ctxt, style)
+    ctxt.move_to(-0.5 * s, 0)
+    ctxt.rel_line_to(s, 0)
+    pp.paint(True, ctxt, style)
+    ctxt.move_to(0, -0.5 * s)
+    ctxt.rel_line_to(0, s)
+    pp.paint(True, ctxt, style)
 
 
 # Stamps drawing these symbols
 
-class Nothing (PrimaryRStamp):
-    def _paintOne (self, ctxt, style, size):
+
+class Nothing(PrimaryRStamp):
+    def _paintOne(self, ctxt, style, size):
         pass
 
 
-class Circle (PrimaryRStamp):
-    def _paintOne (self, ctxt, style, size):
-        symCircle (ctxt, style, size, self._path_painter)
+class Circle(PrimaryRStamp):
+    def _paintOne(self, ctxt, style, size):
+        symCircle(ctxt, style, size, self._path_painter)
 
 
-class UpTriangle (PrimaryRStamp):
-    def _paintOne (self, ctxt, style, size):
-        symUpTriangle (ctxt, style, size, self._path_painter)
+class UpTriangle(PrimaryRStamp):
+    def _paintOne(self, ctxt, style, size):
+        symUpTriangle(ctxt, style, size, self._path_painter)
 
 
-class DownTriangle (PrimaryRStamp):
-    def _paintOne (self, ctxt, style, size):
-        symDownTriangle (ctxt, style, size, self._path_painter)
+class DownTriangle(PrimaryRStamp):
+    def _paintOne(self, ctxt, style, size):
+        symDownTriangle(ctxt, style, size, self._path_painter)
 
 
-class Diamond (PrimaryRStamp):
-    def _paintOne (self, ctxt, style, size):
-        symDiamond (ctxt, style, size, self._path_painter)
+class Diamond(PrimaryRStamp):
+    def _paintOne(self, ctxt, style, size):
+        symDiamond(ctxt, style, size, self._path_painter)
 
 
-class Box (PrimaryRStamp):
+class Box(PrimaryRStamp):
     """`size` measures the box in style.smallScale; this is reduced by sqrt(2) so
     that the area of the Box and Diamond stamps are the same for the same
     values of size.
 
     """
-    def _paintOne (self, ctxt, style, size):
-        symBox (ctxt, style, size, self._path_painter)
+
+    def _paintOne(self, ctxt, style, size):
+        symBox(ctxt, style, size, self._path_painter)
 
 
-class X (PrimaryRStamp):
+class X(PrimaryRStamp):
     """`size` gives the length the X in style.smallScale; corrected by sqrt(2) so
     that X and Plus lay down the same amount of "ink"
 
     """
-    def _paintOne (self, ctxt, style, size):
-        symX (ctxt, style, size, self._path_painter)
+
+    def _paintOne(self, ctxt, style, size):
+        symX(ctxt, style, size, self._path_painter)
 
 
-class Plus (PrimaryRStamp):
-    "`size` gives the side length of the plus in style.smallScale."""
+class Plus(PrimaryRStamp):
+    "`size` gives the side length of the plus in style.smallScale." ""
 
-    def _paintOne (self, ctxt, style, size):
-        symPlus (ctxt, style, size, self._path_painter)
+    def _paintOne(self, ctxt, style, size):
+        symPlus(ctxt, style, size, self._path_painter)
 
 
 # This special PrimaryRStamp plots a symbol that's a function of
 # a style number used for data themes. This allows us to abstract
 # the use of different symbols for different datasets in a plot
 
-class DataThemedStamp (PrimaryRStamp):
-    def __init__ (self, snholder, size=None, rot=0):
-        super (DataThemedStamp, self).__init__ (size, rot)
-        self.setHolder (snholder)
 
-    def setHolder (self, snholder):
+class DataThemedStamp(PrimaryRStamp):
+    def __init__(self, snholder, size=None, rot=0):
+        super(DataThemedStamp, self).__init__(size, rot)
+        self.setHolder(snholder)
+
+    def setHolder(self, snholder):
         self.snholder = snholder
 
-
-    def _paintOne (self, ctxt, style, size):
+    def _paintOne(self, ctxt, style, size):
         if self.snholder is None:
-            raise Exception ('Need to call setHolder before painting DataThemedStamp!')
+            raise Exception("Need to call setHolder before painting DataThemedStamp!")
 
         dsn = self.snholder.dsn
-        style.data.getSymbolFunc (dsn) (ctxt, style, size)
+        style.data.getSymbolFunc(dsn)(ctxt, style, size)
 
 
 # Here are some utility stamps that are *not*
 # primary stamps. They build on top of other stamps
 # to provide useful effects. Namely, error bars.
 
-class WithYErrorBars (RStamp):
-    def __init__ (self, substamp):
+
+class WithYErrorBars(RStamp):
+    def __init__(self, substamp):
         self.substamp = substamp
 
-
-    def setData (self, data):
+    def setData(self, data):
         # Have the substamp register whatever it
         # needs.
 
-        self.substamp.setData (data)
+        self.substamp.setData(data)
 
         # And register our own data needs.
 
-        RStamp.setData (self, data)
-        self.cinfo = data.register (0, 0, 0, 2)
+        RStamp.setData(self, data)
+        self.cinfo = data.register(0, 0, 0, 2)
 
-
-    def _paintData (self, ctxt, style, x, y, mydata):
+    def _paintData(self, ctxt, style, x, y, mydata):
         y1, y2 = mydata[0:2]
         subdata = mydata[2:]
 
-        self.substamp._paintData (ctxt, style, x, y, subdata)
+        self.substamp._paintData(ctxt, style, x, y, subdata)
 
-        for i in xrange (0, x.size):
-            ctxt.move_to (x[i], y1[i])
-            ctxt.line_to (x[i], y2[i])
-            ctxt.stroke ()
+        for i in xrange(0, x.size):
+            ctxt.move_to(x[i], y1[i])
+            ctxt.line_to(x[i], y2[i])
+            ctxt.stroke()
 
-
-    def _getSampleValues (self, style, x, y):
-        subd = self.substamp._getSampleValues (style, x, y)
+    def _getSampleValues(self, style, x, y):
+        subd = self.substamp._getSampleValues(style, x, y)
 
         dy = 4 * style.smallScale
         return (y - dy, y + dy) + subd
 
+    def _getDataValues(self, style, xform):
+        subd = self.substamp._getDataValues(style, xform)
 
-    def _getDataValues (self, style, xform):
-        subd = self.substamp._getDataValues (style, xform)
-
-        imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
+        imisc, fmisc, x, y = self.data.getMapped(self.cinfo, xform)
         return (y[0], y[1]) + subd
 
 
-class WithXErrorBars (RStamp):
-    def __init__ (self, substamp):
+class WithXErrorBars(RStamp):
+    def __init__(self, substamp):
         self.substamp = substamp
 
-
-    def setData (self, data):
+    def setData(self, data):
         # Have the substamp register whatever it
         # needs.
 
-        self.substamp.setData (data)
+        self.substamp.setData(data)
 
         # And register our own data needs.
 
-        RStamp.setData (self, data)
-        self.cinfo = data.register (0, 0, 2, 0)
+        RStamp.setData(self, data)
+        self.cinfo = data.register(0, 0, 2, 0)
 
-
-    def _paintData (self, ctxt, style, x, y, mydata):
+    def _paintData(self, ctxt, style, x, y, mydata):
         x1, x2 = mydata[0:2]
         subdata = mydata[2:]
 
-        self.substamp._paintData (ctxt, style, x, y, subdata)
+        self.substamp._paintData(ctxt, style, x, y, subdata)
 
-        for i in xrange (0, x.size):
-            ctxt.move_to (x1[i], y[i])
-            ctxt.line_to (x2[i], y[i])
-            ctxt.stroke ()
+        for i in xrange(0, x.size):
+            ctxt.move_to(x1[i], y[i])
+            ctxt.line_to(x2[i], y[i])
+            ctxt.stroke()
 
-
-    def _getSampleValues (self, style, x, y):
-        subd = self.substamp._getSampleValues (style, x, y)
+    def _getSampleValues(self, style, x, y):
+        subd = self.substamp._getSampleValues(style, x, y)
 
         dx = 4 * style.smallScale
         return (x - dx, x + dx) + subd
 
+    def _getDataValues(self, style, xform):
+        subd = self.substamp._getDataValues(style, xform)
 
-    def _getDataValues (self, style, xform):
-        subd = self.substamp._getDataValues (style, xform)
-
-        imisc, fmisc, x, y = self.data.getMapped (self.cinfo, xform)
+        imisc, fmisc, x, y = self.data.getMapped(self.cinfo, xform)
         return (x[0], x[1]) + subd
 
 
 # Arrow painting
 
-def arrow (ctxt, x, y, direction, length, headsize):
+
+def arrow(ctxt, x, y, direction, length, headsize):
     dperp = headsize * 0.95
     dpara = headsize * 0.3
 
     if length < 0:
-        if direction == 'left':
-            newdir = 'right'
-        elif direction == 'right':
-            newdir = 'left'
-        elif direction == 'top':
-            newdir = 'bottom'
-        elif direction == 'bottom':
-            newdir = 'top'
+        if direction == "left":
+            newdir = "right"
+        elif direction == "right":
+            newdir = "left"
+        elif direction == "top":
+            newdir = "bottom"
+        elif direction == "bottom":
+            newdir = "top"
 
         length = -length
         direction = newdir
 
-    llength = max (length - dperp, 0)
+    llength = max(length - dperp, 0)
 
-    if direction == 'left':
+    if direction == "left":
         dlx, dly = -llength, 0
         dh1x, dh1y = 0, dpara
         dh2x, dh2y = -(length - llength), dpara
-    elif direction == 'right':
+    elif direction == "right":
         dlx, dly = llength, 0
         dh1x, dh1y = 0, -dpara
         dh2x, dh2y = length - llength, -dpara
-    elif direction == 'top':
+    elif direction == "top":
         dlx, dly = 0, -llength
         dh1x, dh1y = -dpara, 0
         dh2x, dh2y = -dpara, -(length - llength)
-    elif direction == 'bottom':
+    elif direction == "bottom":
         dlx, dly = 0, llength
         dh1x, dh1y = dpara, 0
         dh2x, dh2y = dpara, length - llength
     else:
-        raise ValueError ('unrecognized arrow direction "%s"' % direction)
+        raise ValueError('unrecognized arrow direction "%s"' % direction)
 
     if llength != 0:
-        ctxt.move_to (x, y)
-        ctxt.rel_line_to (dlx, dly)
-        ctxt.stroke ()
+        ctxt.move_to(x, y)
+        ctxt.rel_line_to(dlx, dly)
+        ctxt.stroke()
 
-    ctxt.move_to (x + dlx + dh1x, y + dly + dh1y)
-    ctxt.rel_line_to (-2 * dh1x, -2 * dh1y)
-    ctxt.rel_line_to (dh2x, dh2y)
-    ctxt.close_path ()
-    ctxt.fill_preserve ()
-    ctxt.stroke ()
+    ctxt.move_to(x + dlx + dh1x, y + dly + dh1y)
+    ctxt.rel_line_to(-2 * dh1x, -2 * dh1y)
+    ctxt.rel_line_to(dh2x, dh2y)
+    ctxt.close_path()
+    ctxt.fill_preserve()
+    ctxt.stroke()
 
 
-class _WithArrow (RStamp):
+class _WithArrow(RStamp):
     """
     This is a confusing class here. The whole point of limit arrows as
     opposed to error bars is that the arrow length is not particularly
@@ -565,220 +564,218 @@ class _WithArrow (RStamp):
     [arrowlength, x, y, y-arrow-towards]
     """
 
-    def __init__ (self, substamp, direction, length, headsize, keylength):
+    def __init__(self, substamp, direction, length, headsize, keylength):
         self.substamp = substamp
         self.direction = direction
-        self.length = length # in style.largeScale, or None
-        self.headsize = headsize # in style.largeScale
+        self.length = length  # in style.largeScale, or None
+        self.headsize = headsize  # in style.largeScale
         self.keylength = keylength
         self.lengthCInfo = None
 
-
-    def setData (self, data):
+    def setData(self, data):
         if self.substamp is not None:
-            self.substamp.setData (data)
+            self.substamp.setData(data)
 
-        super (_WithArrow, self).setData (data)
+        super(_WithArrow, self).setData(data)
 
-        if self.direction in ('left', 'right'):
-            self.towardsCInfo = data.register (0, 0, 1, 0)
+        if self.direction in ("left", "right"):
+            self.towardsCInfo = data.register(0, 0, 1, 0)
         else:
-            self.towardsCInfo = data.register (0, 0, 0, 1)
+            self.towardsCInfo = data.register(0, 0, 0, 1)
 
         if self.length is None:
-            self.lengthCInfo = data.register (0, 1, 0, 0)
+            self.lengthCInfo = data.register(0, 1, 0, 0)
 
-
-    def _getSampleValues (self, style, x, y):
+    def _getSampleValues(self, style, x, y):
         if self.substamp is None:
             subd = ()
         else:
-            subd = self.substamp._getSampleValues (style, x, y)
+            subd = self.substamp._getSampleValues(style, x, y)
 
         l = self.keylength * style.largeScale
 
-        if self.direction == 'left':
+        if self.direction == "left":
             v = x - l
-        elif self.direction == 'right':
+        elif self.direction == "right":
             v = x + l
-        elif self.direction == 'top':
+        elif self.direction == "top":
             v = y - l
-        elif self.direction == 'bottom':
+        elif self.direction == "bottom":
             v = y + l
 
         return (v, l) + subd
 
-
-    def _getDataValues (self, style, xform):
+    def _getDataValues(self, style, xform):
         if self.substamp is None:
             subd = ()
         else:
-            subd = self.substamp._getDataValues (style, xform)
+            subd = self.substamp._getDataValues(style, xform)
 
-        imisc, fmisc, x, y = self.data.getMapped (self.towardsCInfo, xform)
+        imisc, fmisc, x, y = self.data.getMapped(self.towardsCInfo, xform)
 
-        if self.direction in ('left', 'right'):
+        if self.direction in ("left", "right"):
             towards = x[0]
         else:
             towards = y[0]
 
-        if self.length is not None: # fixed length for all arrows
+        if self.length is not None:  # fixed length for all arrows
             l = self.length * style.largeScale
-        else: # length varies from arrow to arrow
-            imisc, fmisc, x, y = self.data.getMapped (self.lengthCInfo, xform)
+        else:  # length varies from arrow to arrow
+            imisc, fmisc, x, y = self.data.getMapped(self.lengthCInfo, xform)
             l = fmisc[0] * style.largeScale
 
         return (towards, l) + subd
 
-
-    def _paintData (self, ctxt, style, x, y, mydata):
+    def _paintData(self, ctxt, style, x, y, mydata):
         towards, lengths = mydata[:2]
         subdata = mydata[2:]
-        isx = self.direction in ('left', 'right')
+        isx = self.direction in ("left", "right")
 
         if self.substamp is not None:
-            self.substamp._paintData (ctxt, style, x, y, subdata)
+            self.substamp._paintData(ctxt, style, x, y, subdata)
 
         if isx:
             ref = x
-            dirs = ['left', 'right']
+            dirs = ["left", "right"]
         else:
             ref = y
-            dirs = ['top', 'bottom']
+            dirs = ["top", "bottom"]
 
-        for i in xrange (x.size):
+        for i in xrange(x.size):
             if self.substamp is None:
                 # Draw our little perpendicular bar, copying the sizing logic
                 # used in arrow ()
                 if isx:
-                    ctxt.move_to (x[i], y[i] - 0.3 * self.headsize * style.largeScale)
-                    ctxt.line_to (x[i], y[i] + 0.3 * self.headsize * style.largeScale)
-                    ctxt.stroke ()
+                    ctxt.move_to(x[i], y[i] - 0.3 * self.headsize * style.largeScale)
+                    ctxt.line_to(x[i], y[i] + 0.3 * self.headsize * style.largeScale)
+                    ctxt.stroke()
                 else:
-                    ctxt.move_to (x[i] - 0.3 * self.headsize * style.largeScale, y[i])
-                    ctxt.line_to (x[i] + 0.3 * self.headsize * style.largeScale, y[i])
-                    ctxt.stroke ()
+                    ctxt.move_to(x[i] - 0.3 * self.headsize * style.largeScale, y[i])
+                    ctxt.line_to(x[i] + 0.3 * self.headsize * style.largeScale, y[i])
+                    ctxt.stroke()
 
             if lengths[i] != 0:
                 # This one gets drawn. Figure out the effective
                 # direction and length, set by the relation between
                 # the data coordinate and towards, and do it.
-                l = min (abs (towards[i] - ref[i]), lengths[i])
+                l = min(abs(towards[i] - ref[i]), lengths[i])
                 d = dirs[ref[i] < towards[i]]
-                arrow (ctxt, x[i], y[i], d, l, self.headsize * style.largeScale)
+                arrow(ctxt, x[i], y[i], d, l, self.headsize * style.largeScale)
 
 
-class WithDownArrow (_WithArrow):
-    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
-        super (WithDownArrow, self).__init__ (substamp, 'bottom', length,
-                                              headsize, keylength)
+class WithDownArrow(_WithArrow):
+    def __init__(self, substamp=None, length=7, headsize=3, keylength=0):
+        super(WithDownArrow, self).__init__(
+            substamp, "bottom", length, headsize, keylength
+        )
 
 
-class WithUpArrow (_WithArrow):
-    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
-        super (WithUpArrow, self).__init__ (substamp, 'top', length,
-                                            headsize, keylength)
+class WithUpArrow(_WithArrow):
+    def __init__(self, substamp=None, length=7, headsize=3, keylength=0):
+        super(WithUpArrow, self).__init__(substamp, "top", length, headsize, keylength)
 
 
-class WithLeftArrow (_WithArrow):
-    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
-        super (WithLeftArrow, self).__init__ (substamp, 'left', length,
-                                              headsize, keylength)
+class WithLeftArrow(_WithArrow):
+    def __init__(self, substamp=None, length=7, headsize=3, keylength=0):
+        super(WithLeftArrow, self).__init__(
+            substamp, "left", length, headsize, keylength
+        )
 
 
-class WithRightArrow (_WithArrow):
-    def __init__ (self, substamp=None, length=7, headsize=3, keylength=0):
-        super (WithRightArrow, self).__init__ (substamp, 'right', length,
-                                               headsize, keylength)
+class WithRightArrow(_WithArrow):
+    def __init__(self, substamp=None, length=7, headsize=3, keylength=0):
+        super(WithRightArrow, self).__init__(
+            substamp, "right", length, headsize, keylength
+        )
 
 
 # The all-in-wonder MultiStamp.
 
 _ms_features = {
-    'cnum': (1, 0, 0, 0),
-    'fill': (1, 0, 0, 0),
-    'mcolor': (0, 1, 0, 0),
-    'prepaint': (1, 0, 0, 0),
-    'shape': (1, 0, 0, 0),
-    'size': (0, 1, 0, 0),
-    'tlines': (1, 0, 0, 0),
-    'ux': (1, 0, 2, 0),
-    'uy': (1, 0, 0, 2),
-    'z': (1, 0, 0, 0),
+    "cnum": (1, 0, 0, 0),
+    "fill": (1, 0, 0, 0),
+    "mcolor": (0, 1, 0, 0),
+    "prepaint": (1, 0, 0, 0),
+    "shape": (1, 0, 0, 0),
+    "size": (0, 1, 0, 0),
+    "tlines": (1, 0, 0, 0),
+    "ux": (1, 0, 2, 0),
+    "uy": (1, 0, 0, 2),
+    "z": (1, 0, 0, 0),
 }
 
 
-def _single_limit (rot):
-    '''rot=0 -> limit points down'''
+def _single_limit(rot):
+    """rot=0 -> limit points down"""
 
-    def paint (ctxt, style, size, fill):
+    def paint(ctxt, style, size, fill):
         s = size * style.smallScale
-        s1 = 2 * s # total length of line
-        s2 = 0.8 * s # width of triangle (along line axis)
-        s3 = s # height of triangle (away from line)
+        s1 = 2 * s  # total length of line
+        s2 = 0.8 * s  # width of triangle (along line axis)
+        s3 = s  # height of triangle (away from line)
 
-        ctxt.save ()
-        ctxt.rotate (rot)
+        ctxt.save()
+        ctxt.rotate(rot)
 
-        ctxt.move_to (-0.5 * s1, 0)
-        ctxt.rel_line_to (s1, 0)
+        ctxt.move_to(-0.5 * s1, 0)
+        ctxt.rel_line_to(s1, 0)
 
-        ctxt.move_to (-0.5 * s2, 0)
-        ctxt.rel_line_to (0.5 * s2, s3)
-        ctxt.rel_line_to (0.5 * s2, -s3)
+        ctxt.move_to(-0.5 * s2, 0)
+        ctxt.rel_line_to(0.5 * s2, s3)
+        ctxt.rel_line_to(0.5 * s2, -s3)
         # This way we don't double-stroke the triangle base, which has a
         # discernable and aesthetically detrimental effect:
         if fill:
-            ctxt.stroke_preserve ()
-            ctxt.close_path ()
-            ctxt.fill ()
+            ctxt.stroke_preserve()
+            ctxt.close_path()
+            ctxt.fill()
         else:
-            ctxt.stroke ()
+            ctxt.stroke()
 
-        ctxt.restore ()
+        ctxt.restore()
 
     return paint
 
 
-def _double_limit (rot):
-    '''rot=0 -> limit points down and left'''
+def _double_limit(rot):
+    """rot=0 -> limit points down and left"""
 
-    def paint (ctxt, style, size, fill):
-        s = size * style.smallScale * 2 # keeps consistency with other symbols
-        s1 = 0.2 * s # length of short side of triangle
-        s2 = 0.45 * s # length of long (non-hypoteneuse) side
+    def paint(ctxt, style, size, fill):
+        s = size * style.smallScale * 2  # keeps consistency with other symbols
+        s1 = 0.2 * s  # length of short side of triangle
+        s2 = 0.45 * s  # length of long (non-hypoteneuse) side
 
-        ctxt.save ()
-        ctxt.rotate (rot)
+        ctxt.save()
+        ctxt.rotate(rot)
 
-        ctxt.move_to (-(s - s2), 0)
-        ctxt.rel_line_to (0, s1)
-        ctxt.rel_line_to (-s2, -s1)
-        ctxt.rel_line_to (s, 0)
-        ctxt.rel_line_to (0, s)
-        ctxt.rel_line_to (-s1, -s2)
-        ctxt.rel_line_to (s1, 0)
-        ctxt.stroke ()
+        ctxt.move_to(-(s - s2), 0)
+        ctxt.rel_line_to(0, s1)
+        ctxt.rel_line_to(-s2, -s1)
+        ctxt.rel_line_to(s, 0)
+        ctxt.rel_line_to(0, s)
+        ctxt.rel_line_to(-s1, -s2)
+        ctxt.rel_line_to(s1, 0)
+        ctxt.stroke()
 
         if fill:
-            ctxt.move_to (0, s)
-            ctxt.rel_line_to (0, -s2)
-            ctxt.rel_line_to (-s1, 0)
-            ctxt.close_path ()
-            ctxt.fill ()
+            ctxt.move_to(0, s)
+            ctxt.rel_line_to(0, -s2)
+            ctxt.rel_line_to(-s1, 0)
+            ctxt.close_path()
+            ctxt.fill()
 
-            ctxt.move_to (-s, 0)
-            ctxt.rel_line_to (s2, 0)
-            ctxt.rel_line_to (0, s1)
-            ctxt.close_path ()
-            ctxt.fill ()
+            ctxt.move_to(-s, 0)
+            ctxt.rel_line_to(s2, 0)
+            ctxt.rel_line_to(0, s1)
+            ctxt.close_path()
+            ctxt.fill()
 
-        ctxt.restore ()
+        ctxt.restore()
 
     return paint
 
 
-class MultiStamp (RStamp):
+class MultiStamp(RStamp):
     features = None
     fixedfill = True
     fixedlinestyle = None
@@ -786,7 +783,7 @@ class MultiStamp (RStamp):
     fixedsize = _defaultStampSize
     extracolors = []
     prepaintfuncs = [lambda c, s, x, y: None]
-    colormap = 'black_to_blue'
+    colormap = "black_to_blue"
 
     _cnum_cinfo = None
     _fill_cinfo = None
@@ -799,29 +796,28 @@ class MultiStamp (RStamp):
     _uy_cinfo = None
     _z_cinfo = None
 
-    def __init__ (self, *features):
+    def __init__(self, *features):
         for f in features:
             if f not in _ms_features:
-                raise ValueError ('unrecognized feature "%s"' % f)
+                raise ValueError('unrecognized feature "%s"' % f)
         self.features = features
 
-        if 'cnum' in features and 'mcolor' in features:
-            raise ValueError ('"cnum" and "mcolor" features may not be used simultaneously')
+        if "cnum" in features and "mcolor" in features:
+            raise ValueError(
+                '"cnum" and "mcolor" features may not be used simultaneously'
+            )
 
-
-    def setData (self, data):
-        super (MultiStamp, self).setData (data)
+    def setData(self, data):
+        super(MultiStamp, self).setData(data)
 
         for f in self.features:
-            setattr (self, '_' + f + '_cinfo', data.register (*_ms_features[f]))
+            setattr(self, "_" + f + "_cinfo", data.register(*_ms_features[f]))
 
+    def paintAt(self, ctxt, style, x, y):
+        pass  # TODO
 
-    def paintAt (self, ctxt, style, x, y):
-        pass # TODO
-
-
-    def paintMany (self, ctxt, style, xform):
-        imisc, fmisc, allx, ally = self.data.getAllMapped (xform)
+    def paintMany(self, ctxt, style, xform):
+        imisc, fmisc, allx, ally = self.data.getAllMapped(xform)
         x = allx[0]
         y = ally[0]
 
@@ -837,98 +833,99 @@ class MultiStamp (RStamp):
         doz = self._z_cinfo is not None
 
         if doz:
-            zs = self.data.get (self._z_cinfo)[0][0]
-            zidxs = np.argsort (zs)
+            zs = self.data.get(self._z_cinfo)[0][0]
+            zidxs = np.argsort(zs)
             zsort = lambda a: a[zidxs]
-            zsort2 = lambda a: a[:,zidxs]
-            x = zsort (x)
-            y = zsort (y)
+            zsort2 = lambda a: a[:, zidxs]
+            x = zsort(x)
+            y = zsort(y)
         else:
             zsort = zsort2 = lambda a: a
 
         if docnum:
-            cnums = zsort (self.data.get (self._cnum_cinfo)[0][0])
+            cnums = zsort(self.data.get(self._cnum_cinfo)[0][0])
 
         if dofill:
-            fills = zsort (self.data.get (self._fill_cinfo)[0][0])
+            fills = zsort(self.data.get(self._fill_cinfo)[0][0])
         else:
             fill = self.fixedfill
 
         if domcolor:
             from pwkit import colormaps
-            colormap = colormaps.factory_map[self.colormap] ()
-            rgbs = colormap (zsort (self.data.get (self._mcolor_cinfo)[1][0]))
+
+            colormap = colormaps.factory_map[self.colormap]()
+            rgbs = colormap(zsort(self.data.get(self._mcolor_cinfo)[1][0]))
 
         if doprepaint:
-            ppfuncs = zsort (self.data.get (self._prepaint_cinfo)[0][0])
+            ppfuncs = zsort(self.data.get(self._prepaint_cinfo)[0][0])
 
         if doshape:
-            shapes = zsort (self.data.get (self._shape_cinfo)[0][0])
+            shapes = zsort(self.data.get(self._shape_cinfo)[0][0])
 
         if dosize:
-            sizes = zsort (self.data.get (self._size_cinfo)[1][0])
+            sizes = zsort(self.data.get(self._size_cinfo)[1][0])
         else:
             size = self.fixedsize
 
         if doux:
-            d = self.data.getMapped (self._ux_cinfo, xform)
-            xlimstyles = zsort (d[0][0])
-            uxs = zsort2 (d[2])
+            d = self.data.getMapped(self._ux_cinfo, xform)
+            xlimstyles = zsort(d[0][0])
+            uxs = zsort2(d[2])
         else:
-            uxkind = 'n'
+            uxkind = "n"
 
         if douy:
-            d = self.data.getMapped (self._uy_cinfo, xform)
-            ylimstyles = zsort (d[0][0])
-            uys = zsort2 (d[3])
+            d = self.data.getMapped(self._uy_cinfo, xform)
+            ylimstyles = zsort(d[0][0])
+            uys = zsort2(d[3])
         else:
-            uykind = 'n'
+            uykind = "n"
 
         if dotlines:
-            lineinfo = zsort (self.data.get (self._tlines_cinfo)[0][0])
+            lineinfo = zsort(self.data.get(self._tlines_cinfo)[0][0])
             linegroups = {}
 
-            for i in xrange (x.size):
+            for i in xrange(x.size):
                 idx = lineinfo[i]
                 if idx == 0:
                     continue
-                linegroups.setdefault (idx, []).append (i)
+                linegroups.setdefault(idx, []).append(i)
 
-            ctxt.save ()
-            style.apply (ctxt, self.fixedlinestyle)
+            ctxt.save()
+            style.apply(ctxt, self.fixedlinestyle)
 
-            for points in six.itervalues (linegroups):
-                n = len (points)
+            for points in six.itervalues(linegroups):
+                n = len(points)
                 if n < 2:
                     continue
 
-                ctxt.move_to (x[points[0]], y[points[0]])
-                for i in xrange (1, n):
-                    ctxt.line_to (x[points[i]], y[points[i]])
-                ctxt.stroke ()
+                ctxt.move_to(x[points[0]], y[points[0]])
+                for i in xrange(1, n):
+                    ctxt.line_to(x[points[i]], y[points[i]])
+                ctxt.stroke()
 
-            ctxt.restore ()
+            ctxt.restore()
 
-        for i in xrange (x.size):
-            ctxt.save ()
+        for i in xrange(x.size):
+            ctxt.save()
 
             if docnum:
                 if cnums[i] < 0:
                     c = self.extracolors[-cnums[i] - 1]
                 else:
-                    c = style.colors.getDataColor (cnums[i])
+                    c = style.colors.getDataColor(cnums[i])
 
-                if len (c) == 4:
-                    ctxt.set_source_rgba (*c)
+                if len(c) == 4:
+                    ctxt.set_source_rgba(*c)
                 else:
-                    ctxt.set_source_rgb (*c)
+                    ctxt.set_source_rgb(*c)
             elif domcolor:
-                ctxt.set_source_rgb (*rgbs[i])
+                ctxt.set_source_rgb(*rgbs[i])
 
             if doshape:
-                symfunc = style.data.getStrictSymbolFunc (shapes[i])
+                symfunc = style.data.getStrictSymbolFunc(shapes[i])
             else:
-                symfunc = style.data.getStrictSymbolFunc (self.fixedshape)
+                symfunc = style.data.getStrictSymbolFunc(self.fixedshape)
 
             if dosize:
                 size = sizes[i]
@@ -940,58 +937,58 @@ class MultiStamp (RStamp):
                 xls = xlimstyles[i]
 
                 if xls == -1:
-                    uxkind = 'u' # upper limit
+                    uxkind = "u"  # upper limit
                 elif xls == 1:
-                    uxkind = 'l' # lower
-                elif uxs[0,i] == x[i] and uxs[1,i] == x[i]:
-                    uxkind = 'n' # none
+                    uxkind = "l"  # lower
+                elif uxs[0, i] == x[i] and uxs[1, i] == x[i]:
+                    uxkind = "n"  # none
                 else:
-                    uxkind = 'b' # error bars
+                    uxkind = "b"  # error bars
 
             if douy:
                 yls = ylimstyles[i]
 
                 if yls == -1:
-                    uykind = 'u' # upper limit
+                    uykind = "u"  # upper limit
                 elif yls == 1:
-                    uykind = 'l' # lower
-                elif uys[0,i] == y[i] and uys[1,i] == y[i]:
-                    uykind = 'n' # none
+                    uykind = "l"  # lower
+                elif uys[0, i] == y[i] and uys[1, i] == y[i]:
+                    uykind = "n"  # none
                 else:
-                    uykind = 'b' # error bars
+                    uykind = "b"  # error bars
 
-            if uxkind == 'u':
-                if uykind == 'u':
-                    symfunc = _double_limit (0)
-                elif uykind == 'l':
-                    symfunc = _double_limit (0.5 * np.pi)
+            if uxkind == "u":
+                if uykind == "u":
+                    symfunc = _double_limit(0)
+                elif uykind == "l":
+                    symfunc = _double_limit(0.5 * np.pi)
                 else:
-                    symfunc = _single_limit (0.5 * np.pi)
-            elif uxkind == 'l':
-                if uykind == 'u':
-                    symfunc = _double_limit (-0.5 * np.pi)
-                elif uykind == 'l':
-                    symfunc = _double_limit (np.pi)
+                    symfunc = _single_limit(0.5 * np.pi)
+            elif uxkind == "l":
+                if uykind == "u":
+                    symfunc = _double_limit(-0.5 * np.pi)
+                elif uykind == "l":
+                    symfunc = _double_limit(np.pi)
                 else:
-                    symfunc = _single_limit (-0.5 * np.pi)
-            elif uykind == 'u':
-                symfunc = _single_limit (0)
-            elif uykind == 'l':
-                symfunc = _single_limit (np.pi)
+                    symfunc = _single_limit(-0.5 * np.pi)
+            elif uykind == "u":
+                symfunc = _single_limit(0)
+            elif uykind == "l":
+                symfunc = _single_limit(np.pi)
 
             if doprepaint:
-                self.prepaintfuncs[ppfuncs[i]] (ctxt, style, x[i], y[i])
+                self.prepaintfuncs[ppfuncs[i]](ctxt, style, x[i], y[i])
 
-            if uxkind == 'b':
-                ctxt.move_to (uxs[0,i], y[i])
-                ctxt.line_to (uxs[1,i], y[i])
-                ctxt.stroke ()
+            if uxkind == "b":
+                ctxt.move_to(uxs[0, i], y[i])
+                ctxt.line_to(uxs[1, i], y[i])
+                ctxt.stroke()
 
-            if uykind == 'b':
-                ctxt.move_to (x[i], uys[0,i])
-                ctxt.line_to (x[i], uys[1,i])
-                ctxt.stroke ()
+            if uykind == "b":
+                ctxt.move_to(x[i], uys[0, i])
+                ctxt.line_to(x[i], uys[1, i])
+                ctxt.stroke()
 
-            ctxt.translate (x[i], y[i])
-            symfunc (ctxt, style, size, fill)
-            ctxt.restore ()
+            ctxt.translate(x[i], y[i])
+            symfunc(ctxt, style, size, fill)
+            ctxt.restore()

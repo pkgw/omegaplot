@@ -29,72 +29,70 @@ import pywcs, numpy as np
 from . import rect, sphere
 
 
-def _makeRAPainter (axis):
-    return sphere.AngularAxisPainter (axis, 1./15,
-                                      sphere.DISPLAY_HMS, sphere.WRAP_POS_HR)
-
-def _makeLatPainter (axis):
-    return sphere.AngularAxisPainter (axis, 1,
-                                      sphere.DISPLAY_DMS, sphere.WRAP_LAT)
-
-def _makeLonPainter (axis):
-    return sphere.AngularAxisPainter (axis, 1,
-                                      sphere.DISPLAY_DMS, sphere.WRAP_POS_DEG)
+def _makeRAPainter(axis):
+    return sphere.AngularAxisPainter(
+        axis, 1.0 / 15, sphere.DISPLAY_HMS, sphere.WRAP_POS_HR
+    )
 
 
-class WCSCoordinates (rect.RectCoordinates):
-    def __init__ (self, wcs, field_or_plot):
-        super (WCSCoordinates, self).__init__ (field_or_plot)
+def _makeLatPainter(axis):
+    return sphere.AngularAxisPainter(axis, 1, sphere.DISPLAY_DMS, sphere.WRAP_LAT)
+
+
+def _makeLonPainter(axis):
+    return sphere.AngularAxisPainter(axis, 1, sphere.DISPLAY_DMS, sphere.WRAP_POS_DEG)
+
+
+class WCSCoordinates(rect.RectCoordinates):
+    def __init__(self, wcs, field_or_plot):
+        super(WCSCoordinates, self).__init__(field_or_plot)
         self.wcs = wcs
 
-
-    def makeAxis (self, side):
-        axis = rect.CoordinateAxis (self, side)
+    def makeAxis(self, side):
+        axis = rect.CoordinateAxis(self, side)
 
         if side in (rect.RectPlot.SIDE_TOP, rect.RectPlot.SIDE_BOTTOM):
             axidx = 0
         else:
             axidx = 1
 
-        if self.wcs.wcs.ctype[axidx].startswith ('RA--'):
+        if self.wcs.wcs.ctype[axidx].startswith("RA--"):
             axis.defaultPainter = _makeRAPainter
-        elif self.wcs.wcs.ctype[axidx][1:].startswith ('LAT'):
+        elif self.wcs.wcs.ctype[axidx][1:].startswith("LAT"):
             axis.defaultPainter = _makeLatPainter
         else:
             axis.defaultPainter = _makeLonPainter
 
         return axis
 
-
-    def lin2arb (self, linx, liny):
-        linx = np.atleast_1d (linx)
-        liny = np.atleast_1d (liny)
+    def lin2arb(self, linx, liny):
+        linx = np.atleast_1d(linx)
+        liny = np.atleast_1d(liny)
 
         if linx.size == 1:
             linxval = linx[0]
-            linx = np.empty (liny.shape, linx.dtype)
-            linx.fill (linxval)
+            linx = np.empty(liny.shape, linx.dtype)
+            linx.fill(linxval)
 
         if liny.size == 1:
             linyval = liny[0]
-            liny = np.empty (linx.shape, liny.dtype)
-            liny.fill (linyval)
+            liny = np.empty(linx.shape, liny.dtype)
+            liny.fill(linyval)
 
-        return self.wcs.wcs_pix2sky (linx, liny, 0)
+        return self.wcs.wcs_pix2sky(linx, liny, 0)
 
-
-    def arb2lin (self, arbx, arby):
-        arbx = np.atleast_1d (arbx)
-        arby = np.atleast_1d (arby)
+    def arb2lin(self, arbx, arby):
+        arbx = np.atleast_1d(arbx)
+        arby = np.atleast_1d(arby)
 
         if arbx.size == 1:
             arbxval = arbx[0]
-            arbx = np.empty (arby.shape, arbx.dtype)
-            arbx.fill (arbxval)
+            arbx = np.empty(arby.shape, arbx.dtype)
+            arbx.fill(arbxval)
 
         if arby.size == 1:
             arbyval = arby[0]
-            arby = np.empty (arbx.shape, arby.dtype)
-            arby.fill (arbyval)
+            arby = np.empty(arbx.shape, arby.dtype)
+            arby.fill(arbyval)
 
-        return self.wcs.wcs_sky2pix (arbx, arby, 0)
+        return self.wcs.wcs_sky2pix(arbx, arby, 0)

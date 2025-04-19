@@ -37,14 +37,14 @@ except NameError:
     inIPython = False
 
 
-def shell ():
+def shell():
     if not inIPython:
         return None
-    return get_ipython ()
+    return get_ipython()
 
 
-def gtk_mainloop_running ():
-    sh = shell ()
+def gtk_mainloop_running():
+    sh = shell()
     if sh is None:
         return False
 
@@ -54,7 +54,7 @@ def gtk_mainloop_running ():
 
         if eventloop is None:
             return False
-        return 'gtk' in eventloop.func_name
+        return "gtk" in eventloop.func_name
     except AttributeError:
         try:
             curhook = sh._inputhook
@@ -63,9 +63,10 @@ def gtk_mainloop_running ():
 
             if curhook is None:
                 return False
-            return 'gtk' in curhook.__module__
+            return "gtk" in curhook.__module__
         except AttributeError:
             # We must be in an older IPython.
             import IPython.lib.inputhook
-            gui = IPython.lib.inputhook.inputhook_manager.current_gui ()
-            return gui in ('gtk', 'gtk3')
+
+            gui = IPython.lib.inputhook.inputhook_manager.current_gui()
+            return gui in ("gtk", "gtk3")

@@ -31,42 +31,42 @@ defaultStyle = styles.ColorOnWhiteBitmap
 defaultDims = (600, 400)
 
 
-class NotebookDisplayPager (render.DisplayPager):
-    def __init__ (self, dims=defaultDims, style=None):
+class NotebookDisplayPager(render.DisplayPager):
+    def __init__(self, dims=defaultDims, style=None):
         if style is None:
-            style = defaultStyle ()
+            style = defaultStyle()
 
         self.style = style
         self.dims = dims
 
-    def canPage (self):
+    def canPage(self):
         return False
 
-    def isReusable (self):
+    def isReusable(self):
         return True
 
-    def send (self, painter):
+    def send(self, painter):
         w, h = self.dims
 
-        surf = cairo.ImageSurface (cairo.FORMAT_ARGB32, w, h)
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
 
-        def renderfunc (prend):
-            ctxt = cairo.Context (surf)
-            prend (ctxt, self.style, w, h)
-            ctxt.show_page ()
+        def renderfunc(prend):
+            ctxt = cairo.Context(surf)
+            prend(ctxt, self.style, w, h)
+            ctxt.show_page()
 
-        painter.render (renderfunc)
+        painter.render(renderfunc)
 
-        buf = StringIO.StringIO ()
-        surf.write_to_png (buf)
-        surf.finish ()
-        data = buf.getvalue ()
-        buf.close ()
+        buf = StringIO.StringIO()
+        surf.write_to_png(buf)
+        surf.finish()
+        data = buf.getvalue()
+        buf.close()
 
-        display (Image (data=data))
+        display(Image(data=data))
 
-    def done (self):
+    def done(self):
         pass
 
 
-render.setDisplayPagerClass (NotebookDisplayPager)
+render.setDisplayPagerClass(NotebookDisplayPager)

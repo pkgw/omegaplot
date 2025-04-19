@@ -28,76 +28,79 @@ from . import base
 
 setZoom = latexsnippet.setZoom
 
-def setDebug (debug):
+
+def setDebug(debug):
     latexsnippet.defaultConfig._debug = debug
 
-globalCache = latexsnippet.CairoCache ()
+
+globalCache = latexsnippet.CairoCache()
 
 
-class LatexPainter (_TextPainterBase):
+class LatexPainter(_TextPainterBase):
     hAlign = 0.0
     vAlign = 0.0
     style = None
 
-    def __init__ (self, snippet, cache=globalCache, hAlign=0.0, vAlign=0.0):
+    def __init__(self, snippet, cache=globalCache, hAlign=0.0, vAlign=0.0):
         self.cache = cache
-        self.handle = self.cache.addSnippet (snippet)
-        self.hAlign = float (hAlign)
-        self.vAlign = float (vAlign)
+        self.handle = self.cache.addSnippet(snippet)
+        self.hAlign = float(hAlign)
+        self.vAlign = float(vAlign)
 
-    def doLayout (self, ctxt, style, isfinal, w, h, bt, br, bl, bb):
-        r = self.cache.getRenderer (self.handle)
+    def doLayout(self, ctxt, style, isfinal, w, h, bt, br, bl, bb):
+        r = self.cache.getRenderer(self.handle)
         self.dx = self.hAlign * (w - r.bbw)
         self.dy = self.vAlign * (h - r.bbh)
-        return LayoutInfo (minsize=(r.bbw, r.bbh))
+        return LayoutInfo(minsize=(r.bbw, r.bbh))
 
-    def doPaint (self, ctxt, style):
-        ctxt.save ()
-        style.apply (ctxt, self.style)
-        ctxt.set_source_rgb (*style.getColor (self.color))
-        ctxt.translate (self.border[3] + self.dx, self.border[0] + self.dy)
-        self.cache.getRenderer (self.handle).render (ctxt, True)
-        ctxt.restore ()
+    def doPaint(self, ctxt, style):
+        ctxt.save()
+        style.apply(ctxt, self.style)
+        ctxt.set_source_rgb(*style.getColor(self.color))
+        ctxt.translate(self.border[3] + self.dx, self.border[0] + self.dy)
+        self.cache.getRenderer(self.handle).render(ctxt, True)
+        ctxt.restore()
 
-    def __del__ (self):
-        self.cache.expire (self.handle)
+    def __del__(self):
+        self.cache.expire(self.handle)
 
-class LatexStamper (_TextStamperBase):
-    def __init__ (self, snippet, cache=globalCache):
+
+class LatexStamper(_TextStamperBase):
+    def __init__(self, snippet, cache=globalCache):
         self.cache = cache
-        self.handle = self.cache.addSnippet (snippet)
+        self.handle = self.cache.addSnippet(snippet)
 
-    def getSize (self, ctxt, style):
-        r = self.cache.getRenderer (self.handle)
+    def getSize(self, ctxt, style):
+        r = self.cache.getRenderer(self.handle)
         return r.bbw, r.bbh
 
-    def paintAt (self, ctxt, x, y, color):
-        ctxt.save ()
-        ctxt.translate (x, y)
-        ctxt.set_source_rgb (*color)
-        self.cache.getRenderer (self.handle).render (ctxt, True)
-        ctxt.restore ()
+    def paintAt(self, ctxt, x, y, color):
+        ctxt.save()
+        ctxt.translate(x, y)
+        ctxt.set_source_rgb(*color)
+        self.cache.getRenderer(self.handle).render(ctxt, True)
+        ctxt.restore()
 
 
-def _atexit ():
-    globalCache.close ()
+def _atexit():
+    globalCache.close()
 
-atexit.register (_atexit)
+
+atexit.register(_atexit)
 
 
 _latexMappings = {
-    '%.0f': '$%.0f$',
-    '%.*f': '$%.*f$',
-    '10^%d': '$10^{%d}$',
-    '%d*10^%d': r'$%d\cdot\!10^{%d}$',
-    'UNIT_°': r'UNIT_$^\circ$',
-    'UNIT_′': r'UNIT_$\'$',
-    'UNIT_″': r'UNIT_$\'\'$',
-    'UNIT_h': r'UNIT_$^\textrm{h}$',
-    'UNIT_m': r'UNIT_\vphantom{$^\textrm{h}$}$^\textrm{m}$',
-    'UNIT_s': r'UNIT_$^\textrm{s}$',
+    "%.0f": "$%.0f$",
+    "%.*f": "$%.*f$",
+    "10^%d": "$10^{%d}$",
+    "%d*10^%d": r"$%d\cdot\!10^{%d}$",
+    "UNIT_°": r"UNIT_$^\circ$",
+    "UNIT_′": r"UNIT_$\'$",
+    "UNIT_″": r"UNIT_$\'\'$",
+    "UNIT_h": r"UNIT_$^\textrm{h}$",
+    "UNIT_m": r"UNIT_\vphantom{$^\textrm{h}$}$^\textrm{m}$",
+    "UNIT_s": r"UNIT_$^\textrm{s}$",
 }
 
 
-base._setTextBackend (LatexPainter, LatexStamper,
-                      lambda t: _latexMappings.get (t, t))
+base._setTextBackend(LatexPainter, LatexStamper, lambda t: _latexMappings.get(t, t))
