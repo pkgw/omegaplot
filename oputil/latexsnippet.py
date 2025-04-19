@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""Render snippets of LaTeX code into compiled code that can render
+"""
+Render snippets of LaTeX code into compiled code that can render
 the graphics vectorially using Cairo.
 
 Vaguely derived from htmlatex.py (http://www.meangrape.com/htmlatex/)
@@ -53,10 +54,9 @@ defaultConfig -- An instance of RenderConfig that has sensible defaults.
 
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import os, sys
-from os.path import basename, splitext, join, abspath, exists
+import os
+from os.path import splitext, join, abspath, exists
+import sys
 import tempfile
 
 

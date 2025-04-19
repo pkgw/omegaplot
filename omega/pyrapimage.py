@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# Support for plot axes derived from coordinates embedded in a CASA
-# image access with pyrap.
+"""
+Support for plot axes derived from coordinates embedded in a CASA
+image access with pyrap.
 
-# FIXME: we're hardcoding which axes are the lat/lon axes, etc etc
+FIXME: we're hardcoding which axes are the lat/lon axes, etc etc
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+FIXME: obviously this needs porting to more modern CASA
+"""
 
 import numpy as np
 

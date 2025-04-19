@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""styles - Graphical styling classes."""
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Graphical styling classes.
+"""
 
 import numpy as np
 

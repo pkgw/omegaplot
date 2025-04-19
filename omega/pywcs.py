@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# Support for plot axes derived from WCS coordinate transforms
-# using the pywcs binding to wcslib.
+"""
+Support for plot axes derived from WCS coordinate transforms
+using the pywcs binding to wcslib.
 
-# TODO: allow "paper 4" or "SIP" transforms if desired. Whatever
-# they are.
+TODO: allow "paper 4" or "SIP" transforms if desired. Whatever
+they are.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+FIXME: this was written before Astropy existed!!!
+"""
 
-import pywcs, numpy as np
+import numpy as np
 
 from . import rect, sphere
 

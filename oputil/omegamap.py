@@ -2,7 +2,8 @@
 # Copyright 2012, 2014, 2015 Peter Williams
 # Licensed under the MIT License.
 
-"""omegamap [keywords]
+"""
+omegamap [keywords]
 
 Render an image attractively into vector or bitmap output.
 
@@ -82,10 +83,11 @@ locator=
  multiple locators will be drawn.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import cairo, numpy as np, sys
+import sys
 
+import cairo
+import numpy as np
 from pwkit import astimage, astutil, cli, data_gui_helpers, ellipses
 from pwkit.kwargv import ParseKeywords, Custom
 

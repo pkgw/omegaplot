@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""Jupyter/IPython integration for OmegaPlot.
+"""
+Jupyter/IPython integration for OmegaPlot.
 
 For simplicity we try to maintain compatibility with pre-split IPython, later
 versions of IPython, and the Jupyter consoe mode, when possible. The current
@@ -28,7 +29,6 @@ after the Jupyter split. That is not in fact the case. The focus of
 development is just a bit different.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 try:
     __IPYTHON__

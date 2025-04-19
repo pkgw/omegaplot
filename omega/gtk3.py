@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-"""A few things to keep in mind:
+"""
+A few things to keep in mind:
 
 - Properties on GObject-derived classes must be explicitly declared,
   and they revert to their default values on destruction. This means
@@ -27,7 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 - If you're in Jupyter/IPython and you do "%gui gtk3", show some plots, then
   "%gui" (-> no GUI), bad things will happen. This seems to be Jupyter's
   problem, not mine.
-
 """
 
 import gi
@@ -36,7 +34,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gdk, Gtk
 
-from .base import NullPainter, Painter, ToplevelPaintParent, ContextTooSmallError
+from .base import NullPainter, ToplevelPaintParent, ContextTooSmallError
 from . import jupyter, styles, render
 
 

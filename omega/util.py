@@ -16,16 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-r"""
-.. moduleauthor:: Peter Williams <peter@newton.cx>
-.. sectionauthor:: Peter Williams <peter@newton.cx>
-
-Various functions that don't fit in other modules particularly
-well. This is not to imply that these functions aren't important --
-:func:`quickXY`, for instance, is quite useful.
 """
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+Various functions that don't fit in other modules particularly well. This is not
+to imply that these functions aren't important -- :func:`quickXY`, for instance,
+is quite useful.
+"""
 
 import numpy as np
 

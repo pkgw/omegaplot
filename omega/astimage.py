@@ -22,8 +22,6 @@
 # FIXME: we're hardcoding which axes are the lat/lon axes, etc etc
 # FIXME: lots of copy/paste from pyrapimage
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import numpy as np
 
 from . import rect, sphere

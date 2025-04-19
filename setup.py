@@ -15,6 +15,7 @@ setup(
     zip_safe=False,
     packages=["omega", "oputil"],
     install_requires=[
+        "numpy >= 1.10",
         "pycairo >= 1.14",
     ],
     entry_points={

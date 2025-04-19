@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-"""Compute contours on gridded data.
+"""
+Compute contours on gridded data.
 
 Derived from the algorithm in PGPLOT 5.2, available at:
 
@@ -26,8 +27,6 @@ The relevant files are src/pgcnsc.f and src/pgcn01.f.
 
 FIXME: more docs.
 """
-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 

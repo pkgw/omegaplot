@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# Rectangular plots.
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Rectangular plots.
+"""
 
 import cairo
 import numpy as np
 
 from .base import *
-from .base import _TextPainterBase, _kwordDefaulted, _kwordExtract, _checkKwordsConsumed
+from .base import _kwordDefaulted, _kwordExtract
 from .base import textMarkup as TM
 from .layout import RightRotationPainter
 from . import util

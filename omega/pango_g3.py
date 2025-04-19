@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-
-# This version of the pango support module is intended for use with Gtk+ 3.0;
-# it uses the GObject Introspection system.
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+This version of the pango support module is intended for use with Gtk+ 3.0;
+it uses the GObject Introspection system.
+"""
 
 import gi
 

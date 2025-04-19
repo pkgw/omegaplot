@@ -2,7 +2,8 @@
 # Copyright 2013-2014 Peter Williams
 # Licensed under the MIT License.
 
-"""omegafig [Python file] [keywords...]
+"""
+omegafig [Python file] [keywords...]
 
 Make a plot with omegaplot, either interactively or to hard copy. The Python
 file should provide a function called plot() that returns an omegaplot
@@ -36,9 +37,8 @@ pangosize=[int]
 Set OMEGAFIG_BACKTRACE to a nonempty environment value to get full backtraces
 when the figure-creating code crashes.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, sys, types
+import os, sys
 
 from pwkit import cli
 from pwkit.kwargv import ParseKeywords, Custom

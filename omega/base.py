@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-# Basic classes of OmegaPlot.
+"""
+Basic classes of OmegaPlot.
+"""
 
 import numpy as np
 

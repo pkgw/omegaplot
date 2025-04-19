@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# Simple sine/SIN/orthographic spherical coordinate system, for when
-# you want to plot spherical things but don't have a wcslib object set
-# up.
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Simple sine/SIN/orthographic spherical coordinate system, for when you want to
+plot spherical things but don't have a wcslib object set up.
+"""
 
 import numpy as np
 

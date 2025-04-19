@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-# Axis painters for spherical projections, and potentially
-# other spherical helpers
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Axis painters for spherical projections, and potentially
+other spherical helpers
+"""
 
 import numpy as np
 

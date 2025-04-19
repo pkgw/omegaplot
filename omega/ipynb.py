@@ -16,13 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Omegaplot. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+XXX: I'd like to use SVG graphics, but I ran into problems with corrupted
+output with multiple plots in a notebook. See the history for SVG-writing
+code.
+"""
 
-# XXX: I'd like to use SVG graphics, but I ran into problems with corrupted
-# output with multiple plots in a notebook. See the history for SVG-writing
-# code.
+from io import BytesIO
 
-import cairo, os, StringIO, tempfile
+
+import cairo
 from IPython.display import display, Image
 
 from . import styles, render
@@ -57,7 +60,7 @@ class NotebookDisplayPager(render.DisplayPager):
 
         painter.render(renderfunc)
 
-        buf = StringIO.StringIO()
+        buf = BytesIO()
         surf.write_to_png(buf)
         surf.finish()
         data = buf.getvalue()
