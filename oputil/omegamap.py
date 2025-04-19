@@ -147,7 +147,7 @@ class Config(ParseKeywords):
         v[2] *= astutil.A2R  # major axis
 
         if v[2] <= 0:
-            die("locator major axis must be greater than zero")
+            cli.die("locator major axis must be greater than zero")
 
         if v[3] is None:
             v[3] = v[2]
@@ -155,7 +155,7 @@ class Config(ParseKeywords):
             v[3] *= astutil.A2R  # minor axis
 
         if v[3] <= 0:
-            die("locator minor axis must be greater than zero")
+            cli.die("locator minor axis must be greater than zero")
 
         v[4] *= astutil.D2R  # PA
 
@@ -170,7 +170,7 @@ class Config(ParseKeywords):
         try:
             return getattr(om.styles, v)()
         except:
-            die('can\'t load/instantiate OmegaPlot style "%s"', v)
+            cli.die('can\'t load/instantiate OmegaPlot style "%s"', v)
 
 
 def plot(config):

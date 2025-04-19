@@ -234,7 +234,7 @@ class DataHolder(object):
         Returns: The total number of columns in this DataHolder.
         """
 
-        return reduce(lambda x, y: x + y, self.allocations)
+        return sum(self.allocations)
 
     def _allocMerged(self, type, dtype, len):
         totw = 0

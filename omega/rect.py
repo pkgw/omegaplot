@@ -27,7 +27,6 @@ from .base import *
 from .base import _kwordDefaulted, _kwordExtract
 from .base import textMarkup as TM
 from .layout import RightRotationPainter
-from . import util
 
 
 class RectDataHolder(DataHolder):
@@ -246,7 +245,7 @@ class AxisPaintHelper(object):
         ctxt.stroke()
 
     def paintTickOut(self, ctxt, loc, len):
-        self.paintTickIn(ctxt, w, h, loc, -len)
+        self.paintTickIn(ctxt, self.w, self.h, loc, -len)
 
     def paintNormalTickIn(self, ctxt, loc, angle, length):
         # Not 100% confident that what we do is right, given the
@@ -1813,7 +1812,7 @@ class FieldPainter(Painter):
             raise Exception("cannot render() parent-less FieldPainter")
         return p.render(func)
 
-    def sendTo(self, pager):
+    def sendTo(self, func):
         p = self._getParent()
         if p is None:
             raise Exception("cannot sendTo() parent-less FieldPainter")
@@ -2299,7 +2298,7 @@ def _paintSteppedLines(ctxt, xls, xrs, ys, connectors):
         for i in range(n):
             xl = xls[i]
             xr = xrs[i]
-            ys = ys[i]
+            y = ys[i]
 
             if prevxr is not None and (prevxr - xl) / abs(xl) > 1e-6:
                 raise Exception(

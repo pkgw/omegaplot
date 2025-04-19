@@ -236,7 +236,7 @@ def _makeDvi(snips, texbase, header, cfg):
 
     # Write out the TeX file
 
-    f = file(texfile, "wb")
+    f = open(texfile, "wb")
     f.write(cfg.preamble)
     if header is not None:
         f.write(header)
@@ -282,7 +282,7 @@ def _makePdf(snips, texbase, header, cfg):
 
     texfile = texbase + ".tex"
 
-    f = file(texfile, "wb")
+    f = open(texfile, "wb")
     f.write(cfg.preamble)
     if header is not None:
         f.write(header)
@@ -382,7 +382,7 @@ def _makeSvgs(dvifile, epsbase, svgtmpl, count, cfg):
 
 
 def _getBBox(epsfile):
-    f = file(epsfile, "rb")
+    f = open(epsfile, "rb")
     first = True
 
     x1 = None
@@ -667,7 +667,7 @@ class SkencilCairoRenderer(object):
         self.bbw = bbw
         self.bbh = bbh
 
-        source = file(filename, "rb").read()
+        source = open(filename, "rb").read()
         self.compiled = compile(source, filename, "exec")
 
     def render(self, ctxt, ignoreColor=False):
