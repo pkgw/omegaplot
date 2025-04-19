@@ -61,7 +61,7 @@ from os.path import basename, splitext, join, abspath, exists
 import tempfile
 
 
-class RenderConfig (object):
+class RenderConfig(object):
     """A simple structure containing parameters used by the
     renderSnippets function.
 
@@ -107,22 +107,22 @@ class RenderConfig (object):
     # We shouldn't just make up a value or it will come back to bite us
     # in the ass.
 
-    texprogram = 'latex'
-    texflags = '-interaction scrollmode'
-    pngprogram = 'dvipng'
-    pngflags = '-T tight -D 100 -z 9 -bg Transparent'
-    shutup = '>/dev/null'
-    noinput = '</dev/null'
-    dvips = 'dvips'
-    dvipsbaseflags = '-q -f -E -D 600'
-    dvipsrezflags = '-x 1440'
-    pstoedit = 'pstoedit'
-    multiext = '_%03d'
-    supershutup = '2>&1'
+    texprogram = "latex"
+    texflags = "-interaction scrollmode"
+    pngprogram = "dvipng"
+    pngflags = "-T tight -D 100 -z 9 -bg Transparent"
+    shutup = ">/dev/null"
+    noinput = "</dev/null"
+    dvips = "dvips"
+    dvipsbaseflags = "-q -f -E -D 600"
+    dvipsrezflags = "-x 1440"
+    pstoedit = "pstoedit"
+    multiext = "_%03d"
+    supershutup = "2>&1"
 
     @property
-    def dvipsflags (self):
-        return self.dvipsbaseflags + ' ' + self.dvipsrezflags
+    def dvipsflags(self):
+        return self.dvipsbaseflags + " " + self.dvipsrezflags
 
     _debug = False
 
@@ -145,24 +145,26 @@ class RenderConfig (object):
     # images in the corners of such LaTeX groups, so that the correct bounding
     # boxes will be calculated by DVI processing programs.
 
-    preamble = br'''
+    preamble = rb"""
 \documentclass[12pt]{article}
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
 \usepackage{mathrsfs}
 \usepackage{gensymb}
-'''
+"""
 
-    midamble = br'''
+    midamble = rb"""
 \usepackage{preview}
 \pagestyle{empty}
 \begin{document}
-'''
+"""
 
-defaultConfig = RenderConfig ()
 
-def setZoom (factor, thecfg=defaultConfig):
+defaultConfig = RenderConfig()
+
+
+def setZoom(factor, thecfg=defaultConfig):
     """Control the size of LaTeX snippets when rendered in a vector
     format. A *factor* of 1.0 corresponds to the default size, and
     other values scale linearly from the default.
@@ -189,204 +191,253 @@ def setZoom (factor, thecfg=defaultConfig):
     # should stay harmonized such that setZoom (1) is a noop from
     # the default.
 
-    thecfg.dvipsrezflags = '-x %d' % int (factor * 1440)
+    thecfg.dvipsrezflags = "-x %d" % int(factor * 1440)
+
 
 # Functions to perform various rendering steps
 
-def _run (shellcmd, cfg):
+
+def _run(shellcmd, cfg):
     if cfg._debug:
-        print ('Running:', shellcmd, file=sys.stderr)
+        print("Running:", shellcmd, file=sys.stderr)
 
-    ret = os.system (shellcmd)
+    ret = os.system(shellcmd)
 
-    assert ret == 0, ('Command returned %d: ' % ret) + shellcmd
+    assert ret == 0, ("Command returned %d: " % ret) + shellcmd
 
-def _recklessUnlink (name, cfg):
-    if cfg._debug: return
 
-    try: os.unlink (name)
-    except: pass
+def _recklessUnlink(name, cfg):
+    if cfg._debug:
+        return
 
-def _recklessMultiUnlink (count, tmpl, cfg):
-    if cfg._debug: return
+    try:
+        os.unlink(name)
+    except:
+        pass
+
+
+def _recklessMultiUnlink(count, tmpl, cfg):
+    if cfg._debug:
+        return
 
     if count == 1:
-        _recklessUnlink (tmpl)
+        _recklessUnlink(tmpl)
     else:
-        for i in xrange (0, count):
-            _recklessUnlink (tmpl % i)
+        for i in xrange(0, count):
+            _recklessUnlink(tmpl % i)
 
-def _makeDvi (snips, texbase, header, cfg):
-    if cfg._debug: shutflag = ''
-    else: shutflag = cfg.shutup
 
-    texfile = texbase + '.tex'
+def _makeDvi(snips, texbase, header, cfg):
+    if cfg._debug:
+        shutflag = ""
+    else:
+        shutflag = cfg.shutup
+
+    texfile = texbase + ".tex"
 
     # Write out the TeX file
 
-    f = file (texfile, 'wb')
-    f.write (cfg.preamble)
-    if header is not None: f.write (header)
-    f.write (cfg.midamble)
+    f = file(texfile, "wb")
+    f.write(cfg.preamble)
+    if header is not None:
+        f.write(header)
+    f.write(cfg.midamble)
 
     first = True
 
     for snip in snips:
-        f.write (b'\n')
-        if not first: f.write (b'\\newpage\n')
-        else: first = False
-        f.write (snip)
-        f.write (b'\n')
+        f.write(b"\n")
+        if not first:
+            f.write(b"\\newpage\n")
+        else:
+            first = False
+        f.write(snip)
+        f.write(b"\n")
 
-    f.write (b'\\end{document}\n')
-    f.close ()
+    f.write(b"\\end{document}\n")
+    f.close()
     del f
 
     # Run LaTeX
 
-    _run ('%s %s \'%s\' %s %s' % (cfg.texprogram, cfg.texflags, texfile,
-                                  shutflag, cfg.noinput), cfg)
+    _run(
+        "%s %s '%s' %s %s"
+        % (cfg.texprogram, cfg.texflags, texfile, shutflag, cfg.noinput),
+        cfg,
+    )
 
     if not cfg._debug:
-        os.unlink (texfile)
-        os.unlink (texbase + '.aux')
-        os.unlink (texbase + '.log')
+        os.unlink(texfile)
+        os.unlink(texbase + ".aux")
+        os.unlink(texbase + ".log")
 
-    return texbase + '.dvi'
+    return texbase + ".dvi"
 
 
-def _makePdf (snips, texbase, header, cfg):
+def _makePdf(snips, texbase, header, cfg):
     # XXXXXXX HAAACK
     if cfg._debug:
-        shutflag = ''
+        shutflag = ""
     else:
         shutflag = cfg.shutup
 
-    texfile = texbase + '.tex'
+    texfile = texbase + ".tex"
 
-    f = file (texfile, 'wb')
-    f.write (cfg.preamble)
+    f = file(texfile, "wb")
+    f.write(cfg.preamble)
     if header is not None:
-        f.write (header)
-    f.write (cfg.midamble)
+        f.write(header)
+    f.write(cfg.midamble)
 
     first = True
 
     for snip in snips:
-        f.write (b'\n')
+        f.write(b"\n")
         if not first:
-            f.write (b'\\newpage\n')
+            f.write(b"\\newpage\n")
         else:
             first = False
-        f.write (snip)
-        f.write (b'\n')
+        f.write(snip)
+        f.write(b"\n")
 
-    f.write (b'\\end{document}\n')
-    f.close ()
+    f.write(b"\\end{document}\n")
+    f.close()
     del f
 
-    _run ('pdflatex %s \'%s\' %s %s' % (cfg.texflags, texfile,
-                                        shutflag, cfg.noinput), cfg)
+    _run("pdflatex %s '%s' %s %s" % (cfg.texflags, texfile, shutflag, cfg.noinput), cfg)
 
     if not cfg._debug:
-        os.unlink (texfile)
-        os.unlink (texbase + '.aux')
-        os.unlink (texbase + '.log')
+        os.unlink(texfile)
+        os.unlink(texbase + ".aux")
+        os.unlink(texbase + ".log")
 
-    return texbase + '.pdf'
+    return texbase + ".pdf"
 
 
-def _makePngs (dvifile, pngtmpl, count, cfg):
-    if cfg._debug: shutflag = ''
-    else: shutflag = cfg.shutup
+def _makePngs(dvifile, pngtmpl, count, cfg):
+    if cfg._debug:
+        shutflag = ""
+    else:
+        shutflag = cfg.shutup
 
-    _run ('%s %s -o \'%s\' %s %s' % (cfg.pngprogram, cfg.pngflags, pngtmpl,
-                                     dvifile, shutflag), cfg)
+    _run(
+        "%s %s -o '%s' %s %s"
+        % (cfg.pngprogram, cfg.pngflags, pngtmpl, dvifile, shutflag),
+        cfg,
+    )
 
-    if '%' in pngtmpl:
-        return [pngtmpl % i for i in xrange (0, count)]
+    if "%" in pngtmpl:
+        return [pngtmpl % i for i in xrange(0, count)]
     assert count == 1
     return [pngtmpl]
 
 
-def _makeEpss (dvifile, epsbase, count, cfg):
-    if cfg._debug: shutflag = ''
-    else: shutflag = cfg.shutup
-
-    if count > 1: iflag = '-i'
-    else: iflag = ''
-
-    _run ('%s %s %s -o \'%s.eps\' %s %s' % (cfg.dvips, cfg.dvipsflags, iflag, epsbase,
-                                            dvifile, shutflag), cfg)
-
-    if count == 1:
-        return [epsbase + '.eps']
+def _makeEpss(dvifile, epsbase, count, cfg):
+    if cfg._debug:
+        shutflag = ""
     else:
-        return ['%s.%03d' % (epsbase, i+1) for i in xrange (0, count)]
+        shutflag = cfg.shutup
 
-def _makeSvgs (dvifile, epsbase, svgtmpl, count, cfg):
-    if cfg._debug: shutflag = ''
-    else: shutflag = cfg.shutup + ' ' + cfg.supershutup
+    if count > 1:
+        iflag = "-i"
+    else:
+        iflag = ""
 
-    epsfiles = _makeEpss (dvifile, epsbase, count, cfg)
+    _run(
+        "%s %s %s -o '%s.eps' %s %s"
+        % (cfg.dvips, cfg.dvipsflags, iflag, epsbase, dvifile, shutflag),
+        cfg,
+    )
 
     if count == 1:
-        _run ('%s -f svg \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0], svgtmpl, shutflag), cfg)
+        return [epsbase + ".eps"]
+    else:
+        return ["%s.%03d" % (epsbase, i + 1) for i in xrange(0, count)]
+
+
+def _makeSvgs(dvifile, epsbase, svgtmpl, count, cfg):
+    if cfg._debug:
+        shutflag = ""
+    else:
+        shutflag = cfg.shutup + " " + cfg.supershutup
+
+    epsfiles = _makeEpss(dvifile, epsbase, count, cfg)
+
+    if count == 1:
+        _run(
+            "%s -f svg '%s' '%s' %s" % (cfg.pstoedit, epsfiles[0], svgtmpl, shutflag),
+            cfg,
+        )
         svgfiles = [svgtmpl]
     else:
         svgfiles = []
-        for i in xrange (0, count):
+        for i in xrange(0, count):
             fout = svgtmpl % i
-            _run ('%s -f svg \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i], fout, shutflag), cfg)
-            svgfiles.append (fout)
+            _run(
+                "%s -f svg '%s' '%s' %s" % (cfg.pstoedit, epsfiles[i], fout, shutflag),
+                cfg,
+            )
+            svgfiles.append(fout)
 
     return epsfiles, svgfiles
 
-def _getBBox (epsfile):
-    f = file (epsfile, 'rb')
+
+def _getBBox(epsfile):
+    f = file(epsfile, "rb")
     first = True
 
     x1 = None
 
     for l in f:
         if first:
-            assert l.startswith (b'%!PS')
+            assert l.startswith(b"%!PS")
             first = False
         else:
-            if not l.startswith (b'%%'): break
+            if not l.startswith(b"%%"):
+                break
 
-            if l.startswith (b'%%BoundingBox:'):
-                x1, y1, x2, y2 = (int (x) for x in l.split ()[1:])
+            if l.startswith(b"%%BoundingBox:"):
+                x1, y1, x2, y2 = (int(x) for x in l.split()[1:])
 
-    assert x1 is not None, 'Couldn\'t find EPS file bounding box'
+    assert x1 is not None, "Couldn't find EPS file bounding box"
     return x1, y2, x2 - x1, y2 - y1
 
-def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
-    if cfg._debug: shutflag = ''
-    else: shutflag = cfg.shutup + ' ' + cfg.supershutup
 
-    epsfiles = _makeEpss (dvifile, epsbase, count, cfg)
+def _makeSks(dvifile, epsbase, sktmpl, count, checkExists, cfg):
+    if cfg._debug:
+        shutflag = ""
+    else:
+        shutflag = cfg.shutup + " " + cfg.supershutup
+
+    epsfiles = _makeEpss(dvifile, epsbase, count, cfg)
 
     # We want bounding boxes for Cairo rendering
 
     if count == 1:
-        if not checkExists or not exists (sktmpl):
-            _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[0],
-                                                          sktmpl, shutflag), cfg)
+        if not checkExists or not exists(sktmpl):
+            _run(
+                "%s -f sk -dt -ssp '%s' '%s' %s"
+                % (cfg.pstoedit, epsfiles[0], sktmpl, shutflag),
+                cfg,
+            )
         skfiles = [sktmpl]
-        bboxes = [_getBBox (epsfiles[0])]
+        bboxes = [_getBBox(epsfiles[0])]
     else:
         skfiles = []
         bboxes = []
-        for i in xrange (0, count):
+        for i in xrange(0, count):
             fout = sktmpl % i
-            if not checkExists or not exists (fout):
-                _run ('%s -f sk -dt -ssp \'%s\' \'%s\' %s' % (cfg.pstoedit, epsfiles[i],
-                                                              fout, shutflag), cfg)
-            skfiles.append (fout)
-            bboxes.append (_getBBox (epsfiles[i]))
+            if not checkExists or not exists(fout):
+                _run(
+                    "%s -f sk -dt -ssp '%s' '%s' %s"
+                    % (cfg.pstoedit, epsfiles[i], fout, shutflag),
+                    cfg,
+                )
+            skfiles.append(fout)
+            bboxes.append(_getBBox(epsfiles[i]))
 
     return epsfiles, skfiles, bboxes
+
 
 # End-to-end renderers
 #
@@ -395,97 +446,120 @@ def _makeSks (dvifile, epsbase, sktmpl, count, checkExists, cfg):
 #
 # list means output is a one-file-per-snippet format
 
-def _render_dvi (snips, outbase, header, cfg):
-    return _makeDvi (snips, outbase, header, cfg)
 
-def _render_pdf (snips, outbase, header, cfg):
-    return _makePdf (snips, outbase, header, cfg)
-
-def _render_eps (snips, outbase, header, cfg):
-    dvifile = _makeDvi (snips, outbase, header, cfg)
-
-    try:
-        return _makeEpss (dvifile, outbase, len (snips), cfg)
-    finally:
-        _recklessUnlink (dvifile, cfg)
+def _render_dvi(snips, outbase, header, cfg):
+    return _makeDvi(snips, outbase, header, cfg)
 
 
-def _render_png (snips, outbase, header, cfg):
-    count = len (snips)
+def _render_pdf(snips, outbase, header, cfg):
+    return _makePdf(snips, outbase, header, cfg)
 
-    if count > 1: pngtmpl = outbase + cfg.multiext + '.png'
-    else: pngtmpl = outbase + '.png'
 
-    dvifile = _makeDvi (snips, outbase, header, cfg)
+def _render_eps(snips, outbase, header, cfg):
+    dvifile = _makeDvi(snips, outbase, header, cfg)
 
     try:
-        return _makePngs (dvifile, pngtmpl, count, cfg)
+        return _makeEpss(dvifile, outbase, len(snips), cfg)
     finally:
-        _recklessUnlink (dvifile, cfg)
+        _recklessUnlink(dvifile, cfg)
 
-def _render_svg (snips, outbase, header, cfg):
-    count = len (snips)
 
-    if count > 1: svgtmpl = outbase + cfg.multiext + '.svg'
-    else: svgtmpl = outbase + '.svg'
+def _render_png(snips, outbase, header, cfg):
+    count = len(snips)
 
-    dvifile = _makeDvi (snips, outbase, header, cfg)
+    if count > 1:
+        pngtmpl = outbase + cfg.multiext + ".png"
+    else:
+        pngtmpl = outbase + ".png"
+
+    dvifile = _makeDvi(snips, outbase, header, cfg)
 
     try:
-        epss = [] # in case makesvgs dies
-        epss, svgs = _makeSvgs (dvifile, outbase, svgtmpl, count, cfg)
+        return _makePngs(dvifile, pngtmpl, count, cfg)
     finally:
-        _recklessUnlink (dvifile, cfg)
-        for f in epss: _recklessUnlink (f, cfg)
+        _recklessUnlink(dvifile, cfg)
+
+
+def _render_svg(snips, outbase, header, cfg):
+    count = len(snips)
+
+    if count > 1:
+        svgtmpl = outbase + cfg.multiext + ".svg"
+    else:
+        svgtmpl = outbase + ".svg"
+
+    dvifile = _makeDvi(snips, outbase, header, cfg)
+
+    try:
+        epss = []  # in case makesvgs dies
+        epss, svgs = _makeSvgs(dvifile, outbase, svgtmpl, count, cfg)
+    finally:
+        _recklessUnlink(dvifile, cfg)
+        for f in epss:
+            _recklessUnlink(f, cfg)
 
     return svgs
 
-def _render_sk (snips, outbase, header, cfg, getbbs=False, checkExists=False):
-    count = len (snips)
 
-    if count > 1: sktmpl = outbase + cfg.multiext + '.sk'
-    else: sktmpl = outbase + '.sk'
+def _render_sk(snips, outbase, header, cfg, getbbs=False, checkExists=False):
+    count = len(snips)
 
-    dvifile = _makeDvi (snips, outbase, header, cfg)
+    if count > 1:
+        sktmpl = outbase + cfg.multiext + ".sk"
+    else:
+        sktmpl = outbase + ".sk"
+
+    dvifile = _makeDvi(snips, outbase, header, cfg)
 
     try:
         epss = []
-        epss, sks, bbs = _makeSks (dvifile, outbase, sktmpl, count, checkExists, cfg)
+        epss, sks, bbs = _makeSks(dvifile, outbase, sktmpl, count, checkExists, cfg)
     finally:
-        _recklessUnlink (dvifile, cfg)
-        for f in epss: _recklessUnlink (f, cfg)
+        _recklessUnlink(dvifile, cfg)
+        for f in epss:
+            _recklessUnlink(f, cfg)
 
-    if getbbs: return sks, bbs
+    if getbbs:
+        return sks, bbs
     return sks
+
 
 _renderMap = {}
 
-def _makeRenderMap ():
-    for (name, val) in six.iteritems (globals ()):
-        if not name.startswith ('_render_'): continue
+
+def _makeRenderMap():
+    for name, val in six.iteritems(globals()):
+        if not name.startswith("_render_"):
+            continue
         _renderMap[name[8:]] = val
 
-_makeRenderMap ()
+
+_makeRenderMap()
 
 # High-level rendering functions
 
-def renderSnippet (snip, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
-    return _renderMap[fmt] ([snip], outbase, header, cfg, **kwargs)
 
-def renderSnippets (snips, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
-    return _renderMap[fmt] (snips, outbase, header, cfg, **kwargs)
+def renderSnippet(snip, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
+    return _renderMap[fmt]([snip], outbase, header, cfg, **kwargs)
 
-def _guessFmt (outfile):
-    base, ext = splitext (outfile)
+
+def renderSnippets(snips, outbase, fmt, header=None, cfg=defaultConfig, **kwargs):
+    return _renderMap[fmt](snips, outbase, header, cfg, **kwargs)
+
+
+def _guessFmt(outfile):
+    base, ext = splitext(outfile)
     ext = ext[1:]
 
     assert ext in _renderMap, 'Unknown output format "%s"' % ext
 
     return base, ext
 
-def renderToFile (snip, outfile, header=None, cfg=defaultConfig, **kwargs):
-    base, fmt = _guessFmt (outfile)
-    return renderSnippet (snip, base, fmt, header, cfg, **kwargs)
+
+def renderToFile(snip, outfile, header=None, cfg=defaultConfig, **kwargs):
+    base, fmt = _guessFmt(outfile)
+    return renderSnippet(snip, base, fmt, header, cfg, **kwargs)
+
 
 # No renderToFiles since interpolating the image number into the
 # middle of the filename would be a bit weird
@@ -495,105 +569,128 @@ def renderToFile (snip, outfile, header=None, cfg=defaultConfig, **kwargs):
 
 # SCR global functions - no ctxt
 
-def _scrg_document ():
-    #print ('document')
+
+def _scrg_document():
+    # print ('document')
     pass
 
-def _scrg_layer (name, visible, printable, locked, outlined, *rest):
-    #print ('layer', visible, printable, locked, outlined, rest)
+
+def _scrg_layer(name, visible, printable, locked, outlined, *rest):
+    # print ('layer', visible, printable, locked, outlined, rest)
     pass
 
-def _scrg_guess_cont ():
-    #print ('guess_cont')
+
+def _scrg_guess_cont():
+    # print ('guess_cont')
     pass
+
 
 # SCR local functions -- need ctxt
 
-def _scrl_fp (ctxt, color):
+
+def _scrl_fp(ctxt, color):
     # fill pattern
-    #print ('fp', color)
-    ctxt.set_source_rgb (*color)
+    # print ('fp', color)
+    ctxt.set_source_rgb(*color)
 
-def _scr_nullfp (color): pass
 
-def _scrl_le (ctxt):
+def _scr_nullfp(color):
+    pass
+
+
+def _scrl_le(ctxt):
     # line pattern empty
-    #print ('le')
-    ctxt.set_dash ([])
+    # print ('le')
+    ctxt.set_dash([])
 
-def _scrl_b (ctxt):
+
+def _scrl_b(ctxt):
     # begin bezier
-    #print ('b')
-    ctxt.new_path ()
+    # print ('b')
+    ctxt.new_path()
 
-def _scrl_bs (ctxt, x, y, cont):
+
+def _scrl_bs(ctxt, x, y, cont):
     # bezier straightline
-    #print ('bs', x, y, cont)
-    ctxt.line_to (x, y)
+    # print ('bs', x, y, cont)
+    ctxt.line_to(x, y)
 
-def _scrl_bc (ctxt, x1, y1, x2, y2, x, y, cont):
+
+def _scrl_bc(ctxt, x1, y1, x2, y2, x, y, cont):
     # bezier curve?
-    #print ('bc', x1, y1, x2, y2, x, y, cont)
-    ctxt.curve_to (x1, y1, x2, y2, x, y)
+    # print ('bc', x1, y1, x2, y2, x, y, cont)
+    ctxt.curve_to(x1, y1, x2, y2, x, y)
 
-def _scrl_bC (ctxt):
+
+def _scrl_bC(ctxt):
     # bezier close
-    #print ('bC')
-    ctxt.fill ()
+    # print ('bC')
+    ctxt.fill()
 
-def _scr_makeDoer (func, ctxt):
-    def f (*args):
-        func (ctxt, *args)
+
+def _scr_makeDoer(func, ctxt):
+    def f(*args):
+        func(ctxt, *args)
+
     return f
+
 
 _scrGlobals = {}
 
-def _populateScrGlobals ():
-    for (name, val) in six.iteritems (globals ()):
-        if not name.startswith ('_scrg_'): continue
+
+def _populateScrGlobals():
+    for name, val in six.iteritems(globals()):
+        if not name.startswith("_scrg_"):
+            continue
         rest = name[6:]
         _scrGlobals[rest] = val
 
-_populateScrGlobals ()
 
-def _makeScrLocals (ctxt):
+_populateScrGlobals()
+
+
+def _makeScrLocals(ctxt):
     d = {}
 
-    for (name, val) in six.iteritems (globals ()):
-        if not name.startswith ('_scrl_'): continue
+    for name, val in six.iteritems(globals()):
+        if not name.startswith("_scrl_"):
+            continue
         rest = name[6:]
-        d[rest] = _scr_makeDoer (val, ctxt)
+        d[rest] = _scr_makeDoer(val, ctxt)
 
     return d
 
-class SkencilCairoRenderer (object):
-    def __init__ (self, filename, bbx, bby, bbw, bbh):
+
+class SkencilCairoRenderer(object):
+    def __init__(self, filename, bbx, bby, bbw, bbh):
         self.bbx = bbx
         self.bby = bby
         self.bbw = bbw
         self.bbh = bbh
 
-        source = file (filename, 'rb').read ()
-        self.compiled = compile (source, filename, 'exec')
+        source = file(filename, "rb").read()
+        self.compiled = compile(source, filename, "exec")
 
-    def render (self, ctxt, ignoreColor=False):
-        l = _makeScrLocals (ctxt)
+    def render(self, ctxt, ignoreColor=False):
+        l = _makeScrLocals(ctxt)
 
         if ignoreColor:
-            l['fp'] = _scr_nullfp
+            l["fp"] = _scr_nullfp
 
-        ctxt.save ()
-        #ctxt.translate (0, -self.bbh)
-        ctxt.scale (1, -1)
-        ctxt.translate (-self.bbx, -self.bby)
-        eval (self.compiled, _scrGlobals, l)
-        ctxt.restore ()
+        ctxt.save()
+        # ctxt.translate (0, -self.bbh)
+        ctxt.scale(1, -1)
+        ctxt.translate(-self.bbx, -self.bby)
+        eval(self.compiled, _scrGlobals, l)
+        ctxt.restore()
+
 
 # Now, a cache for rendering multiple snippets with Cairo ...
 
-_expiredString = 'dontevertrytorenderthis'
+_expiredString = "dontevertrytorenderthis"
 
-class CairoCache (object):
+
+class CairoCache(object):
     """Generates a set of snippets at once and caches the results in a
     temporary directory. This class can be used to manage a whole set of
     snippets, generating and retrieving them efficiently.
@@ -634,10 +731,10 @@ class CairoCache (object):
       not be needed outside of the class implementation.
     """
 
-    texbase = 'tex'
-    outbase = 'out'
+    texbase = "tex"
+    outbase = "out"
 
-    def __init__ (self, cdir=None, header=None, cfg=defaultConfig):
+    def __init__(self, cdir=None, header=None, cfg=defaultConfig):
         """Create a SnippetCache object.
         Arguments:
 
@@ -654,17 +751,17 @@ class CairoCache (object):
         """
 
         if not cdir:
-            cdir = tempfile.mkdtemp ('latexsnippetcache')
+            cdir = tempfile.mkdtemp("latexsnippetcache")
 
         self.cdir = cdir
         self.header = header
         self.cfg = cfg
-        self.snips = [] # list of snippet strings
+        self.snips = []  # list of snippet strings
         self.refcounts = []
         self.outputs = []
         self.renderers = []
 
-    def addSnippet (self, snip):
+    def addSnippet(self, snip):
         """Tell the cache to render the specified snippet. Returns
         a handle object which can be used to retrieve the snippet
         later. If a snippet with the same text has already been
@@ -684,20 +781,20 @@ class CairoCache (object):
         # lookup in the flat array is definitely not going to be
         # fast. But this will work for the time being.
 
-        snip = str (snip).strip ()
+        snip = str(snip).strip()
 
         try:
-            idx = self.snips.index (snip)
+            idx = self.snips.index(snip)
             self.refcounts[idx] += 1
             return idx
         except ValueError:
             pass
 
-        self.snips.append (snip)
-        self.refcounts.append (1)
-        return len (self.snips) - 1
+        self.snips.append(snip)
+        self.refcounts.append(1)
+        return len(self.snips) - 1
 
-    def renderAll (self):
+    def renderAll(self):
         """Render all of the registered snippets in one pass.
         Merely farms out the work to renderSnippets.
 
@@ -705,28 +802,34 @@ class CairoCache (object):
         Returns: None
         """
 
-        pwd = abspath (os.curdir)
+        pwd = abspath(os.curdir)
 
         try:
-            os.chdir (self.cdir)
-            sks, self.bbs = renderSnippets (self.snips, self.outbase, 'sk',
-                                            self.header, self.cfg, getbbs=True,
-                                            checkExists=True)
+            os.chdir(self.cdir)
+            sks, self.bbs = renderSnippets(
+                self.snips,
+                self.outbase,
+                "sk",
+                self.header,
+                self.cfg,
+                getbbs=True,
+                checkExists=True,
+            )
         finally:
-            os.chdir (pwd)
+            os.chdir(pwd)
 
-        assert isinstance (sks, list)
+        assert isinstance(sks, list)
 
-        self.outputs = [join (self.cdir, x) for x in sks]
+        self.outputs = [join(self.cdir, x) for x in sks]
 
-        #print ('post-render', len (self.renderers), len (self.snips))
-        #print (self.renderers)
+        # print ('post-render', len (self.renderers), len (self.snips))
+        # print (self.renderers)
 
         # for all new snippets ...
-        for i in xrange (len (self.renderers), len (self.snips)):
-            self.renderers.append (SkencilCairoRenderer (self.outputs[i], *self.bbs[i]))
+        for i in xrange(len(self.renderers), len(self.snips)):
+            self.renderers.append(SkencilCairoRenderer(self.outputs[i], *self.bbs[i]))
 
-    def expire (self, handle):
+    def expire(self, handle):
         """Request that the specified snippet no longer be rendered.
         After calling this function, use of the handle object will
         result in undefined behavior. (Ideally this behavior would be
@@ -746,11 +849,11 @@ class CairoCache (object):
         if self.refcounts[handle] > 0:
             return
 
-        if handle < len (self.outputs):
+        if handle < len(self.outputs):
             # Was the snippet ever actually rendered?
             # Just delete the file for now and don't waste time regenerating the snippet
             try:
-                os.remove (self.outputs[handle])
+                os.remove(self.outputs[handle])
             except:
                 pass
 
@@ -758,7 +861,7 @@ class CairoCache (object):
 
         self.snips[handle] = _expiredString
 
-    def getSnippet (self, handle):
+    def getSnippet(self, handle):
         """Retrieve the equation text associated with a snippet handle.
         This text may not be identical to the value passed to addSnippet,
         since that object is stringified and stripped before being stored.
@@ -773,7 +876,7 @@ class CairoCache (object):
 
         return self.snips[handle]
 
-    def getRenderer (self, handle):
+    def getRenderer(self, handle):
         """Returns the absolute path of the output file containing the
         rendered form of the snippet associated with the handle. If the
         snippet has not yet been rendered, that is done so first.
@@ -787,19 +890,19 @@ class CairoCache (object):
         rendered form of the snippet.
         """
 
-        if len (self.renderers) <= handle:
-            self.renderAll ()
+        if len(self.renderers) <= handle:
+            self.renderAll()
 
         if self.renderers[handle] is None:
-            print ('oh no!')
-            print ('h', handle)
-            print ('s', self.snips[handle])
-            print ('o', self.outputs[handle])
-            raise Exception ()
+            print("oh no!")
+            print("h", handle)
+            print("s", self.snips[handle])
+            print("o", self.outputs[handle])
+            raise Exception()
 
         return self.renderers[handle]
 
-    def close (self):
+    def close(self):
         """Deletes every file in the cache's temporary directory, then
         deletes the directory itself. The cache will be unusuable after
         a call to this function.
@@ -808,24 +911,26 @@ class CairoCache (object):
         Returns: None
         """
 
-        if self.cfg._debug: return
+        if self.cfg._debug:
+            return
 
-        for f in os.listdir (self.cdir):
-            os.remove (join (self.cdir, f))
-        os.rmdir (self.cdir)
+        for f in os.listdir(self.cdir):
+            os.remove(join(self.cdir, f))
+        os.rmdir(self.cdir)
 
-    def __del__ (self):
+    def __del__(self):
         """Calls close() if possible."""
 
-        if hasattr (self, 'cdir') and os and hasattr (os, 'path'):
-            self.close ()
+        if hasattr(self, "cdir") and os and hasattr(os, "path"):
+            self.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import sys
 
-    if len (sys.argv) != 3:
-        print ('Usage: %s \'snippet\' outfile' % (sys.argv[0]))
-        sys.exit (1)
+    if len(sys.argv) != 3:
+        print("Usage: %s 'snippet' outfile" % (sys.argv[0]))
+        sys.exit(1)
 
-    renderToFile (sys.argv[1], sys.argv[2])
-    sys.exit (0)
+    renderToFile(sys.argv[1], sys.argv[2])
+    sys.exit(0)
