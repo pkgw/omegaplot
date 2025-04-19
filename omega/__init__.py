@@ -30,12 +30,22 @@ general introduction to OmegaPlot, please see the
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+__version__ = "0.dev0"  # cranko project-version
+
 from .base import *
 from .rect import *
 from . import layout, rect, render, stamps, styles, util
 
 from .layout import Overlay, Grid
 from .styles import BlackOnWhiteBitmap, WhiteOnBlackBitmap
-from .util import (quickXY, quickXYErr, quickDF, quickHist, quickContours,
-                   quickImage, quickPager, _demo)
+from .util import (
+    quickXY,
+    quickXYErr,
+    quickDF,
+    quickHist,
+    quickContours,
+    quickImage,
+    quickPager,
+    _demo,
+)
 from .render import makePager, makeDisplayPager, getLatestPainter as latest

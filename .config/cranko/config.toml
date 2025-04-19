@@ -1,0 +1,6 @@
+[repo]
+upstream_urls = ['git@github.com:pkgw/omegaplot.git']
+
+[npm]
+
+[projects]
