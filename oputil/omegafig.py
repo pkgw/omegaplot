@@ -137,10 +137,7 @@ def doit (driver, args):
     # Set up omegaplot globals as appropriate
 
     if config.pango:
-        try:
-            import omega.pango_g3 as ompango
-        except ImportError:
-            import omega.pango_g2 as ompango
+        import omega.pango_g3 as ompango
 
         fontparams = {}
         if config.pangofamily is not None:

@@ -91,11 +91,7 @@ from pwkit.kwargv import ParseKeywords, Custom
 
 import omega as om
 import omega.astimage
-
-try:
-    import omega.pango_g3 as ompango
-except ImportError:
-    import omega.pango_g2 as ompango
+import omega.pango_g3 as ompango
 
 
 class Config (ParseKeywords):
