@@ -30,6 +30,8 @@ general introduction to OmegaPlot, please see the
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+__version__ = "0.dev0"  # cranko project-version
+
 from .base import *
 from .rect import *
 from . import layout, rect, render, stamps, styles, util

@@ -1,0 +1,2 @@
+[tool.cranko]
+annotated_files = ["omega/__init__.py", "oputil/__init__.py"]
